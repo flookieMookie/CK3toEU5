@@ -252,6 +252,7 @@ set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/tag_mapper/tag_mapper.cp
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/province_mapper/province_mapper.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/mappers.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_country.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_country_definitions.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_world.cpp")
 
 link_directories("./external/rakaly")

@@ -37,7 +37,8 @@ void Converter::Convert()
        ck3_world.GetLandedTitles());
 
    Log(LogLevel::Info) << "-> Building EU5 countries.";
-   const eu5::EU5World eu5_world(ck3_world, mappers);
+   const eu5::CountryDefinitions country_definitions(configuration_.GetEU5Directory());
+   const eu5::EU5World eu5_world(ck3_world, mappers, country_definitions);
    eu5_world.LogReport();
 
    Log(LogLevel::Progress) << "80%";
