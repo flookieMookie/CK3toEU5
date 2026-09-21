@@ -40,6 +40,7 @@ class CK3World
    [[nodiscard]] const auto& GetLandedTitles() const { return landed_titles_; }
    [[nodiscard]] const auto& GetRealms() const { return realms_; }
    [[nodiscard]] const auto& GetMetaTitleName() const { return meta_realm_title_; }
+   [[nodiscard]] const auto& GetUsedMods() const { return used_mods_; }
    //[[nodiscard]] const auto& GetMetaCoA() const { return metaCoA; }
    //[[nodiscard]] const auto& GetLocalizationMapper() const { return localizationMapper; }
    //[[nodiscard]] const auto& GetAlliancePairs() const { return relations.getAlliancePairs(); }
@@ -61,6 +62,8 @@ class CK3World
 
    // meta
    std::optional<std::string> meta_realm_title_;
+   // Mods the save declares. Their content is not loaded; this only drives a warning.
+   std::vector<std::string> used_mods_;
 
    GameVersion ck3_version_;
    Flags flags_;
