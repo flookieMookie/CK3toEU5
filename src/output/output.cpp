@@ -13,13 +13,17 @@
 #include "out_file_classes/setup/characters_file.hpp"
 #include "out_file_classes/setup/countries_file.hpp"
 #include "out_file_classes/setup/country_definitions_file.hpp"
+#include "out_file_classes/setup/pops_file.hpp"
 
 
 
 namespace out
 {
 
-Output::Output(std::string name, commonItems::ConverterVersion& converter_version, const eu5::EU5World& eu5_world):
+Output::Output(std::string name,
+    commonItems::ConverterVersion& converter_version,
+    const eu5::EU5World& eu5_world,
+    const eu5::LocationData& location_data):
     mod_name_(std::move(name)),
     converter_version_(std::move(converter_version)),
     output_path_(std::filesystem::path("output"))
@@ -54,6 +58,9 @@ Output::Output(std::string name, commonItems::ConverterVersion& converter_versio
 
    auto characters_file = std::make_unique<CharactersFile>("05_characters.txt", file_writer_, eu5_world);
    start_folder->RegisterFileOrResource(std::move(characters_file));
+
+   auto pops_file = std::make_unique<PopsFile>("06_pops.txt", file_writer_, eu5_world, location_data);
+   start_folder->RegisterFileOrResource(std::move(pops_file));
 
    setup_folder->RegisterSubfolder(std::move(start_folder));
    main_menu_folder->RegisterSubfolder(std::move(setup_folder));

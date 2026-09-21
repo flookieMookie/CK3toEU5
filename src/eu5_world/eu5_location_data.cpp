@@ -13,17 +13,13 @@ namespace
 // game/main_menu/setup/start/06_pops.txt, relative to the EU5 install root.
 const std::filesystem::path kPopsFile = std::filesystem::path("game") / "main_menu" / "setup" / "start" / "06_pops.txt";
 
-struct Pop
+eu5::Pop ParsePop(std::istream& input_stream)
 {
-   double size = 0.0;
-   std::string culture;
-   std::string religion;
-};
-
-Pop ParsePop(std::istream& input_stream)
-{
-   Pop pop;
+   eu5::Pop pop;
    commonItems::parser pop_parser;
+   pop_parser.registerKeyword("type", [&pop](std::istream& input_stream) {
+      pop.type = commonItems::getString(input_stream);
+   });
    pop_parser.registerKeyword("size", [&pop](std::istream& input_stream) {
       pop.size = commonItems::getDouble(input_stream);
    });
@@ -68,35 +64,43 @@ void eu5::LocationData::ParsePops(const std::filesystem::path& file_path)
    commonItems::parser locations_parser;
    locations_parser.registerKeyword("locations", [this](std::istream& input_stream) {
       commonItems::parser location_parser;
-      location_parser.registerRegex(R"([a-z0-9_']+)", [this](const std::string& location, std::istream& input_stream) {
-         std::map<std::string, double> culture_sizes;
-         std::map<std::string, double> religion_sizes;
+      // Some EU5 locations carry an uppercase disambiguating suffix, such as constantine_ALG.
+      location_parser.registerRegex(R"([A-Za-z0-9_']+)",
+          [this](const std::string& location, std::istream& input_stream) {
+             std::map<std::string, double> culture_sizes;
+             std::map<std::string, double> religion_sizes;
 
-         commonItems::parser pops_parser;
-         pops_parser.registerKeyword("define_pop", [&culture_sizes, &religion_sizes](std::istream& input_stream) {
-            const auto pop = ParsePop(input_stream);
-            if (!pop.culture.empty())
-            {
-               culture_sizes[pop.culture] += pop.size;
-            }
-            if (!pop.religion.empty())
-            {
-               religion_sizes[pop.religion] += pop.size;
-            }
-         });
-         pops_parser.registerRegex(commonItems::catchallRegex, commonItems::ignoreItem);
-         pops_parser.parseStream(input_stream);
-         pops_parser.clearRegisteredKeywords();
+             std::vector<eu5::Pop> location_pops;
 
-         if (const auto culture = Dominant(culture_sizes); !culture.empty())
-         {
-            dominant_culture_.insert_or_assign(location, culture);
-         }
-         if (const auto religion = Dominant(religion_sizes); !religion.empty())
-         {
-            dominant_religion_.insert_or_assign(location, religion);
-         }
-      });
+             commonItems::parser pops_parser;
+             pops_parser.registerKeyword("define_pop",
+                 [&culture_sizes, &religion_sizes, &location_pops](std::istream& input_stream) {
+                    const auto pop = ParsePop(input_stream);
+                    if (!pop.culture.empty())
+                    {
+                       culture_sizes[pop.culture] += pop.size;
+                    }
+                    if (!pop.religion.empty())
+                    {
+                       religion_sizes[pop.religion] += pop.size;
+                    }
+                    location_pops.emplace_back(pop);
+                 });
+             pops_parser.registerRegex(commonItems::catchallRegex, commonItems::ignoreItem);
+             pops_parser.parseStream(input_stream);
+             pops_parser.clearRegisteredKeywords();
+
+             // Locations with no pops are kept so rewriting the file preserves every entry EU5 had.
+             pops_.insert_or_assign(location, std::move(location_pops));
+             if (const auto culture = Dominant(culture_sizes); !culture.empty())
+             {
+                dominant_culture_.insert_or_assign(location, culture);
+             }
+             if (const auto religion = Dominant(religion_sizes); !religion.empty())
+             {
+                dominant_religion_.insert_or_assign(location, religion);
+             }
+          });
       location_parser.registerRegex(commonItems::catchallRegex, commonItems::ignoreItem);
       location_parser.parseStream(input_stream);
       location_parser.clearRegisteredKeywords();

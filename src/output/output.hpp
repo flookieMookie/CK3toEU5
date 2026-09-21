@@ -18,7 +18,10 @@ namespace out
 class Output  // class with the structure of the output mod
 {
   public:
-   Output(std::string name, commonItems::ConverterVersion& converter_version, const eu5::EU5World& eu5_world);
+   Output(std::string name,
+       commonItems::ConverterVersion& converter_version,
+       const eu5::EU5World& eu5_world,
+       const eu5::LocationData& location_data);
 
    ~Output() = default;
 
