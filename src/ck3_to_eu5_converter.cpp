@@ -8,6 +8,7 @@
 
 #include "ck3_world/ck3_world.hpp"
 #include "configuration/configuration.hpp"
+#include "eu5_world/eu5_world.hpp"
 #include "mappers/mappers.hpp"
 #include "output/output.hpp"
 
@@ -34,6 +35,10 @@ void Converter::Convert()
        ck3_world.GetReligions(),
        ck3_world.GetCultures(),
        ck3_world.GetLandedTitles());
+
+   Log(LogLevel::Info) << "-> Building EU5 countries.";
+   const eu5::EU5World eu5_world(ck3_world, mappers);
+   eu5_world.LogReport();
 
    Log(LogLevel::Progress) << "80%";
 
