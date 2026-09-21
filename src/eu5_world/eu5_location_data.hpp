@@ -4,9 +4,19 @@
 #include <filesystem>
 #include <map>
 #include <string>
+#include <vector>
 
 namespace eu5
 {
+
+// A population group exactly as EU5 defines it in its own start data.
+struct Pop
+{
+   std::string type;
+   double size = 0.0;
+   std::string culture;
+   std::string religion;
+};
 
 // The culture and religion EU5 itself puts in each location, read from its own
 // main_menu/setup/start/06_pops.txt.
@@ -27,9 +37,14 @@ class LocationData
 
    [[nodiscard]] auto GetLocationCount() const { return dominant_culture_.size(); }
 
+   // Every location's pops, in file order, so they can be rewritten with converted religions while
+   // keeping EU5's own types, sizes and cultures.
+   [[nodiscard]] const auto& GetPops() const { return pops_; }
+
   private:
    void ParsePops(const std::filesystem::path& file_path);
 
+   std::map<std::string, std::vector<Pop>> pops_;
    std::map<std::string, std::string> dominant_culture_;
    std::map<std::string, std::string> dominant_religion_;
 };

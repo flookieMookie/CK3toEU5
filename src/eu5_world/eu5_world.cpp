@@ -9,8 +9,11 @@
 
 #include "Log.h"
 #include "src/ck3_world/ck3_world.hpp"
+#include "src/ck3_world/geography/county_detail.hpp"
+#include "src/ck3_world/geography/county_details.hpp"
 #include "src/ck3_world/realms/realm.hpp"
 #include "src/ck3_world/realms/realms.hpp"
+#include "src/ck3_world/religions/faith.hpp"
 #include "src/ck3_world/titles/landed_title.hpp"
 #include "src/ck3_world/titles/landed_titles.hpp"
 #include "src/ck3_world/titles/title.hpp"
@@ -277,6 +280,21 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
             }
             continue;
          }
+         // The county's own faith, not the ruler's, so religious minorities within a realm survive.
+         std::string county_religion;
+         const auto county_detail = ck3_world.GetCountyDetails().GetCountyDetails().find(county->GetKey());
+         if (county_detail != ck3_world.GetCountyDetails().GetCountyDetails().end())
+         {
+            if (const auto faith = county_detail->second->GetFaith().GetPointer().lock(); faith)
+            {
+               const auto mapped = mappers.GetReligionMapper().GetEU5Religion(faith->GetTag());
+               if (mapped.has_value() && (!game_definitions.IsLoaded() || game_definitions.HasReligion(*mapped)))
+               {
+                  county_religion = *mapped;
+               }
+            }
+         }
+
          for (const auto& barony_key: barony_keys)
          {
             for (const auto& location: province_mapper.GetEU5Locations(ProvinceOfBarony(barony_key, landed_titles)))
@@ -284,6 +302,10 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
                if (claimed_locations.insert(location).second)
                {
                   country->AddLocation(location);
+                  if (!county_religion.empty())
+                  {
+                     location_religions_.insert_or_assign(location, county_religion);
+                  }
                }
             }
          }
