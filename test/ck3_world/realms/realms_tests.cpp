@@ -3,7 +3,10 @@
 #include "gtest/gtest.h"
 #include "src/ck3_world/characters/characters.hpp"
 #include "src/ck3_world/council_manager/councillor_tasks.hpp"
+#include "src/ck3_world/cultures/cultures.hpp"
+#include "src/ck3_world/geography/county_details.hpp"
 #include "src/ck3_world/realms/realms.hpp"
+#include "src/ck3_world/religions/religions.hpp"
 #include "src/ck3_world/titles/title.hpp"
 #include "src/ck3_world/titles/titles.hpp"
 
@@ -35,7 +38,8 @@ TEST(CK3WorldRealmsTests, OnlyTheIndependentTitleBecomesARealm)  // NOLINT : cla
    const CouncillorTasks councillor_tasks;
    characters.LinkTitles(titles, councillor_tasks);
 
-   const Realms realms(titles, characters);
+   const CountyDetails county_details;
+   const Realms realms(titles, characters, county_details);
 
    // The vassal count is under a held liege, so only the king is a realm.
    ASSERT_EQ(1, realms.GetRealms().size());
@@ -62,7 +66,8 @@ TEST(CK3WorldRealmsTests, RealmGathersDeFactoVassalCounties)  // NOLINT : clang-
    const CouncillorTasks councillor_tasks;
    characters.LinkTitles(titles, councillor_tasks);
 
-   const Realms realms(titles, characters);
+   const CountyDetails county_details;
+   const Realms realms(titles, characters, county_details);
 
    // The king's own county plus the one his vassal count holds beneath him.
    ASSERT_EQ(1, realms.GetRealms().size());
@@ -85,7 +90,8 @@ TEST(CK3WorldRealmsTests, CapitalCountyIsResolved)  // NOLINT : clang-tidy doens
    const CouncillorTasks councillor_tasks;
    characters.LinkTitles(titles, councillor_tasks);
 
-   const Realms realms(titles, characters);
+   const CountyDetails county_details;
+   const Realms realms(titles, characters, county_details);
 
    ASSERT_NE(nullptr, realms.GetRealms().front()->GetCapitalCounty());
    ASSERT_EQ("c_desmond", realms.GetRealms().front()->GetCapitalCounty()->GetKey());
@@ -109,7 +115,8 @@ TEST(CK3WorldRealmsTests, TitleWithADestroyedLiegeIsIndependent)  // NOLINT : cl
    const CouncillorTasks councillor_tasks;
    characters.LinkTitles(titles, councillor_tasks);
 
-   const Realms realms(titles, characters);
+   const CountyDetails county_details;
+   const Realms realms(titles, characters, county_details);
 
    ASSERT_EQ(1, realms.GetRealms().size());
    ASSERT_EQ("k_munster", realms.GetRealms().front()->GetPrimaryTitle()->GetKey());
@@ -131,7 +138,8 @@ TEST(CK3WorldRealmsTests, LandlessTitularTitlesAreNotRealms)  // NOLINT : clang-
    const CouncillorTasks councillor_tasks;
    characters.LinkTitles(titles, councillor_tasks);
 
-   const Realms realms(titles, characters);
+   const CountyDetails county_details;
+   const Realms realms(titles, characters, county_details);
 
    ASSERT_TRUE(realms.GetRealms().empty());
 }
@@ -154,13 +162,57 @@ TEST(CK3WorldRealmsTests, OneRealmPerRulerHoldingSeveralTitles)  // NOLINT : cla
    const CouncillorTasks councillor_tasks;
    characters.LinkTitles(titles, councillor_tasks);
 
-   const Realms realms(titles, characters);
+   const CountyDetails county_details;
+   const Realms realms(titles, characters, county_details);
 
    ASSERT_EQ(1, realms.GetRealms().size());
    ASSERT_EQ(2, realms.GetRealms().front()->GetHeldTitles().size());
    ASSERT_EQ(2, realms.GetRealms().front()->GetCounties().size());
    // Domain order decides the primary title.
    ASSERT_EQ("k_munster", realms.GetRealms().front()->GetPrimaryTitle()->GetKey());
+}
+
+TEST(CK3WorldRealmsTests, CultureAndFaithFallBackToTheCapitalCounty)  // NOLINT : clang-tidy doens't like gtest
+{
+   // Historical rulers are often stored with no culture or faith of their own.
+   std::stringstream title_input;
+   title_input << "landed_titles={\n";
+   title_input << "1={key=k_italy holder=100 capital=2}\n";
+   title_input << "2={key=c_lombardia holder=100 de_facto_liege=1}\n";
+   title_input << "}";
+   const Titles titles(title_input);
+
+   std::stringstream character_input;
+   character_input << "100={first_name=\"Louis\" landed_data={domain={ 1 2 }}}\n";
+   Characters characters;
+   characters.ParseCharacters(character_input);
+   const CouncillorTasks councillor_tasks;
+   characters.LinkTitles(titles, councillor_tasks);
+
+   std::stringstream culture_input;
+   culture_input << "cultures={\n";
+   culture_input << "\t133={culture_template=\"italian\"}\n";
+   culture_input << "}\n";
+   const Cultures cultures(culture_input);
+
+   std::stringstream religion_input;
+   religion_input << "faiths={\n";
+   religion_input << "23={tag=\"catholic\"}\n";
+   religion_input << "}";
+   const Religions religions(religion_input);
+
+   std::stringstream county_input;
+   county_input << "counties = {\n";
+   county_input << "c_lombardia = { development = 13 culture = 133 faith = 23 }\n";
+   county_input << "}";
+   CountyDetails county_details(county_input);
+   county_details.LinkCultures(cultures);
+   county_details.LinkReligions(religions);
+
+   const Realms realms(titles, characters, county_details);
+
+   ASSERT_EQ("italian", realms.GetRealms().front()->GetCultureName());
+   ASSERT_EQ("catholic", realms.GetRealms().front()->GetFaithName());
 }
 
 }  // namespace ck3

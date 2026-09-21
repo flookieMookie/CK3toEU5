@@ -11,6 +11,7 @@
 #include "Log.h"
 #include "src/ck3_world/characters/character.hpp"
 #include "src/ck3_world/characters/characters.hpp"
+#include "src/ck3_world/geography/county_details.hpp"
 #include "src/ck3_world/titles/title.hpp"
 #include "src/ck3_world/titles/titles.hpp"
 
@@ -114,7 +115,7 @@ void GatherCounties(const std::vector<TitlePtr>& held_titles,
 }
 }  // namespace
 
-ck3::Realms::Realms(const Titles& titles, const Characters& characters)
+ck3::Realms::Realms(const Titles& titles, const Characters& characters, const CountyDetails& county_details)
 {
    const auto id_title_map = MapTitlesById(titles);
    const auto& all_characters = characters.GetAllCharacters();
@@ -163,6 +164,11 @@ ck3::Realms::Realms(const Titles& titles, const Characters& characters)
          if (capital != id_title_map.end())
          {
             realm->SetCapitalCounty(capital->second);
+            const auto details = county_details.GetCountyDetails().find(capital->second->GetKey());
+            if (details != county_details.GetCountyDetails().end())
+            {
+               realm->SetCapitalDetails(details->second);
+            }
          }
       }
       realms_.emplace_back(std::move(realm));

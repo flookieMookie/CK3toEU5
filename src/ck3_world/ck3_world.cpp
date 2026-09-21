@@ -75,7 +75,7 @@ ck3::CK3World::CK3World(const configuration::Configuration& configuration,
    religions_.LinkReligions();
 
    Log(LogLevel::Info) << "-> Determining independent realms.";
-   realms_ = Realms(titles_, characters_);
+   realms_ = Realms(titles_, characters_, county_details_);
    realms_.LogRealmReport();
 
    Log(LogLevel::Info) << "*** Good-bye CK3, rest in peace. ***";
