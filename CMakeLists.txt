@@ -242,6 +242,8 @@ set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/geography/county_detai
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/geography/province_holding.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/geography/province_holdings.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/geography/building.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/realms/realm.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/realms/realms.cpp")
 
 link_directories("./external/rakaly")
 
@@ -332,6 +334,7 @@ set(TEST_SOURCES ${TEST_SOURCES} "test/ck3_world/titles/title_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/ck3_world/titles/titles_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/ck3_world/council_manager/councillor_task_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/ck3_world/council_manager/councillor_tasks_tests.cpp")
+set(TEST_SOURCES ${TEST_SOURCES} "test/ck3_world/realms/realms_tests.cpp")
 
 add_executable(
 	CK3toEU5Tests
