@@ -22,6 +22,7 @@
 #include "flags/flags.hpp"
 #include "geography/county_details.hpp"
 #include "geography/province_holdings.hpp"
+#include "realms/realms.hpp"
 #include "religions/religions.hpp"
 #include "save_melter.hpp"
 #include "src/configuration/configuration.hpp"
@@ -72,6 +73,10 @@ ck3::CK3World::CK3World(const configuration::Configuration& configuration,
 
    religions_.LinkTitles(titles_);
    religions_.LinkReligions();
+
+   Log(LogLevel::Info) << "-> Determining independent realms.";
+   realms_ = Realms(titles_, characters_);
+   realms_.LogRealmReport();
 
    Log(LogLevel::Info) << "*** Good-bye CK3, rest in peace. ***";
    Log(LogLevel::Progress) << "47 %";

@@ -13,6 +13,7 @@
 #include "flags/flags.hpp"
 #include "geography/county_details.hpp"
 #include "geography/province_holdings.hpp"
+#include "realms/realms.hpp"
 #include "religions/religions.hpp"
 #include "src/configuration/configuration.hpp"
 #include "titles/landed_titles.hpp"
@@ -37,6 +38,7 @@ class CK3World
    [[nodiscard]] const auto& GetConfederations() const { return confederations_; }
    [[nodiscard]] const auto& GetCountyDetails() const { return county_details_; }
    [[nodiscard]] const auto& GetLandedTitles() const { return landed_titles_; }
+   [[nodiscard]] const auto& GetRealms() const { return realms_; }
    [[nodiscard]] const auto& GetMetaTitleName() const { return meta_realm_title_; }
    //[[nodiscard]] const auto& GetMetaCoA() const { return metaCoA; }
    //[[nodiscard]] const auto& GetLocalizationMapper() const { return localizationMapper; }
@@ -87,6 +89,8 @@ class CK3World
    // mappers::LocalizationMapper localizationMapper;
 
    LandedTitles landed_titles_;
+
+   Realms realms_;
 };
 }  // namespace ck3
 
