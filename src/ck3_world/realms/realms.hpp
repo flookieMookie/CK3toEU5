@@ -10,6 +10,7 @@ namespace ck3
 {
 class Titles;
 class Characters;
+class CountyDetails;
 
 // Works out which of the save's titles are actually independent, and gathers each one's
 // de facto land into a Realm. Sorted by county count, largest first.
@@ -17,7 +18,7 @@ class Realms
 {
   public:
    Realms() = default;
-   Realms(const Titles& titles, const Characters& characters);
+   Realms(const Titles& titles, const Characters& characters, const CountyDetails& county_details);
 
    [[nodiscard]] const auto& GetRealms() const { return realms_; }
 

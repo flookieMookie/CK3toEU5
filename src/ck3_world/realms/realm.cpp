@@ -5,6 +5,7 @@
 
 #include "src/ck3_world/characters/character.hpp"
 #include "src/ck3_world/cultures/culture.hpp"
+#include "src/ck3_world/geography/county_detail.hpp"
 #include "src/ck3_world/religions/faith.hpp"
 
 namespace
@@ -54,13 +55,10 @@ std::string ck3::Realm::GetRulerName() const
    return holder_->GetName();
 }
 
-std::string ck3::Realm::GetCultureName() const
+namespace
 {
-   if (!holder_ || !holder_->GetCulture().has_value())
-   {
-      return kUnknownName;
-   }
-   const auto culture = holder_->GetCulture()->GetPointer().lock();
+std::string NameOf(const std::shared_ptr<ck3::Culture>& culture)
+{
    if (!culture || culture->GetName().empty())
    {
       return kUnknownName;
@@ -68,13 +66,8 @@ std::string ck3::Realm::GetCultureName() const
    return culture->GetName();
 }
 
-std::string ck3::Realm::GetFaithName() const
+std::string NameOf(const std::shared_ptr<ck3::Faith>& faith)
 {
-   if (!holder_ || !holder_->GetFaith().has_value())
-   {
-      return kUnknownName;
-   }
-   const auto faith = holder_->GetFaith()->GetPointer().lock();
    if (!faith)
    {
       return kUnknownName;
@@ -84,6 +77,42 @@ std::string ck3::Realm::GetFaithName() const
       return faith->GetCustomName();
    }
    return faith->GetTag().empty() ? kUnknownName : faith->GetTag();
+}
+}  // namespace
+
+std::string ck3::Realm::GetCultureName() const
+{
+   if (holder_ && holder_->GetCulture().has_value())
+   {
+      const auto name = NameOf(holder_->GetCulture()->GetPointer().lock());
+      if (name != kUnknownName)
+      {
+         return name;
+      }
+   }
+   // Historical rulers are often stored without a culture of their own - fall back to the capital.
+   if (capital_details_)
+   {
+      return NameOf(capital_details_->GetCulture().GetPointer().lock());
+   }
+   return kUnknownName;
+}
+
+std::string ck3::Realm::GetFaithName() const
+{
+   if (holder_ && holder_->GetFaith().has_value())
+   {
+      const auto name = NameOf(holder_->GetFaith()->GetPointer().lock());
+      if (name != kUnknownName)
+      {
+         return name;
+      }
+   }
+   if (capital_details_)
+   {
+      return NameOf(capital_details_->GetFaith().GetPointer().lock());
+   }
+   return kUnknownName;
 }
 
 std::string ck3::Realm::GetGovernment() const
