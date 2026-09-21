@@ -86,7 +86,9 @@ std::string CapitalBaronyKey(const ck3::Title& county, const IdTitleMap& id_titl
 }
 }  // namespace
 
-eu5::EU5World::EU5World(const ck3::CK3World& ck3_world, const mappers::Mappers& mappers)
+eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
+    const mappers::Mappers& mappers,
+    const CountryDefinitions& country_definitions)
 {
    const auto id_title_map = MapTitlesById(ck3_world.GetTitles());
    const auto& landed_titles = ck3_world.GetLandedTitles();
@@ -129,6 +131,14 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world, const mappers::Mappers& 
       if (!tag.has_value())
       {
          ++realms_without_tag_;
+         continue;
+      }
+      // tag_mappings still carries EU4 era tags that EU5 never defines. Writing one makes EU5
+      // reject that block, and a rejected block early in the file takes the rest down with it.
+      if (!country_definitions.GetTags().empty() && !country_definitions.Contains(*tag))
+      {
+         ++realms_with_undefined_tag_;
+         undefined_tags_.insert(*tag);
          continue;
       }
 
@@ -208,6 +218,17 @@ void eu5::EU5World::LogReport() const
    if (counties_without_baronies_ > 0)
    {
       Log(LogLevel::Warning) << "   " << counties_without_baronies_ << " counties had no baronies to draw land from.";
+   }
+   if (realms_with_undefined_tag_ > 0)
+   {
+      Log(LogLevel::Warning) << "   " << realms_with_undefined_tag_ << " realms mapped to " << undefined_tags_.size()
+                             << " tags EU5 does not define, and were dropped:";
+      std::string tag_list;
+      for (const auto& tag: undefined_tags_)
+      {
+         tag_list += tag + " ";
+      }
+      Log(LogLevel::Warning) << "      " << tag_list;
    }
 
    for (const auto& country: countries_)
