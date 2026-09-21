@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "out_file_classes/output_folder.hpp"
+#include "src/eu5_world/eu5_world.hpp"
 #include "utils/file_writer_impl.hpp"
 #include "utils/folder_manager_impl.hpp"
 
@@ -17,7 +18,7 @@ namespace out
 class Output  // class with the structure of the output mod
 {
   public:
-   Output(std::string name, commonItems::ConverterVersion& converter_version /*, EU5World eu5_world*/);
+   Output(std::string name, commonItems::ConverterVersion& converter_version, const eu5::EU5World& eu5_world);
 
    ~Output() = default;
 

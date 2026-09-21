@@ -11,13 +11,14 @@
 #include "out_file_classes/metadata/metadata.hpp"
 #include "out_file_classes/output_folder.hpp"
 #include "out_file_classes/resource_copy.hpp"
+#include "out_file_classes/setup/countries_file.hpp"
 
 
 
 namespace out
 {
 
-Output::Output(std::string name, commonItems::ConverterVersion& converter_version /*, EU5World eu5_world*/):
+Output::Output(std::string name, commonItems::ConverterVersion& converter_version, const eu5::EU5World& eu5_world):
     mod_name_(std::move(name)),
     converter_version_(std::move(converter_version)),
     output_path_(std::filesystem::path("output"))
@@ -48,6 +49,21 @@ Output::Output(std::string name, commonItems::ConverterVersion& converter_versio
    history_folder->RegisterFileOrResource(std::move(generic_advisors_file));
 
    mod_folder->RegisterSubfolder(std::move(history_folder));
+
+   // Setup
+   // ----------------------------------
+   // The mod mirrors the game's own folder layout, so the start files live under
+   // main_menu/setup/start, matching game/main_menu/setup/start in the EU5 install.
+   auto main_menu_folder = std::make_unique<OutputFolder>("main_menu", folder_manager_);
+   auto setup_folder = std::make_unique<OutputFolder>("setup", folder_manager_);
+   auto start_folder = std::make_unique<OutputFolder>("start", folder_manager_);
+
+   auto countries_file = std::make_unique<CountriesFile>("10_countries.txt", file_writer_, eu5_world);
+   start_folder->RegisterFileOrResource(std::move(countries_file));
+
+   setup_folder->RegisterSubfolder(std::move(start_folder));
+   main_menu_folder->RegisterSubfolder(std::move(setup_folder));
+   mod_folder->RegisterSubfolder(std::move(main_menu_folder));
 
    // Localisation
    // ----------------------------------
