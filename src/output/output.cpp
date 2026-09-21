@@ -10,6 +10,7 @@
 #include "out_file_classes/metadata/metadata.hpp"
 #include "out_file_classes/output_folder.hpp"
 #include "out_file_classes/setup/countries_file.hpp"
+#include "out_file_classes/setup/country_definitions_file.hpp"
 
 
 
@@ -52,6 +53,19 @@ Output::Output(std::string name, commonItems::ConverterVersion& converter_versio
    setup_folder->RegisterSubfolder(std::move(start_folder));
    main_menu_folder->RegisterSubfolder(std::move(setup_folder));
    mod_folder->RegisterSubfolder(std::move(main_menu_folder));
+
+   // Country definitions live under in_game rather than main_menu, mirroring the game again.
+   auto in_game_folder = std::make_unique<OutputFolder>("in_game", folder_manager_);
+   auto in_game_setup_folder = std::make_unique<OutputFolder>("setup", folder_manager_);
+   auto countries_folder = std::make_unique<OutputFolder>("countries", folder_manager_);
+
+   auto country_definitions_file =
+       std::make_unique<CountryDefinitionsFile>("00_converted_countries.txt", file_writer_, eu5_world);
+   countries_folder->RegisterFileOrResource(std::move(country_definitions_file));
+
+   in_game_setup_folder->RegisterSubfolder(std::move(countries_folder));
+   in_game_folder->RegisterSubfolder(std::move(in_game_setup_folder));
+   mod_folder->RegisterSubfolder(std::move(in_game_folder));
 
    // The scaffold also registered a history/advisors.txt holding the placeholder "zaba 123 321" and
    // copied resources/localisation, whose only content is a 3 byte stub. Both shipped inside the

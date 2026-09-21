@@ -214,6 +214,7 @@ set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/resource
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/metadata/metadata.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/history/generic_advisors.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/countries_file.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/country_definitions_file.cpp")
 
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/ck3_world.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/save_melter.cpp")
@@ -252,7 +253,8 @@ set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/tag_mapper/tag_mapper.cp
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/province_mapper/province_mapper.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/mappers.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_country.cpp")
-set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_country_definitions.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_game_definitions.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_location_data.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_world.cpp")
 
 link_directories("./external/rakaly")

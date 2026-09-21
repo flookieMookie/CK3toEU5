@@ -42,6 +42,13 @@ void CountriesFile::Create(const std::filesystem::path& folder_path)
       {
          continue;
       }
+      // A tag EU5 does not define needs one written alongside this file. Where that could not be
+      // generated the tag would be rejected, and a rejected block takes the rest of the file with
+      // it, so the country is left out entirely.
+      if (country->NeedsDefinition() && (!country->GetCulture().has_value() || !country->GetReligion().has_value()))
+      {
+         continue;
+      }
       output << "\n\t\t" << country->GetTag() << " = { # " << country->GetSourceRealm()->GetRealmName() << "\n";
       output << "\t\t\town_control_core = {\n";
 
