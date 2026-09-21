@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 
+#include "out_file_classes/localization/country_names_file.hpp"
 #include "out_file_classes/metadata/metadata.hpp"
 #include "out_file_classes/output_folder.hpp"
 #include "out_file_classes/setup/countries_file.hpp"
@@ -52,6 +53,18 @@ Output::Output(std::string name, commonItems::ConverterVersion& converter_versio
 
    setup_folder->RegisterSubfolder(std::move(start_folder));
    main_menu_folder->RegisterSubfolder(std::move(setup_folder));
+
+   // Localisation sits under main_menu too, matching the game and its DLC.
+   auto localization_folder = std::make_unique<OutputFolder>("localization", folder_manager_);
+   auto english_folder = std::make_unique<OutputFolder>("english", folder_manager_);
+
+   auto country_names_file =
+       std::make_unique<CountryNamesFile>("00_converted_countries_l_english.yml", file_writer_, eu5_world);
+   english_folder->RegisterFileOrResource(std::move(country_names_file));
+
+   localization_folder->RegisterSubfolder(std::move(english_folder));
+   main_menu_folder->RegisterSubfolder(std::move(localization_folder));
+
    mod_folder->RegisterSubfolder(std::move(main_menu_folder));
 
    // Country definitions live under in_game rather than main_menu, mirroring the game again.
