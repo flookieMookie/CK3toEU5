@@ -248,6 +248,7 @@ set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/religion_mapper/religion
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/language_mapper/language_mapper.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/culture_group_mapper/culture_group_mapper.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/tag_mapper/tag_mapper.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/province_mapper/province_mapper.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/mappers.cpp")
 
 link_directories("./external/rakaly")
@@ -294,6 +295,7 @@ if (NOT RUN_CLANG_TIDY)
 	configure_file("data/readme.txt" "${FRONTER_OUTPUT_DIRECTORY}/readme.txt" COPYONLY)
 	file(COPY "data/resources" DESTINATION "${CONVERTER_OUTPUT_DIRECTORY}")
 	file(COPY "data/configurables" DESTINATION "${CONVERTER_OUTPUT_DIRECTORY}")
+	file(COPY "province_mappings.txt" DESTINATION "${CONVERTER_OUTPUT_DIRECTORY}/configurables")
 	if (PLATFORM STREQUAL "Windows")
 		configure_file("external/rakaly/rakaly.dll" "${FRONTER_OUTPUT_DIRECTORY}/CK3toEU5/rakaly.dll" COPYONLY)
 	endif (PLATFORM STREQUAL "Windows")
@@ -344,6 +346,7 @@ set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/religion_mapper/religion_mapper_t
 set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/language_mapper/language_mapper_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/culture_group_mapper/culture_group_mapper_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/tag_mapper/tag_mapper_tests.cpp")
+set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/province_mapper/province_mapper_tests.cpp")
 
 add_executable(
 	CK3toEU5Tests

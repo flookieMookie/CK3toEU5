@@ -9,6 +9,7 @@
 #include "src/ck3_world/realms/realms.hpp"
 #include "src/ck3_world/religions/faith.hpp"
 #include "src/ck3_world/religions/religions.hpp"
+#include "src/ck3_world/titles/landed_titles.hpp"
 #include "src/ck3_world/titles/title.hpp"
 
 namespace
@@ -46,13 +47,15 @@ mappers::Mappers::Mappers(const std::filesystem::path& configurables_folder):
     tag_mapper_(configurables_folder / "tag_mappings.txt"),
     religion_mapper_(configurables_folder / "religion_map.txt"),
     culture_group_mapper_(configurables_folder / "cultureGroups_map.txt"),
-    language_mapper_(configurables_folder / "language_map.txt")
+    language_mapper_(configurables_folder / "language_map.txt"),
+    province_mapper_(configurables_folder / "province_mappings.txt")
 {
 }
 
 void mappers::Mappers::LogCoverageReport(const ck3::Realms& realms,
     const ck3::Religions& religions,
-    const ck3::Cultures& cultures) const
+    const ck3::Cultures& cultures,
+    const ck3::LandedTitles& landed_titles) const
 {
    Log(LogLevel::Info) << "-> Mapping coverage for this save:";
 
@@ -119,4 +122,22 @@ void mappers::Mappers::LogCoverageReport(const ck3::Realms& realms,
    }
    LogMissing("heritages -> culture groups", heritages, unmapped_heritages);
    LogMissing("languages -> languages", languages, unmapped_languages);
+
+   // Every CK3 barony carries the province ID the province mappings are keyed on.
+   std::set<std::string> baronies;
+   std::set<std::string> unmapped_baronies;
+   for (const auto& landed_title: landed_titles.GetLandedTitles())
+   {
+      const auto province = landed_title.second->GetProvince();
+      if (province < 0)
+      {
+         continue;
+      }
+      baronies.insert(landed_title.first);
+      if (province_mapper_.GetEU5Locations(province).empty())
+      {
+         unmapped_baronies.insert(landed_title.first);
+      }
+   }
+   LogMissing("CK3 baronies -> EU5 locations", baronies, unmapped_baronies);
 }
