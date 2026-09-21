@@ -1,6 +1,7 @@
 #include "eu5_world.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <map>
 #include <set>
 #include <string>
@@ -71,6 +72,53 @@ std::vector<std::string> BaronyKeysOf(const ck3::Title& county,
    return barony_keys;
 }
 
+// Most of a CK3 save has no EU5 counterpart - single county tribal realms across Asia and Africa
+// that tag_mappings could never sensibly list. Rather than leave their land unowned, they get a
+// generated tag built from the title key, so c_dublin becomes DUB where that is free.
+std::string GenerateTag(const std::string& title_key, const std::set<std::string>& used_tags)
+{
+   const auto underscore = title_key.find('_');
+   const auto name = underscore == std::string::npos ? title_key : title_key.substr(underscore + 1);
+
+   std::string core;
+   for (const char character: name)
+   {
+      if (std::isalnum(static_cast<unsigned char>(character)) != 0)
+      {
+         core += static_cast<char>(std::toupper(static_cast<unsigned char>(character)));
+      }
+   }
+
+   static const std::string kBase36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+   if (core.size() >= 3 && !used_tags.contains(core.substr(0, 3)))
+   {
+      return core.substr(0, 3);
+   }
+   // Keep the first two letters recognisable and vary the last.
+   if (core.size() >= 2)
+   {
+      for (const char suffix: kBase36)
+      {
+         if (const auto candidate = core.substr(0, 2) + suffix; !used_tags.contains(candidate))
+         {
+            return candidate;
+         }
+      }
+   }
+   // Last resort, a purely synthetic tag. EU5 ships none beginning with X0.
+   for (const char first: kBase36)
+   {
+      for (const char second: kBase36)
+      {
+         if (const auto candidate = std::string("X") + first + second; !used_tags.contains(candidate))
+         {
+            return candidate;
+         }
+      }
+   }
+   return {};
+}
+
 // The save flags the county capital on the barony itself, when it bothers to list the baronies.
 std::string CapitalBaronyKey(const ck3::Title& county, const IdTitleMap& id_title_map)
 {
@@ -97,6 +145,10 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
 
    // An EU5 location can only belong to one country, so first come first served on overlaps.
    std::set<std::string> claimed_locations;
+   // Generated tags must avoid every tag EU5 ships as well as everything handed out so far.
+   std::set<std::string> used_tags = game_definitions.GetTags();
+   // Tags actually given to a converted country, which is what makes a mapping a duplicate.
+   std::set<std::string> assigned_tags;
 
    for (const auto& realm: ck3_world.GetRealms().GetRealms())
    {
@@ -128,12 +180,35 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
          }
       }
 
-      const auto tag = mappers.GetTagMapper().GetEU5Tag(realm->GetPrimaryTitle()->GetKey(), capital_location);
+      auto tag = mappers.GetTagMapper().GetEU5Tag(realm->GetPrimaryTitle()->GetKey(), capital_location);
+      bool generated_tag = false;
       if (!tag.has_value())
       {
-         ++realms_without_tag_;
-         continue;
+         tag = GenerateTag(realm->GetPrimaryTitle()->GetKey(), used_tags);
+         if (tag->empty())
+         {
+            ++realms_without_tag_;
+            continue;
+         }
+         generated_tag = true;
+         ++realms_with_generated_tag_;
       }
+      else if (assigned_tags.contains(*tag))
+      {
+         // Two realms can map to the same tag - a title and a capital both pointing at it. The
+         // second one needs its own, or it would silently take over the first one's land.
+         tag = GenerateTag(realm->GetPrimaryTitle()->GetKey(), used_tags);
+         if (tag->empty())
+         {
+            ++realms_without_tag_;
+            continue;
+         }
+         generated_tag = true;
+         ++duplicate_tags_regenerated_;
+      }
+      used_tags.insert(*tag);
+      assigned_tags.insert(*tag);
+
       auto country = std::make_shared<Country>(*tag, realm);
       if (capital_location.has_value())
       {
@@ -143,10 +218,13 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
       // tag_mappings still carries EU4 era tags that EU5 never defines - the Ottomans are TUR, not
       // OTT. Writing an undefined tag makes EU5 reject that block, and a rejected block early in
       // the file takes the rest down with it, so those tags need a definition written for them.
-      if (game_definitions.IsLoaded() && !game_definitions.HasTag(*tag))
+      if (generated_tag || (game_definitions.IsLoaded() && !game_definitions.HasTag(*tag)))
       {
          country->SetNeedsDefinition(true);
-         undefined_tags_.insert(*tag);
+         if (!generated_tag)
+         {
+            undefined_tags_.insert(*tag);
+         }
       }
 
       // religion_map has the same EU4 era drift - shiite for shia, and religions EU5 simply does
@@ -231,7 +309,7 @@ void eu5::EU5World::LogReport() const
    Log(LogLevel::Info) << "<> " << countries_.size() << " EU5 countries holding " << total_locations << " locations.";
    if (realms_without_tag_ > 0)
    {
-      Log(LogLevel::Warning) << "   " << realms_without_tag_ << " realms had no EU5 tag and were dropped.";
+      Log(LogLevel::Warning) << "   " << realms_without_tag_ << " realms could not be given any tag and were dropped.";
    }
    if (without_capital > 0)
    {
@@ -244,6 +322,16 @@ void eu5::EU5World::LogReport() const
    if (counties_without_baronies_ > 0)
    {
       Log(LogLevel::Warning) << "   " << counties_without_baronies_ << " counties had no baronies to draw land from.";
+   }
+   if (realms_with_generated_tag_ > 0)
+   {
+      Log(LogLevel::Info) << "   " << realms_with_generated_tag_
+                          << " realms had no mapping and were given a generated tag.";
+   }
+   if (duplicate_tags_regenerated_ > 0)
+   {
+      Log(LogLevel::Warning) << "   " << duplicate_tags_regenerated_
+                             << " realms mapped to a tag already taken and were given a generated one.";
    }
    if (!undefined_tags_.empty())
    {
