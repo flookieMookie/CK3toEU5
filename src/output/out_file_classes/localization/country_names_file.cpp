@@ -2,6 +2,7 @@
 
 #include <external/commonItems/Log.h>
 
+#include <set>
 #include <sstream>
 #include <string>
 
@@ -53,19 +54,30 @@ void CountryNamesFile::Create(const std::filesystem::path& folder_path)
    output << kByteOrderMark << "l_english:\n";
 
    int written = 0;
+   std::set<std::string> ruler_names;
    for (const auto& country: eu5_world_.GetCountries())
    {
       if (country->GetLocations().empty())
       {
          continue;
       }
-      const auto name = Sanitize(country->GetSourceRealm()->GetRealmName());
+      const auto name = Sanitize(eu5::CleanCK3Name(country->GetSourceRealm()->GetRealmName()));
       if (name.empty())
       {
          continue;
       }
       output << " " << country->GetTag() << ": \"" << name << "\"\n";
       ++written;
+
+      // Ruler names are written as keys so the game shows them properly rather than a raw token.
+      if (country->HasRuler())
+      {
+         const auto key = country->GetRulerNameKey();
+         if (!key.empty() && ruler_names.insert(key).second)
+         {
+            output << " " << key << ": \"" << Sanitize(country->GetRulerName()) << "\"\n";
+         }
+      }
    }
 
    Log(LogLevel::Info) << "\t<> Wrote " << written << " country names.";

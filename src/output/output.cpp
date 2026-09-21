@@ -10,6 +10,7 @@
 #include "out_file_classes/localization/country_names_file.hpp"
 #include "out_file_classes/metadata/metadata.hpp"
 #include "out_file_classes/output_folder.hpp"
+#include "out_file_classes/setup/characters_file.hpp"
 #include "out_file_classes/setup/countries_file.hpp"
 #include "out_file_classes/setup/country_definitions_file.hpp"
 
@@ -50,6 +51,9 @@ Output::Output(std::string name, commonItems::ConverterVersion& converter_versio
 
    auto countries_file = std::make_unique<CountriesFile>("10_countries.txt", file_writer_, eu5_world);
    start_folder->RegisterFileOrResource(std::move(countries_file));
+
+   auto characters_file = std::make_unique<CharactersFile>("05_characters.txt", file_writer_, eu5_world);
+   start_folder->RegisterFileOrResource(std::move(characters_file));
 
    setup_folder->RegisterSubfolder(std::move(start_folder));
    main_menu_folder->RegisterSubfolder(std::move(setup_folder));
