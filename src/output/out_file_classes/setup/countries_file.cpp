@@ -16,6 +16,23 @@ constexpr int kLocationsPerLine = 8;
 
 // Matches vanilla's first age. Which age a converted save should start in is still undecided.
 const std::string kCurrentAge = "age_1_traditions";
+
+// Without a rank EU5 calls everything a county, so an empire shows in game as "County of Khazaria".
+std::string RankFor(ck3::Level tier)
+{
+   switch (tier)
+   {
+      case ck3::Level::kEmpire:
+      case ck3::Level::kHegemony:
+         return "rank_empire";
+      case ck3::Level::kKingdom:
+         return "rank_kingdom";
+      case ck3::Level::kDuchy:
+         return "rank_duchy";
+      default:
+         return "rank_county";
+   }
+}
 }  // namespace
 
 namespace out
@@ -50,6 +67,7 @@ void CountriesFile::Create(const std::filesystem::path& folder_path)
          continue;
       }
       output << "\n\t\t" << country->GetTag() << " = { # " << country->GetSourceRealm()->GetRealmName() << "\n";
+      output << "\t\t\tcountry_rank = " << RankFor(country->GetSourceRealm()->GetTier()) << "\n\n";
       output << "\t\t\town_control_core = {\n";
 
       int on_this_line = 0;
