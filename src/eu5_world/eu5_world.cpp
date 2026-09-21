@@ -88,7 +88,8 @@ std::string CapitalBaronyKey(const ck3::Title& county, const IdTitleMap& id_titl
 
 eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
     const mappers::Mappers& mappers,
-    const CountryDefinitions& country_definitions)
+    const GameDefinitions& game_definitions,
+    const LocationData& location_data)
 {
    const auto id_title_map = MapTitlesById(ck3_world.GetTitles());
    const auto& landed_titles = ck3_world.GetLandedTitles();
@@ -133,24 +134,49 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
          ++realms_without_tag_;
          continue;
       }
-      // tag_mappings still carries EU4 era tags that EU5 never defines. Writing one makes EU5
-      // reject that block, and a rejected block early in the file takes the rest down with it.
-      if (!country_definitions.GetTags().empty() && !country_definitions.Contains(*tag))
-      {
-         ++realms_with_undefined_tag_;
-         undefined_tags_.insert(*tag);
-         continue;
-      }
-
       auto country = std::make_shared<Country>(*tag, realm);
       if (capital_location.has_value())
       {
          country->SetCapitalLocation(*capital_location);
       }
-      const auto religion = mappers.GetReligionMapper().GetEU5Religion(realm->GetFaithName());
-      if (religion.has_value())
+
+      // tag_mappings still carries EU4 era tags that EU5 never defines - the Ottomans are TUR, not
+      // OTT. Writing an undefined tag makes EU5 reject that block, and a rejected block early in
+      // the file takes the rest down with it, so those tags need a definition written for them.
+      if (game_definitions.IsLoaded() && !game_definitions.HasTag(*tag))
       {
-         country->SetReligion(*religion);
+         country->SetNeedsDefinition(true);
+         undefined_tags_.insert(*tag);
+      }
+
+      // religion_map has the same EU4 era drift - shiite for shia, and religions EU5 simply does
+      // not have. Anything EU5 would reject falls back to what it already believes the capital is.
+      const auto vanilla_religion =
+          capital_location.has_value() ? location_data.GetDominantReligion(*capital_location) : std::string{};
+      const auto mapped_religion = mappers.GetReligionMapper().GetEU5Religion(realm->GetFaithName());
+      if (mapped_religion.has_value() &&
+          (!game_definitions.IsLoaded() || game_definitions.HasReligion(*mapped_religion)))
+      {
+         country->SetReligion(*mapped_religion);
+      }
+      else if (!vanilla_religion.empty())
+      {
+         if (mapped_religion.has_value())
+         {
+            ++religions_replaced_;
+         }
+         country->SetReligion(vanilla_religion);
+      }
+
+      // There is no CK3 culture to EU5 culture mapping at all - the configurables only cover
+      // culture groups - so a generated definition takes the culture EU5 already has in the capital.
+      if (capital_location.has_value())
+      {
+         const auto culture = location_data.GetDominantCulture(*capital_location);
+         if (!culture.empty() && (!game_definitions.IsLoaded() || game_definitions.HasCulture(culture)))
+         {
+            country->SetCulture(culture);
+         }
       }
 
       for (const auto& county: realm->GetCounties())
@@ -219,16 +245,20 @@ void eu5::EU5World::LogReport() const
    {
       Log(LogLevel::Warning) << "   " << counties_without_baronies_ << " counties had no baronies to draw land from.";
    }
-   if (realms_with_undefined_tag_ > 0)
+   if (!undefined_tags_.empty())
    {
-      Log(LogLevel::Warning) << "   " << realms_with_undefined_tag_ << " realms mapped to " << undefined_tags_.size()
-                             << " tags EU5 does not define, and were dropped:";
       std::string tag_list;
       for (const auto& tag: undefined_tags_)
       {
          tag_list += tag + " ";
       }
-      Log(LogLevel::Warning) << "      " << tag_list;
+      Log(LogLevel::Info) << "   " << undefined_tags_.size()
+                          << " tags are not defined by EU5 and get a generated definition: " << tag_list;
+   }
+   if (religions_replaced_ > 0)
+   {
+      Log(LogLevel::Warning) << "   " << religions_replaced_
+                             << " countries had a mapped religion EU5 does not define, replaced with the capital's.";
    }
 
    for (const auto& country: countries_)
