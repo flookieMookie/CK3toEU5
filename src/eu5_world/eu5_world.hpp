@@ -39,6 +39,7 @@ class EU5World
 
    std::size_t realms_without_tag_ = 0;
    std::size_t counties_without_baronies_ = 0;
+   std::size_t landless_counties_ = 0;
 };
 
 }  // namespace eu5
