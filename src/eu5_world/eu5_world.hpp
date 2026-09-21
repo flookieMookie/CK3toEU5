@@ -27,6 +27,13 @@ class Mappers;
 namespace eu5
 {
 
+// A CK3 vassal relationship, written out as an EU5 subject.
+struct Dependency
+{
+   std::string liege_tag;
+   std::string vassal_tag;
+};
+
 // Turns the independent CK3 realms into EU5 countries: a tag, a capital, and the EU5 locations the
 // realm holds, walked down from its counties through their baronies.
 class EU5World
@@ -45,6 +52,7 @@ class EU5World
    // born five centuries before the campaign begins.
    [[nodiscard]] const auto& GetConversionDate() const { return conversion_date_; }
    [[nodiscard]] const auto& GetLocationReligions() const { return location_religions_; }
+   [[nodiscard]] const auto& GetDependencies() const { return dependencies_; }
 
    void LogReport() const;
 
@@ -53,6 +61,7 @@ class EU5World
    date conversion_date_ = date("1.1.1");
    // EU5 location to the religion of the CK3 county it was converted from.
    std::map<std::string, std::string> location_religions_;
+   std::vector<Dependency> dependencies_;
 
    std::size_t realms_without_tag_ = 0;
    std::size_t counties_without_baronies_ = 0;
