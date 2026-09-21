@@ -13,6 +13,7 @@
 #include "out_file_classes/setup/characters_file.hpp"
 #include "out_file_classes/setup/countries_file.hpp"
 #include "out_file_classes/setup/country_definitions_file.hpp"
+#include "out_file_classes/setup/diplomacy_file.hpp"
 #include "out_file_classes/setup/pops_file.hpp"
 
 
@@ -61,6 +62,9 @@ Output::Output(std::string name,
 
    auto pops_file = std::make_unique<PopsFile>("06_pops.txt", file_writer_, eu5_world, location_data);
    start_folder->RegisterFileOrResource(std::move(pops_file));
+
+   auto diplomacy_file = std::make_unique<DiplomacyFile>("12_diplomacy.txt", file_writer_, eu5_world);
+   start_folder->RegisterFileOrResource(std::move(diplomacy_file));
 
    setup_folder->RegisterSubfolder(std::move(start_folder));
    main_menu_folder->RegisterSubfolder(std::move(setup_folder));

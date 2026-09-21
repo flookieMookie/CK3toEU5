@@ -216,6 +216,7 @@ set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/history/
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/countries_file.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/characters_file.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/pops_file.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/diplomacy_file.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/country_definitions_file.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/localization/country_names_file.cpp")
 
