@@ -48,6 +48,8 @@ class EU5World
    std::size_t counties_without_baronies_ = 0;
    std::size_t landless_counties_ = 0;
    std::size_t religions_replaced_ = 0;
+   std::size_t realms_with_generated_tag_ = 0;
+   std::size_t duplicate_tags_regenerated_ = 0;
    std::set<std::string> undefined_tags_;
 };
 
