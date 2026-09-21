@@ -244,6 +244,11 @@ set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/geography/province_hol
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/geography/building.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/realms/realm.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/realms/realms.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/religion_mapper/religion_mapper.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/language_mapper/language_mapper.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/culture_group_mapper/culture_group_mapper.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/tag_mapper/tag_mapper.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/mappers.cpp")
 
 link_directories("./external/rakaly")
 
@@ -335,6 +340,10 @@ set(TEST_SOURCES ${TEST_SOURCES} "test/ck3_world/titles/titles_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/ck3_world/council_manager/councillor_task_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/ck3_world/council_manager/councillor_tasks_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/ck3_world/realms/realms_tests.cpp")
+set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/religion_mapper/religion_mapper_tests.cpp")
+set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/language_mapper/language_mapper_tests.cpp")
+set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/culture_group_mapper/culture_group_mapper_tests.cpp")
+set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/tag_mapper/tag_mapper_tests.cpp")
 
 add_executable(
 	CK3toEU5Tests
