@@ -3,10 +3,12 @@
 #include <external/commonItems/ConverterVersion.h>
 #include <external/commonItems/Log.h>
 
+#include <filesystem>
 #include <utility>
 
 #include "ck3_world/ck3_world.hpp"
 #include "configuration/configuration.hpp"
+#include "mappers/mappers.hpp"
 #include "output/output.hpp"
 
 
@@ -23,6 +25,12 @@ void Converter::Convert()
 {
    Log(LogLevel::Progress) << "5%";
    const ck3::CK3World ck3_world(configuration_, converter_version_);
+
+   Log(LogLevel::Progress) << "50%";
+
+   Log(LogLevel::Info) << "-> Loading mappings.";
+   const mappers::Mappers mappers(std::filesystem::path("configurables"));
+   mappers.LogCoverageReport(ck3_world.GetRealms(), ck3_world.GetReligions(), ck3_world.GetCultures());
 
    Log(LogLevel::Progress) << "80%";
 
