@@ -30,7 +30,10 @@ void Converter::Convert()
 
    Log(LogLevel::Info) << "-> Loading mappings.";
    const mappers::Mappers mappers(std::filesystem::path("configurables"));
-   mappers.LogCoverageReport(ck3_world.GetRealms(), ck3_world.GetReligions(), ck3_world.GetCultures());
+   mappers.LogCoverageReport(ck3_world.GetRealms(),
+       ck3_world.GetReligions(),
+       ck3_world.GetCultures(),
+       ck3_world.GetLandedTitles());
 
    Log(LogLevel::Progress) << "80%";
 
