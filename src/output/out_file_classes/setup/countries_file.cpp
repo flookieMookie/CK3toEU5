@@ -33,6 +33,25 @@ std::string RankFor(ck3::Level tier)
          return "rank_county";
    }
 }
+
+// CK3's government types onto the ones EU5 accepts in a country's government block.
+std::string GovernmentFor(const std::string& ck3_government)
+{
+   if (ck3_government.starts_with("tribal"))
+   {
+      return "tribe";
+   }
+   if (ck3_government.starts_with("theocracy"))
+   {
+      return "theocracy";
+   }
+   if (ck3_government.starts_with("republic"))
+   {
+      return "republic";
+   }
+   // Feudal and clan both sit closest to a monarchy.
+   return "monarchy";
+}
 }  // namespace
 
 namespace out
@@ -68,6 +87,15 @@ void CountriesFile::Create(const std::filesystem::path& folder_path)
       }
       output << "\n\t\t" << country->GetTag() << " = { # " << country->GetSourceRealm()->GetRealmName() << "\n";
       output << "\t\t\tcountry_rank = " << RankFor(country->GetSourceRealm()->GetTier()) << "\n\n";
+
+      output << "\t\t\tgovernment = {\n";
+      output << "\t\t\t\ttype = " << GovernmentFor(country->GetSourceRealm()->GetGovernment()) << "\n";
+      if (country->HasRuler())
+      {
+         output << "\t\t\t\truler = " << country->GetRulerId() << "\n";
+      }
+      output << "\t\t\t}\n\n";
+
       output << "\t\t\town_control_core = {\n";
 
       int on_this_line = 0;

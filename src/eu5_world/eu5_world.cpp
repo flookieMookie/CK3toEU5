@@ -139,6 +139,8 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
     const GameDefinitions& game_definitions,
     const LocationData& location_data)
 {
+   conversion_date_ = ck3_world.GetConversionDate();
+
    const auto id_title_map = MapTitlesById(ck3_world.GetTitles());
    const auto& landed_titles = ck3_world.GetLandedTitles();
    const auto& province_mapper = mappers.GetProvinceMapper();

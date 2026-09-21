@@ -1,6 +1,8 @@
 #ifndef EU5_WORLD_H
 #define EU5_WORLD_H
 
+#include <Date.h>
+
 #include <cstddef>
 #include <memory>
 #include <set>
@@ -38,11 +40,15 @@ class EU5World
    [[nodiscard]] const auto& GetCountries() const { return countries_; }
    [[nodiscard]] auto GetRealmsWithoutTag() const { return realms_without_tag_; }
    [[nodiscard]] auto GetCountiesWithoutBaronies() const { return counties_without_baronies_; }
+   // The CK3 save's date, so converted rulers can be aged onto EU5's start date instead of being
+   // born five centuries before the campaign begins.
+   [[nodiscard]] const auto& GetConversionDate() const { return conversion_date_; }
 
    void LogReport() const;
 
   private:
    std::vector<std::shared_ptr<Country>> countries_;
+   date conversion_date_ = date("1.1.1");
 
    std::size_t realms_without_tag_ = 0;
    std::size_t counties_without_baronies_ = 0;
