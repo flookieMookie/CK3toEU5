@@ -7,10 +7,8 @@
 #include <string>
 #include <utility>
 
-#include "out_file_classes/history/generic_advisors.hpp"
 #include "out_file_classes/metadata/metadata.hpp"
 #include "out_file_classes/output_folder.hpp"
-#include "out_file_classes/resource_copy.hpp"
 #include "out_file_classes/setup/countries_file.hpp"
 
 
@@ -40,16 +38,6 @@ Output::Output(std::string name, commonItems::ConverterVersion& converter_versio
 
    mod_folder->RegisterSubfolder(std::move(metadata_folder));
 
-   // History
-   // ----------------------------------
-   auto history_folder = std::make_unique<OutputFolder>("history", folder_manager_);
-
-   auto generic_advisors_file = std::make_unique<AdvisorFile>("advisors", file_writer_ /*, EU5World eu5_world*/);
-
-   history_folder->RegisterFileOrResource(std::move(generic_advisors_file));
-
-   mod_folder->RegisterSubfolder(std::move(history_folder));
-
    // Setup
    // ----------------------------------
    // The mod mirrors the game's own folder layout, so the start files live under
@@ -65,12 +53,10 @@ Output::Output(std::string name, commonItems::ConverterVersion& converter_versio
    main_menu_folder->RegisterSubfolder(std::move(setup_folder));
    mod_folder->RegisterSubfolder(std::move(main_menu_folder));
 
-   // Localisation
-   // ----------------------------------
-   auto localisation_resource_folder = std::make_unique<CopyResource>("localisation",
-       std::filesystem::path("resources") / "localisation");  // makes a copy of resources/localisation
-   mod_folder->RegisterFileOrResource(std::move(localisation_resource_folder));
-
+   // The scaffold also registered a history/advisors.txt holding the placeholder "zaba 123 321" and
+   // copied resources/localisation, whose only content is a 3 byte stub. Both shipped inside the
+   // generated mod. AdvisorFile and CopyResource are kept and still tested; they just need real
+   // content before they go back into the output.
 
    // ----------------------------------
    root_folder_->RegisterSubfolder(std::move(mod_folder));
