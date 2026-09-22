@@ -24,7 +24,8 @@ namespace out
 Output::Output(std::string name,
     commonItems::ConverterVersion& converter_version,
     const eu5::EU5World& eu5_world,
-    const eu5::LocationData& location_data):
+    const eu5::LocationData& location_data,
+    const eu5::VanillaCountries& vanilla_countries):
     mod_name_(std::move(name)),
     converter_version_(std::move(converter_version)),
     output_path_(std::filesystem::path("output"))
@@ -54,7 +55,8 @@ Output::Output(std::string name,
    auto setup_folder = std::make_unique<OutputFolder>("setup", folder_manager_);
    auto start_folder = std::make_unique<OutputFolder>("start", folder_manager_);
 
-   auto countries_file = std::make_unique<CountriesFile>("10_countries.txt", file_writer_, eu5_world);
+   auto countries_file =
+       std::make_unique<CountriesFile>("10_countries.txt", file_writer_, eu5_world, vanilla_countries);
    start_folder->RegisterFileOrResource(std::move(countries_file));
 
    auto characters_file = std::make_unique<CharactersFile>("05_characters.txt", file_writer_, eu5_world);

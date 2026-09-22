@@ -2,6 +2,8 @@
 
 #include <external/commonItems/Log.h>
 
+#include <algorithm>
+#include <set>
 #include <sstream>
 #include <string>
 
@@ -57,9 +59,13 @@ std::string GovernmentFor(const std::string& ck3_government)
 namespace out
 {
 
-CountriesFile::CountriesFile(const std::string& name, FileWriter& file_writer, const eu5::EU5World& eu5_world):
+CountriesFile::CountriesFile(const std::string& name,
+    FileWriter& file_writer,
+    const eu5::EU5World& eu5_world,
+    const eu5::VanillaCountries& vanilla_countries):
     OutputFile(name, file_writer),
-    eu5_world_(eu5_world)
+    eu5_world_(eu5_world),
+    vanilla_countries_(vanilla_countries)
 {
 }
 
@@ -120,6 +126,35 @@ void CountriesFile::Create(const std::filesystem::path& folder_path)
       output << "\t\t\t}\n";
       output << "\t\t}\n";
    }
+
+   // Everything CK3 does not cover - the Americas, Oceania, much of Siberia - would otherwise be
+   // left with no owner at all, since this file replaces EU5's wholesale. Vanilla countries whose
+   // land the conversion never touched are carried over exactly as EU5 wrote them.
+   std::set<std::string> converted_locations;
+   for (const auto& country: eu5_world_.GetCountries())
+   {
+      converted_locations.insert(country->GetLocations().begin(), country->GetLocations().end());
+   }
+
+   int preserved = 0;
+   for (const auto& vanilla: vanilla_countries_.GetCountries())
+   {
+      if (vanilla.locations.empty())
+      {
+         continue;
+      }
+      // A country the conversion took any land from has been replaced by a converted one.
+      const bool overlaps = std::ranges::any_of(vanilla.locations, [&converted_locations](const auto& location) {
+         return converted_locations.contains(location);
+      });
+      if (overlaps)
+      {
+         continue;
+      }
+      output << "\n" << vanilla.block;
+      ++preserved;
+   }
+   Log(LogLevel::Info) << "\t<> Kept " << preserved << " vanilla countries on land the conversion did not reach.";
 
    output << "\t}\n";
    output << "}\n";
