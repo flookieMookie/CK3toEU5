@@ -12,10 +12,10 @@
 
 namespace
 {
-// EU5's campaign begins in 1337, so a ruler born in 867 would be five centuries old at game start.
+// EU5 has a single start date, START_DATE = "1337.4.1" in its defines, so a ruler born in 867
+// would be five centuries old at game start.
 // Birth dates are shifted by the gap between the CK3 save and this, preserving the ruler's age.
-// TODO(converter): make this follow the chosen bookmark once the start date is configurable.
-const date kGameStartDate = date("1337.1.1");
+const date kGameStartDate = date("1337.4.1");
 
 date AgeOntoStartDate(const date& birth_date, const date& conversion_date)
 {
