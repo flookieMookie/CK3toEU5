@@ -23,7 +23,8 @@ class Output  // class with the structure of the output mod
        commonItems::ConverterVersion& converter_version,
        const eu5::EU5World& eu5_world,
        const eu5::LocationData& location_data,
-       const eu5::VanillaCountries& vanilla_countries);
+       const eu5::VanillaCountries& vanilla_countries,
+       const std::filesystem::path& eu5_directory);
 
    ~Output() = default;
 

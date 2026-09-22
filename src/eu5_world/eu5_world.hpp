@@ -53,20 +53,25 @@ class EU5World
    [[nodiscard]] const auto& GetConversionDate() const { return conversion_date_; }
    [[nodiscard]] const auto& GetLocationReligions() const { return location_religions_; }
    [[nodiscard]] const auto& GetDependencies() const { return dependencies_; }
+   [[nodiscard]] const auto& GetDevelopmentBonuses() const { return development_bonuses_; }
 
    void LogReport() const;
 
   private:
    // Vassals cannot outrank their liege, so ranks are settled after every country exists.
    void AssignRanks();
+   // Carries CK3 development onto EU5 and derives a technology level from it.
+   void AssignDevelopment();
 
-  public:
-  private:
    std::vector<std::shared_ptr<Country>> countries_;
    date conversion_date_ = date("1.1.1");
    // EU5 location to the religion of the CK3 county it was converted from.
    std::map<std::string, std::string> location_religions_;
    std::vector<Dependency> dependencies_;
+   // EU5 location to the CK3 development of the county it came from, and the bonus that becomes.
+   std::map<std::string, int> location_development_;
+   std::map<std::string, int> development_bonuses_;
+   int development_baseline_ = 0;
 
    std::size_t realms_without_tag_ = 0;
    std::size_t counties_without_baronies_ = 0;

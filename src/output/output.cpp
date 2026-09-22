@@ -13,6 +13,7 @@
 #include "out_file_classes/setup/characters_file.hpp"
 #include "out_file_classes/setup/countries_file.hpp"
 #include "out_file_classes/setup/country_definitions_file.hpp"
+#include "out_file_classes/setup/development_file.hpp"
 #include "out_file_classes/setup/diplomacy_file.hpp"
 #include "out_file_classes/setup/pops_file.hpp"
 
@@ -25,7 +26,8 @@ Output::Output(std::string name,
     commonItems::ConverterVersion& converter_version,
     const eu5::EU5World& eu5_world,
     const eu5::LocationData& location_data,
-    const eu5::VanillaCountries& vanilla_countries):
+    const eu5::VanillaCountries& vanilla_countries,
+    const std::filesystem::path& eu5_directory):
     mod_name_(std::move(name)),
     converter_version_(std::move(converter_version)),
     output_path_(std::filesystem::path("output"))
@@ -67,6 +69,10 @@ Output::Output(std::string name,
 
    auto diplomacy_file = std::make_unique<DiplomacyFile>("12_diplomacy.txt", file_writer_, eu5_world);
    start_folder->RegisterFileOrResource(std::move(diplomacy_file));
+
+   auto development_file =
+       std::make_unique<DevelopmentFile>("14_development.txt", file_writer_, eu5_world, eu5_directory);
+   start_folder->RegisterFileOrResource(std::move(development_file));
 
    setup_folder->RegisterSubfolder(std::move(start_folder));
    main_menu_folder->RegisterSubfolder(std::move(setup_folder));
