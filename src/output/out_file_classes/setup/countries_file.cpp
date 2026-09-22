@@ -17,7 +17,7 @@ namespace
 // and keeps the location lists to readable line lengths.
 constexpr int kLocationsPerLine = 8;
 
-// Matches vanilla's first age. Which age a converted save should start in is still undecided.
+// What vanilla starts in. EU5 has a single start date, so there is no other age to choose.
 const std::string kCurrentAge = "age_1_traditions";
 
 // CK3's government types onto the ones EU5 accepts in a country's government block.
