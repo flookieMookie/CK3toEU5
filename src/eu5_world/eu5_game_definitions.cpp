@@ -20,7 +20,7 @@ const std::string kKeyPattern = R"([a-z_0-9]+)";
 eu5::GameDefinitions::GameDefinitions(const std::filesystem::path& eu5_directory)
 {
    LoadKeys(eu5_directory / kCountriesFolder, tags_, kTagPattern);
-   LoadKeys(eu5_directory / kCulturesFolder, cultures_, kKeyPattern);
+   LoadCultures(eu5_directory / kCulturesFolder);
    LoadKeys(eu5_directory / kReligionsFolder, religions_, kKeyPattern);
 
    if (!IsLoaded())
@@ -29,8 +29,19 @@ eu5::GameDefinitions::GameDefinitions(const std::filesystem::path& eu5_directory
                              << " - converted output cannot be validated against the game.";
       return;
    }
-   Log(LogLevel::Info) << "<> EU5 defines " << tags_.size() << " country tags, " << cultures_.size() << " cultures and "
+   Log(LogLevel::Info) << "<> EU5 defines " << tags_.size() << " country tags, " << cultures_.size() << " cultures in "
+                       << culture_groups_.size() << " groups speaking " << languages_.size() << " languages, and "
                        << religions_.size() << " religions.";
+}
+
+const eu5::CultureDefinition* eu5::GameDefinitions::GetCultureDefinition(const std::string& culture) const
+{
+   const auto definition = culture_definitions_.find(culture);
+   if (definition == culture_definitions_.end())
+   {
+      return nullptr;
+   }
+   return &definition->second;
 }
 
 void eu5::GameDefinitions::LoadKeys(const std::filesystem::path& folder,
@@ -55,5 +66,61 @@ void eu5::GameDefinitions::LoadKeys(const std::filesystem::path& folder,
       parser.registerRegex(commonItems::catchallRegex, commonItems::ignoreItem);
       parser.parseFile(entry.path());
       parser.clearRegisteredKeywords();
+   }
+}
+
+void eu5::GameDefinitions::LoadCultures(const std::filesystem::path& folder)
+{
+   if (!std::filesystem::exists(folder))
+   {
+      return;
+   }
+
+   commonItems::parser culture_parser;
+   CultureDefinition* current = nullptr;
+   culture_parser.registerKeyword("language", [&current](std::istream& input_stream) {
+      const auto language = commonItems::getString(input_stream);
+      if (current != nullptr)
+      {
+         current->language = language;
+      }
+   });
+   culture_parser.registerKeyword("culture_groups", [&current](std::istream& input_stream) {
+      const auto groups = commonItems::getStrings(input_stream);
+      if (current != nullptr)
+      {
+         current->groups = groups;
+      }
+   });
+   culture_parser.registerRegex(commonItems::catchallRegex, commonItems::ignoreItem);
+
+   for (const auto& entry: std::filesystem::directory_iterator(folder))
+   {
+      if (!entry.is_regular_file() || entry.path().extension() != ".txt")
+      {
+         continue;
+      }
+      commonItems::parser parser;
+      // EU5 is inconsistent about the suffix - english and dakelh_culture are both top level
+      // culture keys - so the key itself cannot be used to tell a culture from anything else.
+      parser.registerRegex(kKeyPattern, [this, &culture_parser, &current](const std::string& key,
+                                            std::istream& input_stream) {
+         cultures_.insert(key);
+         current = &culture_definitions_[key];
+         culture_parser.parseStream(input_stream);
+         current = nullptr;
+      });
+      parser.registerRegex(commonItems::catchallRegex, commonItems::ignoreItem);
+      parser.parseFile(entry.path());
+      parser.clearRegisteredKeywords();
+   }
+
+   for (const auto& [name, definition]: culture_definitions_)
+   {
+      if (!definition.language.empty())
+      {
+         languages_.insert(definition.language);
+      }
+      culture_groups_.insert(definition.groups.begin(), definition.groups.end());
    }
 }

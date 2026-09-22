@@ -11,6 +11,7 @@
 #include "Log.h"
 #include "src/ck3_world/characters/characters.hpp"
 #include "src/ck3_world/ck3_world.hpp"
+#include "src/ck3_world/cultures/culture.hpp"
 #include "src/ck3_world/geography/county_detail.hpp"
 #include "src/ck3_world/geography/county_details.hpp"
 #include "src/ck3_world/realms/realm.hpp"
@@ -245,6 +246,7 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
     const LocationData& location_data)
 {
    conversion_date_ = ck3_world.GetConversionDate();
+   culture_resolver_ = CultureResolver(game_definitions, mappers.GetCultureGroupMapper(), mappers.GetLanguageMapper());
 
    const auto id_title_map = MapTitlesById(ck3_world.GetTitles());
    const auto& landed_titles = ck3_world.GetLandedTitles();
@@ -437,6 +439,14 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
             county_development = county_detail->second->GetDevelopment();
          }
 
+         // The county's own culture, kept as the CK3 object so each location can be judged against
+         // whatever EU5 already has there.
+         std::shared_ptr<ck3::Culture> county_culture;
+         if (county_detail != ck3_world.GetCountyDetails().GetCountyDetails().end())
+         {
+            county_culture = county_detail->second->GetCulture().GetPointer().lock();
+         }
+
          for (const auto& barony_key: barony_keys)
          {
             for (const auto& location: province_mapper.GetEU5Locations(ProvinceOfBarony(barony_key, landed_titles)))
@@ -451,6 +461,24 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
                   if (county_development >= 0)
                   {
                      location_development_.insert_or_assign(location, county_development);
+                  }
+                  // EU5 is far more granular than CK3, so its own culture is kept wherever it is
+                  // a plausible member of the CK3 one. Only where the two genuinely disagree -
+                  // because a campaign moved a culture somewhere it does not belong - is the
+                  // location rewritten.
+                  if (county_culture)
+                  {
+                     const auto vanilla_culture = location_data.GetDominantCulture(location);
+                     if (!vanilla_culture.empty() && !culture_resolver_.IsCompatible(*county_culture, vanilla_culture))
+                     {
+                        const auto converted_culture = culture_resolver_.Resolve(*county_culture);
+                        if (!converted_culture.empty())
+                        {
+                           location_cultures_.insert_or_assign(location, converted_culture);
+                           culture_resolver_.MarkUsed(converted_culture);
+                           ++cultures_replaced_;
+                        }
+                     }
                   }
                }
             }
@@ -468,11 +496,17 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
          {
             continue;
          }
+         const auto converted_culture = location_cultures_.find(location);
+         const auto vanilla_culture_majority = location_data.GetDominantCulture(location);
          const auto converted = location_religions_.find(location);
          const auto vanilla_majority = location_data.GetDominantReligion(location);
          for (const auto& pop: pops->second)
          {
-            culture_weight[pop.culture] += pop.size;
+            // Pops get rewritten to the county's converted culture the same way, so weigh what
+            // the game will actually see rather than what EU5 shipped.
+            const bool culture_rewritten =
+                converted_culture != location_cultures_.end() && pop.culture == vanilla_culture_majority;
+            culture_weight[culture_rewritten ? converted_culture->second : pop.culture] += pop.size;
             // Pops get rewritten to the county's converted faith, so count what the game will see.
             const bool rewritten = converted != location_religions_.end() && pop.religion == vanilla_majority;
             religion_weight[rewritten ? converted->second : pop.religion] += pop.size;
@@ -483,9 +517,13 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
          const auto top = std::ranges::max_element(culture_weight, {}, [](const auto& entry) {
             return entry.second;
          });
-         if (!game_definitions.IsLoaded() || game_definitions.HasCulture(top->first))
+         // A generated culture is not in EU5's own definitions but will be shipped alongside.
+         const bool defined = !game_definitions.IsLoaded() || game_definitions.HasCulture(top->first) ||
+                              culture_resolver_.GetGeneratedCultures().contains(top->first);
+         if (defined)
          {
             country->SetCulture(top->first);
+            culture_resolver_.MarkUsed(top->first);
          }
       }
       if (!religion_weight.empty())
@@ -578,6 +616,19 @@ void eu5::EU5World::LogReport() const
    {
       Log(LogLevel::Warning) << "   " << religions_replaced_
                              << " countries had a mapped religion EU5 does not define, replaced with the capital's.";
+   }
+   Log(LogLevel::Info) << "   " << cultures_replaced_
+                       << " locations had a culture CK3 disagrees with, rewritten from the county.";
+   const auto generated_cultures = culture_resolver_.GetUsedGeneratedCultures();
+   if (!generated_cultures.empty())
+   {
+      Log(LogLevel::Info) << "   " << generated_cultures.size()
+                          << " CK3 cultures have no EU5 equivalent and get a generated definition.";
+   }
+   if (!culture_resolver_.GetUnresolved().empty())
+   {
+      Log(LogLevel::Warning) << "   " << culture_resolver_.GetUnresolved().size()
+                             << " CK3 cultures map to no EU5 culture group; EU5's own culture stands there.";
    }
 
    for (const auto& country: countries_)

@@ -13,6 +13,7 @@
 #include "out_file_classes/setup/characters_file.hpp"
 #include "out_file_classes/setup/countries_file.hpp"
 #include "out_file_classes/setup/country_definitions_file.hpp"
+#include "out_file_classes/setup/culture_definitions_file.hpp"
 #include "out_file_classes/setup/development_file.hpp"
 #include "out_file_classes/setup/diplomacy_file.hpp"
 #include "out_file_classes/setup/pops_file.hpp"
@@ -101,6 +102,17 @@ Output::Output(std::string name,
 
    in_game_setup_folder->RegisterSubfolder(std::move(countries_folder));
    in_game_folder->RegisterSubfolder(std::move(in_game_setup_folder));
+
+   // Generated cultures live under in_game/common/cultures, mirroring the game again.
+   auto in_game_common_folder = std::make_unique<OutputFolder>("common", folder_manager_);
+   auto cultures_folder = std::make_unique<OutputFolder>("cultures", folder_manager_);
+
+   auto culture_definitions_file =
+       std::make_unique<CultureDefinitionsFile>("00_converted_cultures.txt", file_writer_, eu5_world);
+   cultures_folder->RegisterFileOrResource(std::move(culture_definitions_file));
+
+   in_game_common_folder->RegisterSubfolder(std::move(cultures_folder));
+   in_game_folder->RegisterSubfolder(std::move(in_game_common_folder));
    mod_folder->RegisterSubfolder(std::move(in_game_folder));
 
    // The scaffold also registered a history/advisors.txt holding the placeholder "zaba 123 321" and
