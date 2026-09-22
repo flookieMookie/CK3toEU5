@@ -57,6 +57,11 @@ class EU5World
    void LogReport() const;
 
   private:
+   // Vassals cannot outrank their liege, so ranks are settled after every country exists.
+   void AssignRanks();
+
+  public:
+  private:
    std::vector<std::shared_ptr<Country>> countries_;
    date conversion_date_ = date("1.1.1");
    // EU5 location to the religion of the CK3 county it was converted from.
@@ -69,6 +74,7 @@ class EU5World
    std::size_t religions_replaced_ = 0;
    std::size_t realms_with_generated_tag_ = 0;
    std::size_t duplicate_tags_regenerated_ = 0;
+   std::size_t vassals_demoted_ = 0;
    std::set<std::string> undefined_tags_;
 };
 
