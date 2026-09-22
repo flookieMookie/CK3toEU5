@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "eu5_country.hpp"
+#include "eu5_culture_resolver.hpp"
 #include "eu5_game_definitions.hpp"
 #include "eu5_location_data.hpp"
 
@@ -52,6 +53,8 @@ class EU5World
    // born five centuries before the campaign begins.
    [[nodiscard]] const auto& GetConversionDate() const { return conversion_date_; }
    [[nodiscard]] const auto& GetLocationReligions() const { return location_religions_; }
+   [[nodiscard]] const auto& GetLocationCultures() const { return location_cultures_; }
+   [[nodiscard]] const auto& GetCultureResolver() const { return culture_resolver_; }
    [[nodiscard]] const auto& GetDependencies() const { return dependencies_; }
    [[nodiscard]] const auto& GetDevelopmentBonuses() const { return development_bonuses_; }
 
@@ -67,6 +70,9 @@ class EU5World
    date conversion_date_ = date("1.1.1");
    // EU5 location to the religion of the CK3 county it was converted from.
    std::map<std::string, std::string> location_religions_;
+   // EU5 location to the culture converted from the CK3 county, where the two disagree.
+   std::map<std::string, std::string> location_cultures_;
+   CultureResolver culture_resolver_;
    std::vector<Dependency> dependencies_;
    // EU5 location to the CK3 development of the county it came from, and the bonus that becomes.
    std::map<std::string, int> location_development_;
@@ -77,6 +83,7 @@ class EU5World
    std::size_t counties_without_baronies_ = 0;
    std::size_t landless_counties_ = 0;
    std::size_t religions_replaced_ = 0;
+   std::size_t cultures_replaced_ = 0;
    std::size_t realms_with_generated_tag_ = 0;
    std::size_t duplicate_tags_regenerated_ = 0;
    std::size_t vassals_demoted_ = 0;

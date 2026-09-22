@@ -219,6 +219,7 @@ set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/po
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/diplomacy_file.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/development_file.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/country_definitions_file.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/culture_definitions_file.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/localization/country_names_file.cpp")
 
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/ck3_world.cpp")
@@ -259,6 +260,7 @@ set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/province_mapper/province
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/mappers.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_country.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_game_definitions.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_culture_resolver.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_location_data.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_vanilla_countries.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_world.cpp")
