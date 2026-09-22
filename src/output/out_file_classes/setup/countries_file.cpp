@@ -103,7 +103,8 @@ void CountriesFile::Create(const std::filesystem::path& folder_path)
          continue;
       }
       output << "\n\t\t" << country->GetTag() << " = { # " << country->GetSourceRealm()->GetRealmName() << "\n";
-      output << "\t\t\tcountry_rank = " << country->GetRank() << "\n\n";
+      output << "\t\t\tcountry_rank = " << country->GetRank() << "\n";
+      output << "\t\t\tstarting_technology_level = " << country->GetTechnologyLevel() << "\n\n";
 
       const auto government = GovernmentFor(country->GetSourceRealm()->GetGovernment());
       output << "\t\t\tgovernment = {\n";

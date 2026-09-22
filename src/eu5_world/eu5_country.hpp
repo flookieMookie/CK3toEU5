@@ -39,6 +39,7 @@ class Country
    [[nodiscard]] auto NeedsDefinition() const { return needs_definition_; }
    // EU5 rejects a vassal that outranks its liege, so rank is decided once the liege is known.
    [[nodiscard]] const auto& GetRank() const { return rank_; }
+   [[nodiscard]] auto GetTechnologyLevel() const { return technology_level_; }
    [[nodiscard]] const auto& GetLiegeTag() const { return liege_tag_; }
 
    // A ruler can only be written when the realm has a holder and EU5 will accept their culture and
@@ -54,6 +55,7 @@ class Country
    void SetReligion(std::string religion) { religion_ = std::move(religion); }
    void SetCulture(std::string culture) { culture_ = std::move(culture); }
    void SetNeedsDefinition(bool needs_definition) { needs_definition_ = needs_definition; }
+   void SetTechnologyLevel(int level) { technology_level_ = level; }
    void SetRank(std::string rank) { rank_ = std::move(rank); }
    void SetLiegeTag(std::string liege_tag) { liege_tag_ = std::move(liege_tag); }
    void AddLocation(std::string location) { locations_.emplace_back(std::move(location)); }
@@ -67,6 +69,7 @@ class Country
    std::optional<std::string> culture_;
    bool needs_definition_ = false;
    std::string rank_ = "rank_county";
+   int technology_level_ = 3;
    std::string liege_tag_;
    std::vector<std::string> locations_;
 };

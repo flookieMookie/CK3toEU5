@@ -48,7 +48,7 @@ void Converter::Convert()
    Log(LogLevel::Info) << "Outputting mod";
    const eu5::VanillaCountries vanilla_countries(configuration_.GetEU5Directory());
    out::Output output =
-       out::Output(configuration_.GetOutputName(), converter_version_, eu5_world, location_data, vanilla_countries);
+       out::Output(configuration_.GetOutputName(), converter_version_, eu5_world, location_data, vanilla_countries, configuration_.GetEU5Directory());
    output.GenerateOutputMod();
 
    Log(LogLevel::Progress) << "85%";

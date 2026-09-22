@@ -6,6 +6,7 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "Log.h"
 #include "src/ck3_world/characters/characters.hpp"
@@ -428,6 +429,14 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
             }
          }
 
+         // CK3's own development for this county, carried so the player's building up of their
+         // realm is not thrown away in favour of EU5's default terrain score.
+         int county_development = -1;
+         if (county_detail != ck3_world.GetCountyDetails().GetCountyDetails().end())
+         {
+            county_development = county_detail->second->GetDevelopment();
+         }
+
          for (const auto& barony_key: barony_keys)
          {
             for (const auto& location: province_mapper.GetEU5Locations(ProvinceOfBarony(barony_key, landed_titles)))
@@ -438,6 +447,10 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
                   if (!county_religion.empty())
                   {
                      location_religions_.insert_or_assign(location, county_religion);
+                  }
+                  if (county_development >= 0)
+                  {
+                     location_development_.insert_or_assign(location, county_development);
                   }
                }
             }
@@ -505,6 +518,7 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
    }
 
    AssignRanks();
+   AssignDevelopment();
 
    std::ranges::sort(countries_, [](const std::shared_ptr<Country>& lhs, const std::shared_ptr<Country>& rhs) {
       return lhs->GetLocations().size() > rhs->GetLocations().size();
@@ -643,5 +657,80 @@ void eu5::EU5World::AssignRanks()
    for (const auto& country: countries_)
    {
       country->SetRank(kRanks[rank_index[country->GetTag()]]);
+   }
+}
+
+void eu5::EU5World::AssignDevelopment()
+{
+   if (location_development_.empty())
+   {
+      return;
+   }
+
+   // EU5 only hands a development bonus to a few hundred notable places; giving one to every
+   // converted location would inflate the whole world. The save's own median is the baseline, so
+   // only land the player developed beyond ordinary gets a bonus, and the scale calibrates itself
+   // whether the save is an early start or a late one.
+   std::vector<int> values;
+   values.reserve(location_development_.size());
+   for (const auto& [location, development]: location_development_)
+   {
+      values.emplace_back(development);
+   }
+   std::ranges::sort(values);
+   development_baseline_ = values[values.size() / 2];
+
+   // EU5's own bonuses top out at 30.
+   constexpr int kMaxBonus = 30;
+   for (const auto& [location, development]: location_development_)
+   {
+      const auto bonus = std::min(development - development_baseline_, kMaxBonus);
+      if (bonus > 0)
+      {
+         development_bonuses_.insert_or_assign(location, bonus);
+      }
+   }
+
+   // Technology is judged on absolute CK3 development, not against the save's median. Half of any
+   // save sits below its own median by definition, so a relative test would demote half the world
+   // no matter when the save was taken. Absolute thresholds instead mean an early save converts as
+   // genuinely less advanced and a late one as more, which is the point of converting at 1337.
+   constexpr double kAdvanced = 15.0;
+   constexpr double kModerate = 8.0;
+   constexpr double kRudimentary = 3.0;
+   for (const auto& country: countries_)
+   {
+      double total = 0;
+      int counted = 0;
+      for (const auto& location: country->GetLocations())
+      {
+         const auto development = location_development_.find(location);
+         if (development != location_development_.end())
+         {
+            total += development->second;
+            ++counted;
+         }
+      }
+      if (counted == 0)
+      {
+         continue;
+      }
+      const auto mean = total / counted;
+      if (mean >= kAdvanced)
+      {
+         country->SetTechnologyLevel(3);
+      }
+      else if (mean >= kModerate)
+      {
+         country->SetTechnologyLevel(2);
+      }
+      else if (mean >= kRudimentary)
+      {
+         country->SetTechnologyLevel(1);
+      }
+      else
+      {
+         country->SetTechnologyLevel(0);
+      }
    }
 }
