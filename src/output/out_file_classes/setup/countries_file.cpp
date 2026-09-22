@@ -6,6 +6,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "src/ck3_world/realms/realm.hpp"
 #include "src/eu5_world/eu5_country.hpp"
@@ -18,23 +19,6 @@ constexpr int kLocationsPerLine = 8;
 
 // Matches vanilla's first age. Which age a converted save should start in is still undecided.
 const std::string kCurrentAge = "age_1_traditions";
-
-// Without a rank EU5 calls everything a county, so an empire shows in game as "County of Khazaria".
-std::string RankFor(ck3::Level tier)
-{
-   switch (tier)
-   {
-      case ck3::Level::kEmpire:
-      case ck3::Level::kHegemony:
-         return "rank_empire";
-      case ck3::Level::kKingdom:
-         return "rank_kingdom";
-      case ck3::Level::kDuchy:
-         return "rank_duchy";
-      default:
-         return "rank_county";
-   }
-}
 
 // CK3's government types onto the ones EU5 accepts in a country's government block.
 std::string GovernmentFor(const std::string& ck3_government)
@@ -54,6 +38,33 @@ std::string GovernmentFor(const std::string& ck3_government)
    // Feudal and clan both sit closest to a monarchy.
    return "monarchy";
 }
+
+std::string ParliamentFor(const std::string& government)
+{
+   if (government == "tribe")
+   {
+      return "assembly";
+   }
+   if (government == "republic")
+   {
+      return "estate_parliament";
+   }
+   return "council";
+}
+
+// The axes CK3 says nothing about. Writing them neutral is honest and stops EU5 complaining that
+// the country has no society values scripted.
+const std::vector<std::string> kNeutralSocietyAxes = {"spiritualist_vs_humanist",
+    "aristocracy_vs_plutocracy",
+    "serfdom_vs_free_subjects",
+    "mercantilism_vs_free_trade",
+    "belligerent_vs_conciliatory",
+    "quality_vs_quantity",
+    "offensive_vs_defensive",
+    "land_vs_naval",
+    "capital_economy_vs_traditional_economy",
+    "individualism_vs_communalism",
+    "outward_vs_inward"};
 }  // namespace
 
 namespace out
@@ -92,13 +103,24 @@ void CountriesFile::Create(const std::filesystem::path& folder_path)
          continue;
       }
       output << "\n\t\t" << country->GetTag() << " = { # " << country->GetSourceRealm()->GetRealmName() << "\n";
-      output << "\t\t\tcountry_rank = " << RankFor(country->GetSourceRealm()->GetTier()) << "\n\n";
+      output << "\t\t\tcountry_rank = " << country->GetRank() << "\n\n";
 
+      const auto government = GovernmentFor(country->GetSourceRealm()->GetGovernment());
       output << "\t\t\tgovernment = {\n";
-      output << "\t\t\t\ttype = " << GovernmentFor(country->GetSourceRealm()->GetGovernment()) << "\n";
+      output << "\t\t\t\ttype = " << government << "\n";
       if (country->HasRuler())
       {
          output << "\t\t\t\truler = " << country->GetRulerId() << "\n";
+      }
+      output << "\t\t\t\tparliament = { parliament_type = " << ParliamentFor(government) << " }\n";
+      // EU5 wants every country placed on its society axes and complains for each one that is not.
+      // CK3 has no equivalent for most of them, so only the two its government type genuinely
+      // speaks to are leaned; the rest sit neutral rather than inventing a position.
+      output << "\t\t\t\tcentralization_vs_decentralization = " << (government == "tribe" ? 40 : -20) << "\n";
+      output << "\t\t\t\ttraditionalist_vs_innovative = " << (government == "tribe" ? -40 : -20) << "\n";
+      for (const auto& axis: kNeutralSocietyAxes)
+      {
+         output << "\t\t\t\t" << axis << " = 0\n";
       }
       output << "\t\t\t}\n\n";
 

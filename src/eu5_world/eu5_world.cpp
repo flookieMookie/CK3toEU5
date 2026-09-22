@@ -455,10 +455,13 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
 
       if (!liege_tag.empty())
       {
+         country->SetLiegeTag(liege_tag);
          dependencies_.emplace_back(Dependency{liege_tag, *tag});
       }
       countries_.emplace_back(std::move(country));
    }
+
+   AssignRanks();
 
    std::ranges::sort(countries_, [](const std::shared_ptr<Country>& lhs, const std::shared_ptr<Country>& rhs) {
       return lhs->GetLocations().size() > rhs->GetLocations().size();
@@ -531,5 +534,71 @@ void eu5::EU5World::LogReport() const
                           << " | capital: " << country->GetCapitalLocation().value_or("none")
                           << " | religion: " << country->GetReligion().value_or("none")
                           << " | locations: " << country->GetLocations().size();
+   }
+}
+
+namespace
+{
+// EU5 ranks, weakest first. A country's rank comes from its CK3 title tier.
+const std::vector<std::string> kRanks = {"rank_county", "rank_duchy", "rank_kingdom", "rank_empire"};
+
+std::size_t RankIndexFor(ck3::Level tier)
+{
+   switch (tier)
+   {
+      case ck3::Level::kEmpire:
+      case ck3::Level::kHegemony:
+         return 3;
+      case ck3::Level::kKingdom:
+         return 2;
+      case ck3::Level::kDuchy:
+         return 1;
+      default:
+         return 0;
+   }
+}
+}  // namespace
+
+void eu5::EU5World::AssignRanks()
+{
+   std::map<std::string, std::size_t> rank_index;
+   for (const auto& country: countries_)
+   {
+      rank_index[country->GetTag()] = RankIndexFor(country->GetSourceRealm()->GetTier());
+   }
+
+   // EU5 refuses a vassal that outranks its liege - vassal.txt requires
+   // country_rank_level >= scope:target.country_rank_level - and silently drops the relationship.
+   // Walking lieges first is not enough, because a liege can itself be someone's vassal, so this
+   // repeats until nothing more needs lowering.
+   bool changed = true;
+   while (changed)
+   {
+      changed = false;
+      for (const auto& country: countries_)
+      {
+         const auto& liege_tag = country->GetLiegeTag();
+         if (liege_tag.empty())
+         {
+            continue;
+         }
+         const auto liege = rank_index.find(liege_tag);
+         if (liege == rank_index.end())
+         {
+            continue;
+         }
+         auto& own = rank_index[country->GetTag()];
+         if (own > liege->second)
+         {
+            own = liege->second;
+            ++vassals_demoted_;
+            changed = true;
+         }
+      }
+   }
+
+   for (const auto& country: countries_)
+   {
+      country->SetRank(kRanks[rank_index[country->GetTag()]]);
    }
 }
