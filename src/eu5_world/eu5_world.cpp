@@ -443,6 +443,49 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
             }
          }
       }
+      // EU5 checks a country's religion and culture against its own population and complains for
+      // every one that disagrees. The capital alone is a poor proxy, so now that the land is known
+      // both are taken from the pops the country actually holds, weighted by size.
+      std::map<std::string, double> culture_weight;
+      std::map<std::string, double> religion_weight;
+      for (const auto& location: country->GetLocations())
+      {
+         const auto pops = location_data.GetPops().find(location);
+         if (pops == location_data.GetPops().end())
+         {
+            continue;
+         }
+         const auto converted = location_religions_.find(location);
+         const auto vanilla_majority = location_data.GetDominantReligion(location);
+         for (const auto& pop: pops->second)
+         {
+            culture_weight[pop.culture] += pop.size;
+            // Pops get rewritten to the county's converted faith, so count what the game will see.
+            const bool rewritten = converted != location_religions_.end() && pop.religion == vanilla_majority;
+            religion_weight[rewritten ? converted->second : pop.religion] += pop.size;
+         }
+      }
+      if (!culture_weight.empty())
+      {
+         const auto top = std::ranges::max_element(culture_weight, {}, [](const auto& entry) {
+            return entry.second;
+         });
+         if (!game_definitions.IsLoaded() || game_definitions.HasCulture(top->first))
+         {
+            country->SetCulture(top->first);
+         }
+      }
+      if (!religion_weight.empty())
+      {
+         const auto top = std::ranges::max_element(religion_weight, {}, [](const auto& entry) {
+            return entry.second;
+         });
+         if (!game_definitions.IsLoaded() || game_definitions.HasReligion(top->first))
+         {
+            country->SetReligion(top->first);
+         }
+      }
+
       // Each vassal ruler becomes a country of its own, holding the land under its titles.
       for (const auto& [vassal_holder_id, vassal_titles]: vassal_titles_by_holder)
       {
