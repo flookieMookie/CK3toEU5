@@ -259,6 +259,7 @@ set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/mappers.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_country.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_game_definitions.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_location_data.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_vanilla_countries.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_world.cpp")
 
 link_directories("./external/rakaly")
