@@ -20,7 +20,8 @@ namespace eu5
 // four hex digits (Cui_6F3C is Cui + U+6F3C), which this restores. Characters the melt could not
 // represent leave a bare underscore behind instead - E_thelred for AEthelred, SigfriT_ for
 // Sigfrid - and those are unrecoverable, so the underscore is dropped and the stranded capital
-// lowercased to keep the name readable.
+// lowercased to keep the name readable. Only uppercase escapes that make a real character count,
+// and an underscore joining two words - Domnall_Dabaill - is the space between them.
 [[nodiscard]] std::string CleanCK3Name(const std::string& name);
 
 // The localisation key a character's cleaned first name is written under. Shared by everyone of the

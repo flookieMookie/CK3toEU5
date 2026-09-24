@@ -35,4 +35,19 @@ TEST(EU5WorldCountryTests, SkillsBecomeAbilitiesOnEU5sScale)  // NOLINT : clang-
    EXPECT_EQ(0, AbilityFromSkill(-5));
 }
 
+TEST(EU5WorldCountryTests, EscapedNamesAreRestored)  // NOLINT : clang-tidy doens't like gtest
+{
+   EXPECT_EQ("Cui\xE6\xBC\xBC", CleanCK3Name("Cui_6F3C"));
+   EXPECT_EQ("Ethelred", CleanCK3Name("E_thelred"));
+   EXPECT_EQ("Sigfrit", CleanCK3Name("SigfriT_"));
+}
+
+TEST(EU5WorldCountryTests, WordsAfterAnUnderscoreAreNotEscapes)  // NOLINT : clang-tidy doens't like gtest
+{
+   // _Daba would be half a surrogate pair, which as UTF-8 made the whole localisation file invalid.
+   EXPECT_EQ("Domnall Dabaill", CleanCK3Name("Domnall_Dabaill"));
+   EXPECT_EQ("Abu Abdallah", CleanCK3Name("Abu_Abdallah"));
+   EXPECT_EQ("Aillil Fland Becc", CleanCK3Name("Aillil_Fland_Becc"));
+}
+
 }  // namespace eu5

@@ -95,9 +95,18 @@ void AppendUtf8(std::string& target, unsigned int codepoint)
    }
 }
 
-bool IsHex(char character)
+// The melt writes its escapes in uppercase hex - Zhuo_68B2 - so a name that merely has four hex
+// letters after an underscore, Domnall_Dabaill or Abu_Abdallah, is left as it is.
+bool IsEscapeDigit(char character)
 {
-   return std::isxdigit(static_cast<unsigned char>(character)) != 0;
+   return (character >= '0' && character <= '9') || (character >= 'A' && character <= 'F');
+}
+
+// Half of a UTF-16 surrogate pair is no character on its own, and written as UTF-8 it makes the
+// whole file invalid.
+bool IsSurrogate(unsigned int codepoint)
+{
+   return codepoint >= 0xD800U && codepoint <= 0xDFFFU;
 }
 }  // namespace
 
@@ -112,11 +121,22 @@ std::string eu5::CleanCK3Name(const std::string& name)
          continue;
       }
       // _HHHH is a codepoint the melt escaped.
-      if (index + 4 < name.size() && IsHex(name[index + 1]) && IsHex(name[index + 2]) && IsHex(name[index + 3]) &&
-          IsHex(name[index + 4]))
+      if (index + 4 < name.size() && IsEscapeDigit(name[index + 1]) && IsEscapeDigit(name[index + 2]) &&
+          IsEscapeDigit(name[index + 3]) && IsEscapeDigit(name[index + 4]))
       {
-         AppendUtf8(clean, static_cast<unsigned int>(std::stoul(name.substr(index + 1, 4), nullptr, 16)));
-         index += 4;
+         if (const auto codepoint = static_cast<unsigned int>(std::stoul(name.substr(index + 1, 4), nullptr, 16));
+             !IsSurrogate(codepoint))
+         {
+            AppendUtf8(clean, codepoint);
+            index += 4;
+            continue;
+         }
+      }
+      // Between the end of one word and the capital of the next it is a space: Aillil_Fland_Becc.
+      if (!clean.empty() && std::islower(static_cast<unsigned char>(clean.back())) != 0 && index + 1 < name.size() &&
+          std::isupper(static_cast<unsigned char>(name[index + 1])) != 0)
+      {
+         clean += ' ';
          continue;
       }
       // A lost character. Drop the underscore, and lowercase the capital it stranded mid-word.
