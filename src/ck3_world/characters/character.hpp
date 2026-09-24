@@ -40,6 +40,8 @@ class Character
    [[nodiscard]] auto GetInfluence() const { return influence_; }
    [[nodiscard]] auto GetGold() const { return gold_; }
    [[nodiscard]] const auto& GetName() const { return name_; }
+   [[nodiscard]] const auto& GetNickname() const { return nickname_; }
+   [[nodiscard]] const auto& GetNicknameText() const { return nickname_text_; }
    [[nodiscard]] const auto& GetBirthDate() const { return birth_date_; }
    [[nodiscard]] const auto& GetDeathDate() const { return death_date_; }
    [[nodiscard]] auto GetLegitimacy() const { return legitimacy_; }
@@ -100,6 +102,8 @@ class Character
    std::optional<double> legitimacy_;  // Only present with DLC's
 
    std::string name_;
+   std::string nickname_;
+   std::string nickname_text_;
    date birth_date_ = date("1.1.1");
    std::optional<date> death_date_;
    std::set<int> traits_;

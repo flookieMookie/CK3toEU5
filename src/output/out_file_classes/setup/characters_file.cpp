@@ -51,6 +51,15 @@ void WriteAbilities(std::ostringstream& output, const ck3::Character& character,
       output << "\t\truler_trait = " << trait << "\n";
    }
 }
+
+// The CK3 nickname, as EU5 writes one: nickname = { name = key }. The text is in the localisation.
+void WriteNickname(std::ostringstream& output, const ck3::Character& character)
+{
+   if (const auto key = eu5::NicknameKey(character.GetNickname(), character.GetNicknameText()); !key.empty())
+   {
+      output << "\t\tnickname = { name = \"" << key << "\" }\n";
+   }
+}
 }  // namespace
 
 namespace out
@@ -92,6 +101,7 @@ void CharactersFile::Create(const std::filesystem::path& folder_path)
       output << "\t\tculture = " << *country->GetCulture() << "\n";
       output << "\t\treligion = " << *country->GetReligion() << "\n";
       WriteAbilities(output, *holder, eu5_world_.GetCK3TraitNames());
+      WriteNickname(output, *holder);
       if (holder->IsFemale())
       {
          output << "\t\tfemale = yes\n";
@@ -119,6 +129,7 @@ void CharactersFile::Create(const std::filesystem::path& folder_path)
          output << "\t\tculture = " << *country->GetCulture() << "\n";
          output << "\t\treligion = " << *country->GetReligion() << "\n";
          WriteAbilities(output, *member.character, eu5_world_.GetCK3TraitNames());
+         WriteNickname(output, *member.character);
          if (member.character->IsFemale())
          {
             output << "\t\tfemale = yes\n";

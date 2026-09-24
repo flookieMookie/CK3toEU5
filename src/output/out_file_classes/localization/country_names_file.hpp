@@ -27,6 +27,7 @@ class CountryNamesFile: public OutputFile
        const eu5::EU5World& eu5_world,
        const commonItems::LocalizationDatabase& ck3_culture_names,
        const commonItems::LocalizationDatabase& ck3_dynasty_names,
+       const commonItems::LocalizationDatabase& ck3_nicknames,
        std::string language);
 
    void Create(const std::filesystem::path& folder_path) override;
@@ -35,6 +36,7 @@ class CountryNamesFile: public OutputFile
    const eu5::EU5World& eu5_world_;
    const commonItems::LocalizationDatabase& ck3_culture_names_;
    const commonItems::LocalizationDatabase& ck3_dynasty_names_;
+   const commonItems::LocalizationDatabase& ck3_nicknames_;
    std::string language_;
 };
 

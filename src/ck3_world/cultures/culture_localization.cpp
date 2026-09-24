@@ -91,3 +91,10 @@ commonItems::LocalizationDatabase ck3::LoadDynastyLocalization(const std::filesy
 {
    return LoadCK3Localization(ck3_directory, "dynasties", "dynasty_names", "dynasty", mods, "dynast");
 }
+
+commonItems::LocalizationDatabase ck3::LoadNicknameLocalization(const std::filesystem::path& ck3_directory,
+    const std::vector<Mod>& mods)
+{
+   // Nicknames sit directly in each language's folder: localization/english/nicknames_l_english.yml.
+   return LoadCK3Localization(ck3_directory, "", "nicknames", "nickname", mods, "nick");
+}

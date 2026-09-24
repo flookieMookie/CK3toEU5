@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "src/ck3_world/characters/character.hpp"
 #include "src/ck3_world/dynasties/house.hpp"
@@ -94,11 +95,13 @@ CountryNamesFile::CountryNamesFile(const std::string& name,
     const eu5::EU5World& eu5_world,
     const commonItems::LocalizationDatabase& ck3_culture_names,
     const commonItems::LocalizationDatabase& ck3_dynasty_names,
+    const commonItems::LocalizationDatabase& ck3_nicknames,
     std::string language):
     OutputFile(name, file_writer),
     eu5_world_(eu5_world),
     ck3_culture_names_(ck3_culture_names),
     ck3_dynasty_names_(ck3_dynasty_names),
+    ck3_nicknames_(ck3_nicknames),
     language_(std::move(language))
 {
 }
@@ -143,6 +146,27 @@ void CountryNamesFile::Create(const std::filesystem::path& folder_path)
          if (!key.empty() && ruler_names.insert(key).second)
          {
             WriteEntry(output, key, member_name);
+         }
+      }
+
+      // Nicknames, for the ruler and the family alike.
+      std::vector<const ck3::Character*> people;
+      if (const auto& holder = country->GetSourceRealm()->GetHolder(); country->HasRuler() && holder)
+      {
+         people.push_back(holder.get());
+      }
+      for (const auto& member: country->GetFamily())
+      {
+         people.push_back(member.character.get());
+      }
+      for (const auto* person: people)
+      {
+         const auto key = eu5::NicknameKey(person->GetNickname(), person->GetNicknameText());
+         if (!key.empty() && ruler_names.insert(key).second)
+         {
+            WriteEntry(output,
+                key,
+                eu5::NicknameText(person->GetNickname(), person->GetNicknameText(), ck3_nicknames_, language_));
          }
       }
    }

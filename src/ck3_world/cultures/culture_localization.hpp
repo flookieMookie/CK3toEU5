@@ -22,6 +22,10 @@ namespace ck3
 [[nodiscard]] commonItems::LocalizationDatabase LoadDynastyLocalization(const std::filesystem::path& ck3_directory,
     const std::vector<Mod>& mods);
 
+// CK3's nicknames - nick_the_great is "the Great" - in the same way.
+[[nodiscard]] commonItems::LocalizationDatabase LoadNicknameLocalization(const std::filesystem::path& ck3_directory,
+    const std::vector<Mod>& mods);
+
 }  // namespace ck3
 
 #endif  // CK3_CULTURE_LOCALIZATION_H

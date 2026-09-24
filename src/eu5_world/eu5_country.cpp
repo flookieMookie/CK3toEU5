@@ -148,6 +148,45 @@ std::string eu5::CleanCK3Name(const std::string& name)
    return clean;
 }
 
+std::string eu5::NicknameKey(const std::string& nickname, const std::string& nickname_text)
+{
+   if (nickname.empty())
+   {
+      return {};
+   }
+   const auto key = ToKey(nickname_text.empty() ? nickname : nickname_text);
+   return key.empty() ? std::string{} : "ck3_nick_" + key;
+}
+
+std::string eu5::NicknameText(const std::string& nickname,
+    const std::string& nickname_text,
+    const commonItems::LocalizationDatabase& ck3_nicknames,
+    const std::string& language)
+{
+   auto key = nickname;
+   // A few nicknames are another nickname: nick_the_bald_ironic is "$nick_the_bald$".
+   for (int follows = 0; follows < 2; ++follows)
+   {
+      const auto block = ck3_nicknames.GetLocalizationBlock(key);
+      if (!block.has_value())
+      {
+         break;
+      }
+      const auto text = block->GetLocalization(language);
+      if (text.size() > 2 && text.front() == '$' && text.back() == '$' && text.find('$', 1) == text.size() - 1)
+      {
+         key = text.substr(1, text.size() - 2);
+         continue;
+      }
+      if (!text.empty() && text.find_first_of("[$#") == std::string::npos)
+      {
+         return text;
+      }
+      break;
+   }
+   return nickname_text.empty() ? nickname : nickname_text;
+}
+
 int eu5::StartingGoldFor(const double ck3_gold)
 {
    constexpr double kLowest = -500.0;

@@ -31,7 +31,8 @@ class Output  // class with the structure of the output mod
        const std::filesystem::path& eu5_directory,
        const commonItems::ModFilesystem& ck3_files,
        const commonItems::LocalizationDatabase& ck3_culture_names,
-       const commonItems::LocalizationDatabase& ck3_dynasty_names);
+       const commonItems::LocalizationDatabase& ck3_dynasty_names,
+       const commonItems::LocalizationDatabase& ck3_nicknames);
 
    ~Output() = default;
 

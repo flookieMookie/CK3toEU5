@@ -45,7 +45,8 @@ Output::Output(std::string name,
     const std::filesystem::path& eu5_directory,
     const commonItems::ModFilesystem& ck3_files,
     const commonItems::LocalizationDatabase& ck3_culture_names,
-    const commonItems::LocalizationDatabase& ck3_dynasty_names):
+    const commonItems::LocalizationDatabase& ck3_dynasty_names,
+    const commonItems::LocalizationDatabase& ck3_nicknames):
     mod_name_(std::move(name)),
     converter_version_(std::move(converter_version)),
     output_path_(std::filesystem::path("output"))
@@ -139,6 +140,7 @@ Output::Output(std::string name,
           eu5_world,
           ck3_culture_names,
           ck3_dynasty_names,
+          ck3_nicknames,
           language);
       language_folder->RegisterFileOrResource(std::move(names_file));
       localization_folder->RegisterSubfolder(std::move(language_folder));

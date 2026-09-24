@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include "gtest/gtest.h"
 #include "src/eu5_world/eu5_country.hpp"
 
@@ -48,6 +50,36 @@ TEST(EU5WorldCountryTests, WordsAfterAnUnderscoreAreNotEscapes)  // NOLINT : cla
    EXPECT_EQ("Domnall Dabaill", CleanCK3Name("Domnall_Dabaill"));
    EXPECT_EQ("Abu Abdallah", CleanCK3Name("Abu_Abdallah"));
    EXPECT_EQ("Aillil Fland Becc", CleanCK3Name("Aillil_Fland_Becc"));
+}
+
+TEST(EU5WorldCountryTests, NicknamesAreKeyedByTheirText)  // NOLINT : clang-tidy doens't like gtest
+{
+   EXPECT_EQ("ck3_nick_the_great", NicknameKey("nick_the_great", "the Great"));
+   // Two characters with CK3's culture nickname read differently, so they get different keys.
+   EXPECT_EQ("ck3_nick_the_irish", NicknameKey("nick_the_own_culture", "the Irish"));
+   EXPECT_TRUE(NicknameKey("", "").empty());
+}
+
+TEST(EU5WorldCountryTests, NicknamesUseCK3sTextWhereItIsPlain)  // NOLINT : clang-tidy doens't like gtest
+{
+   commonItems::LocalizationDatabase nicknames("english", {"french", "german"});
+   std::stringstream english;
+   english << "l_english:\n nick_the_great: \"the Great\"\n nick_the_bald: \"the Bald\"\n"
+           << " nick_the_bald_ironic: \"$nick_the_bald$\"\n nick_the_own_culture: \"the [CHARACTER.GetCulture.GetName]\"\n";
+   std::stringstream french;
+   french << "l_french:\n nick_the_great: \"[CHARACTER.Custom('FR_LeLa')] Grand\"\n";
+   std::stringstream german;
+   german << "l_german:\n nick_the_great: \"der Gro\xC3\x9F" "e\"\n";
+   ASSERT_GT(nicknames.ScrapeStream(english), 0);
+   ASSERT_GT(nicknames.ScrapeStream(french), 0);
+   ASSERT_GT(nicknames.ScrapeStream(german), 0);
+
+   EXPECT_EQ("the Great", NicknameText("nick_the_great", "the Great", nicknames, "english"));
+   EXPECT_EQ("der Gro\xC3\x9F" "e", NicknameText("nick_the_great", "the Great", nicknames, "german"));
+   // Scripted by gender in French, so the save's own text stands in.
+   EXPECT_EQ("the Great", NicknameText("nick_the_great", "the Great", nicknames, "french"));
+   EXPECT_EQ("the Bald", NicknameText("nick_the_bald_ironic", "the Bald", nicknames, "english"));
+   EXPECT_EQ("the Irish", NicknameText("nick_the_own_culture", "the Irish", nicknames, "english"));
 }
 
 }  // namespace eu5

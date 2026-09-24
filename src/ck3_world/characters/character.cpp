@@ -33,6 +33,13 @@ void ck3::Character::ParseCharacter(std::istream& input_stream)
    parser.registerKeyword("first_name", [this](const std::string&, std::istream& input_stream) {
       name_ = commonItems::singleString(input_stream).getString();
    });
+   // The nickname's key - nick_the_great - and the text CK3 showed for it when it saved.
+   parser.registerKeyword("nickname", [this](const std::string&, std::istream& input_stream) {
+      nickname_ = commonItems::singleString(input_stream).getString();
+   });
+   parser.registerKeyword("nickname_text", [this](const std::string&, std::istream& input_stream) {
+      nickname_text_ = commonItems::singleString(input_stream).getString();
+   });
    parser.registerKeyword("birth", [this](const std::string&, std::istream& input_stream) {
       birth_date_ = date(commonItems::singleString(input_stream).getString());
    });

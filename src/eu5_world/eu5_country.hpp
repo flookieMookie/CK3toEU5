@@ -7,6 +7,8 @@
 #include <utility>
 #include <vector>
 
+#include "external/commonItems/Localization/LocalizationDatabase.h"
+
 namespace ck3
 {
 class Character;
@@ -27,6 +29,19 @@ namespace eu5
 // The localisation key a character's cleaned first name is written under. Shared by everyone of the
 // same name, so each is localised once.
 [[nodiscard]] std::string CharacterNameKey(const std::string& clean_name);
+
+// The localisation key for a CK3 nickname - nick_the_great, which the save rendered as "the Great" -
+// built from the rendered text, since a few CK3 nicknames read differently for each character ("the
+// Irish" from nick_the_own_culture). Empty for a character without one.
+[[nodiscard]] std::string NicknameKey(const std::string& nickname, const std::string& nickname_text);
+
+// A nickname's text in one language: CK3's own where it is plain text, else what the save rendered
+// for the character. Most of CK3's non-English nicknames are scripted by gender or culture, which EU5
+// can't evaluate. A nickname that only points at another - "$nick_the_bald$" - is followed.
+[[nodiscard]] std::string NicknameText(const std::string& nickname,
+    const std::string& nickname_text,
+    const commonItems::LocalizationDatabase& ck3_nicknames,
+    const std::string& language);
 
 // A country's starting treasury from its CK3 ruler's gold. The two games count money on much the same
 // scale at their starts, so it carries over as it is, held within the range EU5's own start data uses -
