@@ -1,0 +1,4 @@
+// wxWidgets' standard resources. The manifest that gives the launcher modern Windows controls and
+// sharp text on high DPI screens is passed to the linker by CMake instead, which embeds a manifest
+// of its own and would otherwise clash with a second one here.
+#include "wx/msw/wx.rc"

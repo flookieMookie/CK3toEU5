@@ -261,6 +261,7 @@ set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/mappers/mappers.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_country.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_game_definitions.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_culture_resolver.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/launcher/launcher_core.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_location_data.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_vanilla_countries.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/eu5_world/eu5_world.cpp")
@@ -317,6 +318,31 @@ if (NOT RUN_CLANG_TIDY)
 endif (NOT RUN_CLANG_TIDY)
 
 
+#### Launcher ####
+# The fork's own launcher, which its releases ship in place of the Fronter. Windows only for now.
+if (PLATFORM STREQUAL "Windows")
+	add_executable(CK3toEU5Launcher WIN32
+		"src/launcher/launcher_app.cpp"
+		"src/launcher/launcher_frame.cpp"
+		"src/launcher/launcher_core.cpp"
+		"src/launcher/launcher.rc"
+		"external/Fronter/external/wxWidgets/3.2.1/include/wx/msw/wx_dpi_aware_pmv2.manifest"
+	)
+	# wx.rc includes the rcdefs.h generated for this particular wxWidgets build.
+	target_include_directories(CK3toEU5Launcher PRIVATE
+		"${PROJECT_SOURCE_DIR}/external/Fronter/external/wxWidgets/3.2.1/lib/vc14x_x64_dll/$<IF:$<CONFIG:Debug>,mswud,mswu>")
+	# Keep the build machine's folders out of the released program: the debug directory records
+	# only the PDB's file name, and wxWidgets' asserts, which embed their header paths, are off.
+	target_compile_definitions(CK3toEU5Launcher PRIVATE wxDEBUG_LEVEL=0)
+	target_link_options(CK3toEU5Launcher PRIVATE /PDBALTPATH:%_PDB%)
+	target_compile_options(CK3toEU5Launcher PRIVATE
+		$<$<COMPILE_LANGUAGE:CXX>:/W4 /external:anglebrackets /external:W0 /WX>)
+	set_target_properties(CK3toEU5Launcher
+		PROPERTIES
+		RUNTIME_OUTPUT_DIRECTORY ${FRONTER_OUTPUT_DIRECTORY}
+	)
+endif (PLATFORM STREQUAL "Windows")
+
 #### Tests ####
 
 include_directories("./external/commonItems/external/googletest/googletest")
@@ -358,6 +384,7 @@ set(TEST_SOURCES ${TEST_SOURCES} "test/ck3_world/council_manager/councillor_task
 set(TEST_SOURCES ${TEST_SOURCES} "test/ck3_world/realms/realms_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/religion_mapper/religion_mapper_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/language_mapper/language_mapper_tests.cpp")
+set(TEST_SOURCES ${TEST_SOURCES} "test/launcher/launcher_core_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/culture_group_mapper/culture_group_mapper_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/tag_mapper/tag_mapper_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/province_mapper/province_mapper_tests.cpp")

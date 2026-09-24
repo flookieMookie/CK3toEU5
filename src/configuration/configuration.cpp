@@ -136,12 +136,14 @@ void Configuration::VerifyCK3Version(const commonItems::ConverterVersion& conver
    }
 }
 
-void Configuration::VerifyEU5Version(  // NOLINT: not yet implemented
+void Configuration::VerifyEU5Version(  // NOLINT: nothing to verify against
     const commonItems::ConverterVersion& converter_version) const
 {
-   // TODO(kubkm): - find a way to get eu5 version
-   (void)converter_version;
-   Log(LogLevel::Error) << "EU5 version could not be determined, proceeding blind!";
+   // EU5 ships no launcher-settings.json and records its version nowhere else in the install, so
+   // there is nothing to check. That is expected rather than an error, and reporting it as one put
+   // a red line in front of every successful conversion.
+   Log(LogLevel::Info) << "EU5 records no version in its install, so it cannot be checked. This converter targets EU5 "
+                       << converter_version.getMinTarget().toShortString() << ".";
 }
 
 void Configuration::VerifyCK3Save() const
