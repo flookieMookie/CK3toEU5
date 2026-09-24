@@ -20,6 +20,7 @@
 #include "out_file_classes/setup/diplomacy_file.hpp"
 #include "out_file_classes/setup/dynasties_file.hpp"
 #include "out_file_classes/setup/pops_file.hpp"
+#include "out_file_classes/setup/vanilla_start_file.hpp"
 
 
 
@@ -93,6 +94,18 @@ Output::Output(std::string name,
    auto development_file =
        std::make_unique<DevelopmentFile>("14_development.txt", file_writer_, eu5_world, eu5_directory);
    start_folder->RegisterFileOrResource(std::move(development_file));
+
+   // EU5's own wars, rivalries, opinions, armies and AI personalities, kept only for the vanilla
+   // countries on land CK3 doesn't cover. Each entry sits one brace in, the personalities two.
+   for (const auto& [file_name, entry_depth]: {std::pair{"16_wars.txt", 1},
+            std::pair{"18_opinions.txt", 1},
+            std::pair{"20_rivals.txt", 1},
+            std::pair{"26_ai_personalities.txt", 2},
+            std::pair{"27_armies.txt", 1}})
+   {
+      start_folder->RegisterFileOrResource(std::make_unique<VanillaStartFile>(
+          file_name, file_writer_, eu5_world, vanilla_countries, eu5_directory, entry_depth));
+   }
 
    setup_folder->RegisterSubfolder(std::move(start_folder));
    main_menu_folder->RegisterSubfolder(std::move(setup_folder));
