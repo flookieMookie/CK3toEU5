@@ -393,6 +393,7 @@ set(TEST_SOURCES ${TEST_SOURCES} "test/eu5_world/culture_display_name_tests.cpp"
 set(TEST_SOURCES ${TEST_SOURCES} "test/ck3_world/contracts/vassal_contracts_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/ck3_world/relations/relations_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/eu5_world/vanilla_characters_tests.cpp")
+set(TEST_SOURCES ${TEST_SOURCES} "test/eu5_world/eu5_country_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/culture_group_mapper/culture_group_mapper_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/tag_mapper/tag_mapper_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/province_mapper/province_mapper_tests.cpp")

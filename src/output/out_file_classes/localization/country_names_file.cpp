@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 
+#include "src/ck3_world/characters/character.hpp"
 #include "src/ck3_world/realms/realm.hpp"
 #include "src/ck3_world/titles/title.hpp"
 #include "src/eu5_world/eu5_country.hpp"
@@ -102,6 +103,15 @@ void CountryNamesFile::Create(const std::filesystem::path& folder_path)
          if (!key.empty() && ruler_names.insert(key).second)
          {
             WriteEntry(output, key, country->GetRulerName());
+         }
+      }
+      for (const auto& member: country->GetFamily())
+      {
+         const auto member_name = eu5::CleanCK3Name(member.character->GetName());
+         const auto key = eu5::CharacterNameKey(member_name);
+         if (!key.empty() && ruler_names.insert(key).second)
+         {
+            WriteEntry(output, key, member_name);
          }
       }
    }

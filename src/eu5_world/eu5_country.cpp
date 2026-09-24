@@ -63,7 +63,12 @@ std::string eu5::Country::GetRulerName() const
 
 std::string eu5::Country::GetRulerNameKey() const
 {
-   const auto key = ToKey(GetRulerName());
+   return CharacterNameKey(GetRulerName());
+}
+
+std::string eu5::CharacterNameKey(const std::string& clean_name)
+{
+   const auto key = ToKey(clean_name);
    return key.empty() ? std::string{} : "ck3_name_" + key;
 }
 

@@ -78,6 +78,8 @@ class EU5World
    void AssignTributaries(const ck3::VassalContracts& contracts);
    // Alliances between CK3 rulers who both became independent countries.
    void AssignAlliances(const ck3::Relations& relations);
+   // Each converted ruler's living spouse, children and heir, as characters alongside them.
+   void AssignFamilies(const ck3::CK3World& ck3_world);
    // The country each CK3 ruler became, among those written to the mod.
    [[nodiscard]] std::map<long long, std::shared_ptr<Country>> MapCountriesByRuler() const;
    // Vassals cannot outrank their liege, so ranks are settled after every country exists.
@@ -154,6 +156,8 @@ class EU5World
    std::size_t vassals_demoted_ = 0;
    std::size_t tributaries_ = 0;
    std::size_t tributaries_skipped_ = 0;
+   std::size_t family_members_ = 0;
+   std::size_t heirs_ = 0;
    std::set<std::string> undefined_tags_;
 };
 

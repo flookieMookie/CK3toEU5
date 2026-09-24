@@ -9,6 +9,7 @@
 
 namespace ck3
 {
+class Character;
 class Realm;
 }
 
@@ -21,6 +22,21 @@ namespace eu5
 // Sigfrid - and those are unrecoverable, so the underscore is dropped and the stranded capital
 // lowercased to keep the name readable.
 [[nodiscard]] std::string CleanCK3Name(const std::string& name);
+
+// The localisation key a character's cleaned first name is written under. Shared by everyone of the
+// same name, so each is localised once.
+[[nodiscard]] std::string CharacterNameKey(const std::string& clean_name);
+
+// Someone from the ruler's family converted alongside them. Parents and spouse are EU5 character
+// IDs, set only where that person is converted too.
+struct FamilyMember
+{
+   std::string id;
+   std::shared_ptr<ck3::Character> character;
+   std::string father;
+   std::string mother;
+   std::string spouse;
+};
 
 // An EU5 country converted from one independent CK3 realm. Locations are EU5 location names, the
 // keys 10_countries.txt is written in.
@@ -41,6 +57,9 @@ class Country
    [[nodiscard]] const auto& GetRank() const { return rank_; }
    [[nodiscard]] auto GetTechnologyLevel() const { return technology_level_; }
    [[nodiscard]] const auto& GetLiegeTag() const { return liege_tag_; }
+   [[nodiscard]] const auto& GetFamily() const { return family_; }
+   // Empty when the heir isn't converted.
+   [[nodiscard]] const auto& GetHeirId() const { return heir_id_; }
    // Whether the country makes it into the mod at all. One with no land is left out, and so is one
    // needing a definition that lacks the culture or religion a definition requires, since EU5 would
    // reject it. Anything else that names a country must check this, or it names one EU5 lacks.
@@ -65,6 +84,8 @@ class Country
    void SetTechnologyLevel(int level) { technology_level_ = level; }
    void SetRank(std::string rank) { rank_ = std::move(rank); }
    void SetLiegeTag(std::string liege_tag) { liege_tag_ = std::move(liege_tag); }
+   void AddFamilyMember(FamilyMember member) { family_.push_back(std::move(member)); }
+   void SetHeirId(std::string heir_id) { heir_id_ = std::move(heir_id); }
    void AddLocation(std::string location) { locations_.emplace_back(std::move(location)); }
 
   private:
@@ -78,6 +99,8 @@ class Country
    std::string rank_ = "rank_county";
    int technology_level_ = 3;
    std::string liege_tag_;
+   std::vector<FamilyMember> family_;
+   std::string heir_id_;
    std::vector<std::string> locations_;
 };
 

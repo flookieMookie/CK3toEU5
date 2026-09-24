@@ -83,6 +83,11 @@ void WriteGovernment(std::ostringstream& output, const eu5::Country& country)
    {
       output << "\t\t\t\truler = " << country.GetRulerId() << "\n";
    }
+   // Only an heir who was converted can be named; otherwise EU5 picks one as it would anyway.
+   if (!country.GetHeirId().empty())
+   {
+      output << "\t\t\t\their = " << country.GetHeirId() << "\n";
+   }
    output << "\t\t\t\tparliament = { parliament_type = " << ParliamentFor(government) << " }\n";
    // EU5 wants every country placed on its society axes and complains for each one that is not.
    // CK3 has no equivalent for most of them, so only the two its government type genuinely speaks

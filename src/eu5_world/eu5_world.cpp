@@ -368,6 +368,7 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
 
    AssignTributaries(ck3_world.GetVassalContracts());
    AssignAlliances(ck3_world.GetRelations());
+   AssignFamilies(ck3_world);
    AssignRanks();
    AssignDevelopment();
 
@@ -679,6 +680,86 @@ void eu5::EU5World::AssignAlliances(const ck3::Relations& relations)
    }
 }
 
+void eu5::EU5World::AssignFamilies(const ck3::CK3World& ck3_world)
+{
+   const auto& characters = ck3_world.GetCharacters().GetAllCharacters();
+   // Everyone is converted once. A son who rules a country of his own is that country's ruler, not
+   // also a child in his father's household.
+   std::set<long long> converted;
+   for (const auto& country: countries_)
+   {
+      if (country->IsWritten() && country->HasRuler())
+      {
+         converted.insert(country->GetSourceRealm()->GetHolder()->GetID());
+      }
+   }
+   const auto convertible = [&converted](const std::shared_ptr<ck3::Character>& character) {
+      return character && !character->IsDead() && !converted.contains(character->GetID()) &&
+             !CleanCK3Name(character->GetName()).empty();
+   };
+
+   for (const auto& country: countries_)
+   {
+      if (!country->IsWritten() || !country->HasRuler())
+      {
+         continue;
+      }
+      const auto& ruler = country->GetSourceRealm()->GetHolder();
+      std::map<long long, std::string> family_ids{{ruler->GetID(), country->GetRulerId()}};
+      const auto add = [&](const std::shared_ptr<ck3::Character>& character, FamilyMember member) {
+         member.id = "ck3_char_" + std::to_string(character->GetID());
+         member.character = character;
+         family_ids.emplace(character->GetID(), member.id);
+         converted.insert(character->GetID());
+         country->AddFamilyMember(std::move(member));
+         ++family_members_;
+      };
+
+      // EU5 treats a marriage declared on one side as mutual, as its own start data does.
+      if (const auto& spouse = ruler->GetSpouse(); spouse.has_value())
+      {
+         if (const auto partner = spouse->GetPointer().lock(); convertible(partner))
+         {
+            add(partner, FamilyMember{.spouse = country->GetRulerId()});
+         }
+      }
+      for (const auto& child_link: ruler->GetChildren())
+      {
+         if (const auto child = child_link.GetPointer().lock(); convertible(child))
+         {
+            FamilyMember member;
+            (ruler->IsFemale() ? member.mother : member.father) = country->GetRulerId();
+            add(child, std::move(member));
+         }
+      }
+
+      // CK3 keeps the line of succession on the primary title; the first living one is the heir.
+      for (const auto& heir_link: country->GetSourceRealm()->GetPrimaryTitle()->GetHeirs())
+      {
+         const auto heir = characters.find(heir_link.GetID());
+         if (heir == characters.end() || !heir->second || heir->second->IsDead())
+         {
+            continue;
+         }
+         if (const auto known = family_ids.find(heir->first); known != family_ids.end())
+         {
+            if (known->second != country->GetRulerId())
+            {
+               country->SetHeirId(known->second);
+               ++heirs_;
+            }
+         }
+         else if (convertible(heir->second))
+         {
+            add(heir->second, FamilyMember{});
+            country->SetHeirId(family_ids.at(heir->first));
+            ++heirs_;
+         }
+         break;
+      }
+   }
+}
+
 std::map<long long, std::shared_ptr<eu5::Country>> eu5::EU5World::MapCountriesByRuler() const
 {
    std::map<long long, std::shared_ptr<Country>> country_of_ruler;
@@ -781,6 +862,8 @@ void eu5::EU5World::LogLandReport() const
                           << " could not, their ruler having no country or already being a subject.";
    }
    Log(LogLevel::Info) << "   " << alliances_.size() << " alliances between independent countries.";
+   Log(LogLevel::Info) << "   " << family_members_ << " family members converted alongside their rulers, " << heirs_
+                       << " of the countries with a named heir.";
 }
 
 void eu5::EU5World::LogTagReport() const

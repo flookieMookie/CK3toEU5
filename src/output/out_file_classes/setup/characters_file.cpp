@@ -6,6 +6,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include "src/ck3_world/characters/character.hpp"
 #include "src/ck3_world/realms/realm.hpp"
@@ -50,6 +51,7 @@ void CharactersFile::Create(const std::filesystem::path& folder_path)
    output << "character_db = {\n";
 
    int written = 0;
+   int family = 0;
    for (const auto& country: eu5_world_.GetCountries())
    {
       if (!country->IsWritten() || !country->HasRuler())
@@ -76,6 +78,39 @@ void CharactersFile::Create(const std::filesystem::path& folder_path)
       output << "\t\ttag = " << country->GetTag() << "\n";
       output << "\t}\n";
       ++written;
+
+      // The ruler's family shares their country's culture and religion, and is aged the same way.
+      for (const auto& member: country->GetFamily())
+      {
+         const auto name = eu5::CleanCK3Name(member.character->GetName());
+         output << "\n\t" << member.id << " = { # " << name << ", family of " << country->GetRulerName() << "\n";
+         output << "\t\tfirst_name = { name = " << eu5::CharacterNameKey(name) << " }\n";
+         output << "\t\tculture = " << *country->GetCulture() << "\n";
+         output << "\t\treligion = " << *country->GetReligion() << "\n";
+         if (member.character->IsFemale())
+         {
+            output << "\t\tfemale = yes\n";
+         }
+         output << "\t\tbirth_date = "
+                << AgeOntoStartDate(member.character->GetBirthDate(), eu5_world_.GetConversionDate()).toString()
+                << "\n";
+         if (country->GetCapitalLocation().has_value())
+         {
+            output << "\t\tbirth = " << *country->GetCapitalLocation() << "\n";
+         }
+         for (const auto& [relation, id]: {std::pair{"father", member.father},
+                  std::pair{"mother", member.mother},
+                  std::pair{"spouse", member.spouse}})
+         {
+            if (!id.empty())
+            {
+               output << "\t\t" << relation << " = " << id << "\n";
+            }
+         }
+         output << "\t\ttag = " << country->GetTag() << "\n";
+         output << "\t}\n";
+         ++family;
+      }
    }
 
    // The vanilla countries kept on land CK3 doesn't cover name their own rulers, heirs and regents.
@@ -96,7 +131,7 @@ void CharactersFile::Create(const std::filesystem::path& folder_path)
 
    output << "}\n";
 
-   Log(LogLevel::Info) << "\t<> Wrote " << written << " rulers and kept " << kept
+   Log(LogLevel::Info) << "\t<> Wrote " << written << " rulers with " << family << " family members, and kept " << kept
                        << " vanilla characters of the countries CK3 doesn't cover.";
    UseFileWriter().CreateEmptyAndWrite(folder_path / GetName(), output.str());
 }
