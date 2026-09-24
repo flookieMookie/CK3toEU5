@@ -41,6 +41,13 @@ class Country
    [[nodiscard]] const auto& GetRank() const { return rank_; }
    [[nodiscard]] auto GetTechnologyLevel() const { return technology_level_; }
    [[nodiscard]] const auto& GetLiegeTag() const { return liege_tag_; }
+   // Whether the country makes it into the mod at all. One with no land is left out, and so is one
+   // needing a definition that lacks the culture or religion a definition requires, since EU5 would
+   // reject it. Anything else that names a country must check this, or it names one EU5 lacks.
+   [[nodiscard]] bool IsWritten() const
+   {
+      return !locations_.empty() && (!needs_definition_ || (culture_.has_value() && religion_.has_value()));
+   }
 
    // A ruler can only be written when the realm has a holder and EU5 will accept their culture and
    // religion, since a character naming something EU5 does not define is rejected.

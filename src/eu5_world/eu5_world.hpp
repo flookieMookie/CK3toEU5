@@ -22,6 +22,7 @@ class CK3World;
 class Culture;
 class Realm;
 class Title;
+class VassalContracts;
 }
 
 namespace mappers
@@ -37,6 +38,8 @@ struct Dependency
 {
    std::string liege_tag;
    std::string vassal_tag;
+   // vassal for CK3 vassalage, tributary for CK3 tributaries.
+   std::string subject_type = "vassal";
 };
 
 // Turns the independent CK3 realms into EU5 countries: a tag, a capital, and the EU5 locations the
@@ -65,6 +68,8 @@ class EU5World
    void LogReport() const;
 
   private:
+   // CK3 tributaries rule their own land, so they are already countries; this makes them subjects.
+   void AssignTributaries(const ck3::VassalContracts& contracts);
    // Vassals cannot outrank their liege, so ranks are settled after every country exists.
    void AssignRanks();
    // Carries CK3 development onto EU5 and derives a technology level from it.
@@ -136,6 +141,8 @@ class EU5World
    std::size_t realms_with_generated_tag_ = 0;
    std::size_t duplicate_tags_regenerated_ = 0;
    std::size_t vassals_demoted_ = 0;
+   std::size_t tributaries_ = 0;
+   std::size_t tributaries_skipped_ = 0;
    std::set<std::string> undefined_tags_;
 };
 

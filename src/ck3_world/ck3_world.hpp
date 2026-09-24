@@ -7,6 +7,7 @@
 #include "Parser.h"
 #include "characters/characters.hpp"
 #include "confederations/confederations.hpp"
+#include "contracts/vassal_contracts.hpp"
 #include "council_manager/councillor_tasks.hpp"
 #include "cultures/cultures.hpp"
 #include "dynasties/dynasties.hpp"
@@ -36,6 +37,7 @@ class CK3World
    [[nodiscard]] const auto& GetDynasties() const { return dynasties_; }
    [[nodiscard]] const auto& GetReligions() const { return religions_; }
    [[nodiscard]] const auto& GetConfederations() const { return confederations_; }
+   [[nodiscard]] const auto& GetVassalContracts() const { return vassal_contracts_; }
    [[nodiscard]] const auto& GetCountyDetails() const { return county_details_; }
    [[nodiscard]] const auto& GetLandedTitles() const { return landed_titles_; }
    [[nodiscard]] const auto& GetRealms() const { return realms_; }
@@ -48,7 +50,6 @@ class CK3World
    //[[nodiscard]] const auto& GetWars() const { return wars.getWars(); }
    //[[nodiscard]] const auto& GetArtifacts() const { return artifacts.getArtifacts(); }
    //[[nodiscard]] const auto& GetMenAtArms() const { return armies.getMenAtArms(); }
-   //[[nodiscard]] const auto& GetVassalContracts() const { return vassalContracts; }
 
   private:
    void ParseGamestate(std::istream& input_stream, const commonItems::ConverterVersion& converter_version);
@@ -80,13 +81,13 @@ class CK3World
    Cultures cultures_;
    // HouseNameScraper houseNameScraper;
    Confederations confederations_;
+   VassalContracts vassal_contracts_;
    CouncillorTasks councillor_tasks_;
    // Relations relations;
    // Opinions opinions;
    // Wars wars;
    // Artifacts artifacts;
    // Armies armies;
-   // VassalContracts vassalContracts;
    // mappers::NamedColors namedColors;
    // mappers::TraitScraper traitScraper;
    // mappers::LocalizationMapper localizationMapper;

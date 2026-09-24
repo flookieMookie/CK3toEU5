@@ -68,14 +68,10 @@ const std::vector<std::string> kNeutralSocietyAxes = {"spiritualist_vs_humanist"
 
 bool ShouldWrite(const eu5::Country& country)
 {
-   if (country.GetLocations().empty())
-   {
-      return false;
-   }
    // A tag EU5 does not define needs one written alongside this file. Where that could not be
    // generated the tag would be rejected, and a rejected block takes the rest of the file with it,
    // so the country is left out entirely.
-   return !country.NeedsDefinition() || (country.GetCulture().has_value() && country.GetReligion().has_value());
+   return country.IsWritten();
 }
 
 void WriteGovernment(std::ostringstream& output, const eu5::Country& country)

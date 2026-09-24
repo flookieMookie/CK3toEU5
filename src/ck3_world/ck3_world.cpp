@@ -199,11 +199,12 @@ void ck3::CK3World::ParseGamestate(std::istream& input_stream, const commonItems
    //	opinions = Opinions(input_stream);
    //	Log(LogLevel::Info) << "<> Loaded " << opinions.getRivalPairs().size() << " rivalries.";
    // });
-   // registerKeyword("vassal_contracts", [this](const std::string&, std::istream& input_stream) {
-   //	Log(LogLevel::Info) << "-> Loading vassal contracts.";
-   //	vassalContracts = VassalContracts(input_stream);
-   //	Log(LogLevel::Info) << "<> Loaded " << vassalContracts.getContractGroups().size() << " vassal contracts.";
-   // });
+   parser.registerKeyword("vassal_contracts", [this](const std::string&, std::istream& input_stream) {
+      Log(LogLevel::Info) << "-> Loading vassal contracts.";
+      vassal_contracts_ = VassalContracts(input_stream);
+      Log(LogLevel::Info) << "<> Loaded " << vassal_contracts_.GetContracts().size() << " vassal contracts, "
+                          << vassal_contracts_.GetTributaries().size() << " of them tributaries.";
+   });
    parser.registerRegex(commonItems::catchallRegex, commonItems::ignoreItem);
 
    parser.parseStream(input_stream);

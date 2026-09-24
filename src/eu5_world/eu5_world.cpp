@@ -366,6 +366,7 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
       countries_.emplace_back(std::move(country));
    }
 
+   AssignTributaries(ck3_world.GetVassalContracts());
    AssignRanks();
    AssignDevelopment();
 
@@ -655,6 +656,56 @@ void eu5::EU5World::AssignPopulationFaithAndCulture(Country& country, const Cont
    }
 }
 
+void eu5::EU5World::AssignTributaries(const ck3::VassalContracts& contracts)
+{
+   // The country each ruler became, to find both sides of a contract.
+   std::map<long long, std::shared_ptr<Country>> country_of_ruler;
+   std::map<std::string, std::shared_ptr<Country>> country_of_tag;
+   for (const auto& country: countries_)
+   {
+      country_of_tag.emplace(country->GetTag(), country);
+      if (const auto& holder = country->GetSourceRealm()->GetHolder(); holder && country->IsWritten())
+      {
+         country_of_ruler.try_emplace(holder->GetID(), country);
+      }
+   }
+   // Whether a country sits anywhere above another in the subject hierarchy.
+   const auto is_overlord_of = [&country_of_tag](const std::string& candidate, const Country& country) {
+      for (auto liege = country.GetLiegeTag(); !liege.empty();)
+      {
+         if (liege == candidate)
+         {
+            return true;
+         }
+         const auto next = country_of_tag.find(liege);
+         liege = next == country_of_tag.end() ? std::string{} : next->second->GetLiegeTag();
+      }
+      return false;
+   };
+
+   for (const auto& contract: contracts.GetTributaries())
+   {
+      const auto tributary = country_of_ruler.find(contract.vassal_id);
+      const auto suzerain = country_of_ruler.find(contract.liege_id);
+      if (tributary == country_of_ruler.end() || suzerain == country_of_ruler.end() ||
+          tributary->second == suzerain->second)
+      {
+         ++tributaries_skipped_;
+         continue;
+      }
+      // EU5 gives a country one overlord, so one that is already a subject stays with that one; and a
+      // suzerain that is itself below the tributary would make a loop EU5 cannot represent.
+      if (!tributary->second->GetLiegeTag().empty() || is_overlord_of(tributary->second->GetTag(), *suzerain->second))
+      {
+         ++tributaries_skipped_;
+         continue;
+      }
+      tributary->second->SetLiegeTag(suzerain->second->GetTag());
+      dependencies_.emplace_back(Dependency{suzerain->second->GetTag(), tributary->second->GetTag(), "tributary"});
+      ++tributaries_;
+   }
+}
+
 void eu5::EU5World::LogReport() const
 {
    LogLandReport();
@@ -691,6 +742,11 @@ void eu5::EU5World::LogLandReport() const
    if (counties_without_baronies_ > 0)
    {
       Log(LogLevel::Warning) << "   " << counties_without_baronies_ << " counties had no baronies to draw land from.";
+   }
+   if (tributaries_ > 0 || tributaries_skipped_ > 0)
+   {
+      Log(LogLevel::Info) << "   " << tributaries_ << " CK3 tributaries became EU5 tributaries; " << tributaries_skipped_
+                          << " could not, their ruler having no country or already being a subject.";
    }
 }
 
