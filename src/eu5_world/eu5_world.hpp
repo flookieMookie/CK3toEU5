@@ -48,6 +48,27 @@ struct Dependency
    std::string subject_type = "vassal";
 };
 
+// A country's part in a converted war, as EU5 asks it to join: the leader as Instigator or Target,
+// the rest called in by a country already in it - its liege as Subject, the leader as an ally.
+struct WarParticipant
+{
+   std::string tag;
+   std::string reason;  // Instigator, Target, Subject or Scripted
+   std::string caller;  // empty for the leaders
+};
+
+// A CK3 war between rulers who both became independent countries, fought in EU5 over one location
+// of the land at stake.
+struct ConvertedWar
+{
+   std::string name_key;  // localisation key for the CK3 name, or empty if the save gave none
+   std::string name;
+   date start_date = date("1.1.1");
+   std::string target_location;
+   std::vector<WarParticipant> attackers;
+   std::vector<WarParticipant> defenders;
+};
+
 // A CK3 house written as an EU5 dynasty. EU5's dynasty is the family name a character carries,
 // which in CK3 is the house - Karling - rather than the wider dynasty.
 struct ConvertedDynasty
@@ -84,6 +105,7 @@ class EU5World
    // Each allied pair of independent countries, as tags, once.
    [[nodiscard]] const auto& GetAlliances() const { return alliances_; }
    [[nodiscard]] const auto& GetDynasties() const { return dynasties_; }
+   [[nodiscard]] const auto& GetWars() const { return wars_; }
    // Country tag to the CK3 coat of arms it flies, for the tags the conversion invents.
    [[nodiscard]] const auto& GetFlags() const { return flags_; }
    // The EU5 dynasty a converted character belongs to, or empty.
@@ -131,6 +153,8 @@ class EU5World
       std::map<std::string, double> religion;
    };
 
+   // Active CK3 wars between independent countries, once every country and subject is known.
+   void AssignWars(const Context& context);
    [[nodiscard]] static std::optional<std::string> ResolveCapitalLocation(const ck3::Realm& realm,
        const Context& context);
    [[nodiscard]] std::optional<TagChoice> ChooseTag(const ck3::Realm& realm,
@@ -167,6 +191,8 @@ class EU5World
    CultureResolver culture_resolver_;
    std::vector<Dependency> dependencies_;
    std::set<std::pair<std::string, std::string>> alliances_;
+   std::vector<ConvertedWar> wars_;
+   int wars_skipped_ = 0;
    std::map<long long, ConvertedDynasty> dynasties_;
    std::map<std::string, ck3::CoatOfArms> flags_;
    // EU5 location to the CK3 development of the county it came from, and the bonus that becomes.

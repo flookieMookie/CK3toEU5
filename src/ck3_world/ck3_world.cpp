@@ -194,6 +194,11 @@ void ck3::CK3World::ParseGamestate(std::istream& input_stream, const commonItems
       coats_of_arms_ = CoatsOfArms(input_stream);
       Log(LogLevel::Info) << "<> Loaded " << coats_of_arms_.GetCoatsOfArms().size() << " coats of arms.";
    });
+   parser.registerKeyword("wars", [this](const std::string&, std::istream& input_stream) {
+      Log(LogLevel::Info) << "-> Loading wars.";
+      wars_ = Wars(input_stream);
+      Log(LogLevel::Info) << "<> Loaded " << wars_.GetWars().size() << " active wars.";
+   });
    parser.registerKeyword("relations", [this](const std::string&, std::istream& input_stream) {
       Log(LogLevel::Info) << "-> Loading relations.";
       relations_ = Relations(input_stream);

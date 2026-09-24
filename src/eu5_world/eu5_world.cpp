@@ -380,6 +380,7 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
 
    AssignTributaries(ck3_world.GetVassalContracts());
    AssignAlliances(ck3_world.GetRelations());
+   AssignWars(context);
    AssignFamilies(ck3_world);
    AssignDynasties();
    AssignFlags(ck3_world);
@@ -694,6 +695,155 @@ void eu5::EU5World::AssignAlliances(const ck3::Relations& relations)
    }
 }
 
+void eu5::EU5World::AssignWars(const Context& context)
+{
+   const auto country_of_ruler = MapCountriesByRuler();
+   std::map<std::string, std::string> owner_of_location;
+   for (const auto& country: countries_)
+   {
+      if (country->IsWritten())
+      {
+         for (const auto& location: country->GetLocations())
+         {
+            owner_of_location.emplace(location, country->GetTag());
+         }
+      }
+   }
+   const auto& landed_titles = context.ck3_world.GetLandedTitles();
+   // Every EU5 location under a CK3 title, down through the game files' hierarchy to its baronies.
+   const auto locations_under = [&](const std::string& title_key) {
+      std::vector<std::string> locations;
+      std::vector<std::string> pending{title_key};
+      while (!pending.empty())
+      {
+         const auto key = pending.back();
+         pending.pop_back();
+         if (key.starts_with("b_"))
+         {
+            const auto mapped = context.mappers.GetProvinceMapper().GetEU5Locations(ProvinceOfBarony(key, landed_titles));
+            locations.insert(locations.end(), mapped.begin(), mapped.end());
+            continue;
+         }
+         for (const auto& child: landed_titles.GetChildren(key))
+         {
+            pending.push_back(child);
+         }
+      }
+      return locations;
+   };
+
+   for (const auto& war: context.ck3_world.GetWars().GetWars())
+   {
+      const auto attacker = country_of_ruler.find(war.attacker);
+      const auto defender = country_of_ruler.find(war.defender);
+      // Only wars between independent countries: EU5 subjects fight their overlords' wars, not their
+      // own, and a war inside one realm has nothing to be fought over once it is one country.
+      if (attacker == country_of_ruler.end() || defender == country_of_ruler.end() ||
+          attacker->second == defender->second || !attacker->second->GetLiegeTag().empty() ||
+          !defender->second->GetLiegeTag().empty())
+      {
+         ++wars_skipped_;
+         continue;
+      }
+
+      ConvertedWar converted;
+      converted.name = war.name;
+      converted.start_date = war.start_date;
+      std::set<std::string> joined{attacker->second->GetTag(), defender->second->GetTag()};
+      converted.attackers.push_back({attacker->second->GetTag(), "Instigator", ""});
+      converted.defenders.push_back({defender->second->GetTag(), "Target", ""});
+
+      // Everyone else joins behind a country already in the war: a subject behind its liege, anyone
+      // independent behind the leader as an ally. Subjects of countries sitting the war out stay out.
+      const auto join = [&](const std::vector<long long>& characters, std::vector<WarParticipant>& side) {
+         std::vector<std::shared_ptr<Country>> waiting;
+         for (const auto character: characters)
+         {
+            const auto country = country_of_ruler.find(character);
+            if (country != country_of_ruler.end() && !joined.contains(country->second->GetTag()))
+            {
+               waiting.push_back(country->second);
+            }
+         }
+         for (bool progress = true; progress;)
+         {
+            progress = false;
+            for (auto& country: waiting)
+            {
+               if (!country || joined.contains(country->GetTag()))
+               {
+                  continue;
+               }
+               const auto& liege = country->GetLiegeTag();
+               const bool liege_on_side = std::ranges::any_of(side, [&liege](const WarParticipant& participant) {
+                  return participant.tag == liege;
+               });
+               if (liege.empty() || liege_on_side)
+               {
+                  side.push_back({country->GetTag(),
+                      liege.empty() ? "Scripted" : "Subject",
+                      liege.empty() ? side.front().tag : liege});
+                  joined.insert(country->GetTag());
+                  country.reset();
+                  progress = true;
+               }
+            }
+         }
+      };
+      join(war.attackers, converted.attackers);
+      join(war.defenders, converted.defenders);
+
+      // The war is over a location of the land at stake the defenders hold, the war leader's first.
+      std::string fallback;
+      for (const auto title_id: war.targeted_titles)
+      {
+         const auto title = context.id_title_map.find(title_id);
+         if (title == context.id_title_map.end())
+         {
+            continue;
+         }
+         for (const auto& location: locations_under(title->second->GetKey()))
+         {
+            const auto owner = owner_of_location.find(location);
+            if (owner == owner_of_location.end())
+            {
+               continue;
+            }
+            if (owner->second == defender->second->GetTag())
+            {
+               converted.target_location = location;
+               break;
+            }
+            if (fallback.empty() && std::ranges::any_of(converted.defenders, [&owner](const WarParticipant& participant) {
+                   return participant.tag == owner->second;
+                }))
+            {
+               fallback = location;
+            }
+         }
+         if (!converted.target_location.empty())
+         {
+            break;
+         }
+      }
+      if (converted.target_location.empty())
+      {
+         converted.target_location =
+             fallback.empty() ? defender->second->GetCapitalLocation().value_or("") : fallback;
+      }
+      if (converted.target_location.empty())
+      {
+         ++wars_skipped_;
+         continue;
+      }
+      if (!converted.name.empty())
+      {
+         converted.name_key = "ck3_war_" + std::to_string(wars_.size());
+      }
+      wars_.push_back(std::move(converted));
+   }
+}
+
 void eu5::EU5World::AssignFamilies(const ck3::CK3World& ck3_world)
 {
    const auto& characters = ck3_world.GetCharacters().GetAllCharacters();
@@ -975,6 +1125,8 @@ void eu5::EU5World::LogLandReport() const
                           << " could not, their ruler having no country or already being a subject.";
    }
    Log(LogLevel::Info) << "   " << alliances_.size() << " alliances between independent countries.";
+   Log(LogLevel::Info) << "   " << wars_.size() << " CK3 wars carry on in EU5; " << wars_skipped_
+                       << " could not, a side having no independent country.";
    Log(LogLevel::Info) << "   " << family_members_ << " family members converted alongside their rulers, " << heirs_
                        << " of the countries with a named heir.";
    Log(LogLevel::Info) << "   " << dynasties_.size() << " CK3 houses become EU5 dynasties.";

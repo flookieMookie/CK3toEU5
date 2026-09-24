@@ -22,6 +22,7 @@
 #include "out_file_classes/setup/international_organizations_file.hpp"
 #include "out_file_classes/setup/pops_file.hpp"
 #include "out_file_classes/setup/vanilla_start_file.hpp"
+#include "out_file_classes/setup/wars_file.hpp"
 
 
 
@@ -99,10 +100,13 @@ Output::Output(std::string name,
    start_folder->RegisterFileOrResource(std::make_unique<InternationalOrganizationsFile>(
        "15_international_organizations.txt", file_writer_, eu5_world, vanilla_countries, vanilla_characters, eu5_directory));
 
-   // EU5's own wars, rivalries, opinions, armies and AI personalities, kept only for the vanilla
-   // countries on land CK3 doesn't cover. Each entry sits one brace in, the personalities two.
-   for (const auto& [file_name, entry_depth]: {std::pair{"16_wars.txt", 1},
-            std::pair{"18_opinions.txt", 1},
+   // The wars the CK3 save was in the middle of, beside EU5's own among the countries it keeps.
+   start_folder->RegisterFileOrResource(
+       std::make_unique<WarsFile>("16_wars.txt", file_writer_, eu5_world, vanilla_countries, eu5_directory));
+
+   // EU5's own rivalries, opinions, colonial claims, armies and AI personalities, kept only for the
+   // vanilla countries on land CK3 doesn't cover. Each entry sits one brace in, some two.
+   for (const auto& [file_name, entry_depth]: {std::pair{"18_opinions.txt", 1},
             std::pair{"20_rivals.txt", 1},
             std::pair{"23_colonies.txt", 1},
             std::pair{"25_area_preferences.txt", 2},

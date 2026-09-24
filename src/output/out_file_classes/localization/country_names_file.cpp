@@ -152,6 +152,15 @@ void CountryNamesFile::Create(const std::filesystem::path& folder_path)
       WriteEntry(output, dynasty.id, DynastyName(*dynasty.house, ck3_dynasty_names_, language_));
    }
 
+   // CK3 wrote war names out in the player's language when it saved, so they read the same everywhere.
+   for (const auto& war: eu5_world_.GetWars())
+   {
+      if (!war.name_key.empty())
+      {
+         WriteEntry(output, war.name_key, war.name);
+      }
+   }
+
    const auto cultures = eu5_world_.GetCultureResolver().GetUsedGeneratedCultures();
    for (const auto& [key, definition]: cultures)
    {
