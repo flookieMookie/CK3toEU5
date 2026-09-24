@@ -367,6 +367,7 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
    }
 
    AssignTributaries(ck3_world.GetVassalContracts());
+   AssignAlliances(ck3_world.GetRelations());
    AssignRanks();
    AssignDevelopment();
 
@@ -656,18 +657,49 @@ void eu5::EU5World::AssignPopulationFaithAndCulture(Country& country, const Cont
    }
 }
 
-void eu5::EU5World::AssignTributaries(const ck3::VassalContracts& contracts)
+void eu5::EU5World::AssignAlliances(const ck3::Relations& relations)
 {
-   // The country each ruler became, to find both sides of a contract.
+   const auto country_of_ruler = MapCountriesByRuler();
+   for (const auto& [first_id, second_id]: relations.GetAlliances())
+   {
+      const auto first = country_of_ruler.find(first_id);
+      const auto second = country_of_ruler.find(second_id);
+      // Most CK3 alliances bind courtiers and kin rather than rulers, and only rulers have countries.
+      if (first == country_of_ruler.end() || second == country_of_ruler.end() || first->second == second->second)
+      {
+         continue;
+      }
+      // EU5 ends an alliance the moment either side is a subject.
+      if (!first->second->GetLiegeTag().empty() || !second->second->GetLiegeTag().empty())
+      {
+         continue;
+      }
+      alliances_.emplace(std::min(first->second->GetTag(), second->second->GetTag()),
+          std::max(first->second->GetTag(), second->second->GetTag()));
+   }
+}
+
+std::map<long long, std::shared_ptr<eu5::Country>> eu5::EU5World::MapCountriesByRuler() const
+{
    std::map<long long, std::shared_ptr<Country>> country_of_ruler;
-   std::map<std::string, std::shared_ptr<Country>> country_of_tag;
    for (const auto& country: countries_)
    {
-      country_of_tag.emplace(country->GetTag(), country);
       if (const auto& holder = country->GetSourceRealm()->GetHolder(); holder && country->IsWritten())
       {
          country_of_ruler.try_emplace(holder->GetID(), country);
       }
+   }
+   return country_of_ruler;
+}
+
+void eu5::EU5World::AssignTributaries(const ck3::VassalContracts& contracts)
+{
+   // The country each ruler became, to find both sides of a contract.
+   const auto country_of_ruler = MapCountriesByRuler();
+   std::map<std::string, std::shared_ptr<Country>> country_of_tag;
+   for (const auto& country: countries_)
+   {
+      country_of_tag.emplace(country->GetTag(), country);
    }
    // Whether a country sits anywhere above another in the subject hierarchy.
    const auto is_overlord_of = [&country_of_tag](const std::string& candidate, const Country& country) {
@@ -748,6 +780,7 @@ void eu5::EU5World::LogLandReport() const
       Log(LogLevel::Info) << "   " << tributaries_ << " CK3 tributaries became EU5 tributaries; " << tributaries_skipped_
                           << " could not, their ruler having no country or already being a subject.";
    }
+   Log(LogLevel::Info) << "   " << alliances_.size() << " alliances between independent countries.";
 }
 
 void eu5::EU5World::LogTagReport() const

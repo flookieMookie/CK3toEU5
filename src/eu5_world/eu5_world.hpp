@@ -9,6 +9,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "eu5_country.hpp"
@@ -23,6 +24,7 @@ class Culture;
 class Realm;
 class Title;
 class VassalContracts;
+class Relations;
 }
 
 namespace mappers
@@ -63,6 +65,8 @@ class EU5World
    [[nodiscard]] const auto& GetLocationCultures() const { return location_cultures_; }
    [[nodiscard]] const auto& GetCultureResolver() const { return culture_resolver_; }
    [[nodiscard]] const auto& GetDependencies() const { return dependencies_; }
+   // Each allied pair of independent countries, as tags, once.
+   [[nodiscard]] const auto& GetAlliances() const { return alliances_; }
    [[nodiscard]] const auto& GetDevelopmentBonuses() const { return development_bonuses_; }
 
    void LogReport() const;
@@ -70,6 +74,10 @@ class EU5World
   private:
    // CK3 tributaries rule their own land, so they are already countries; this makes them subjects.
    void AssignTributaries(const ck3::VassalContracts& contracts);
+   // Alliances between CK3 rulers who both became independent countries.
+   void AssignAlliances(const ck3::Relations& relations);
+   // The country each CK3 ruler became, among those written to the mod.
+   [[nodiscard]] std::map<long long, std::shared_ptr<Country>> MapCountriesByRuler() const;
    // Vassals cannot outrank their liege, so ranks are settled after every country exists.
    void AssignRanks();
    // Carries CK3 development onto EU5 and derives a technology level from it.
@@ -128,6 +136,7 @@ class EU5World
    std::map<std::string, std::string> location_cultures_;
    CultureResolver culture_resolver_;
    std::vector<Dependency> dependencies_;
+   std::set<std::pair<std::string, std::string>> alliances_;
    // EU5 location to the CK3 development of the county it came from, and the bonus that becomes.
    std::map<std::string, int> location_development_;
    std::map<std::string, int> development_bonuses_;

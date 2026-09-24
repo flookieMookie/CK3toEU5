@@ -188,12 +188,12 @@ void ck3::CK3World::ParseGamestate(std::istream& input_stream, const commonItems
       confederations_ = Confederations(input_stream);
       Log(LogLevel::Info) << "<> Loaded " << confederations_.GetConfederations().size() << " confederations.";
    });
-   // TODO(Kmiotek): add relations, opinions, vassal_contracts
-   // registerKeyword("relations", [this](const std::string&, std::istream& input_stream) {
-   //	Log(LogLevel::Info) << "-> Loading relations.";
-   //	relations = Relations(input_stream);
-   //	Log(LogLevel::Info) << "<> Loaded " << relations.getAlliancePairs().size() << " alliances.";
-   // });
+   // TODO(Kmiotek): add opinions
+   parser.registerKeyword("relations", [this](const std::string&, std::istream& input_stream) {
+      Log(LogLevel::Info) << "-> Loading relations.";
+      relations_ = Relations(input_stream);
+      Log(LogLevel::Info) << "<> Loaded " << relations_.GetAlliances().size() << " alliances.";
+   });
    // registerKeyword("opinions", [this](const std::string&, std::istream& input_stream) {
    //	Log(LogLevel::Info) << "-> Loading opinions.";
    //	opinions = Opinions(input_stream);

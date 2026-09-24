@@ -32,7 +32,7 @@ void DiplomacyFile::Create(const std::filesystem::path& folder_path)
    }
 
    std::ostringstream output;
-   output << "# Vassals and tributaries converted from the CK3 save.\n\n";
+   output << "# Vassals, tributaries and alliances converted from the CK3 save.\n\n";
    output << "diplomacy_manager = {\n";
 
    int written = 0;
@@ -47,9 +47,20 @@ void DiplomacyFile::Create(const std::filesystem::path& folder_path)
       ++written;
    }
 
+   int alliances = 0;
+   for (const auto& [first, second]: eu5_world_.GetAlliances())
+   {
+      if (!written_tags.contains(first) || !written_tags.contains(second))
+      {
+         continue;
+      }
+      output << "\tscripted_mutual = { first = " << first << " second = " << second << " type = alliance }\n";
+      ++alliances;
+   }
+
    output << "}\n";
 
-   Log(LogLevel::Info) << "\t<> Wrote " << written << " subject relationships.";
+   Log(LogLevel::Info) << "\t<> Wrote " << written << " subject relationships and " << alliances << " alliances.";
    UseFileWriter().CreateEmptyAndWrite(folder_path / GetName(), output.str());
 }
 

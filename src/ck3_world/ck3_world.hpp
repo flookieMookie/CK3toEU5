@@ -15,6 +15,7 @@
 #include "geography/county_details.hpp"
 #include "geography/province_holdings.hpp"
 #include "realms/realms.hpp"
+#include "relations/relations.hpp"
 #include "religions/religions.hpp"
 #include "src/configuration/configuration.hpp"
 #include "titles/landed_titles.hpp"
@@ -38,6 +39,7 @@ class CK3World
    [[nodiscard]] const auto& GetReligions() const { return religions_; }
    [[nodiscard]] const auto& GetConfederations() const { return confederations_; }
    [[nodiscard]] const auto& GetVassalContracts() const { return vassal_contracts_; }
+   [[nodiscard]] const auto& GetRelations() const { return relations_; }
    [[nodiscard]] const auto& GetCountyDetails() const { return county_details_; }
    [[nodiscard]] const auto& GetLandedTitles() const { return landed_titles_; }
    [[nodiscard]] const auto& GetRealms() const { return realms_; }
@@ -45,7 +47,6 @@ class CK3World
    [[nodiscard]] const auto& GetUsedMods() const { return used_mods_; }
    //[[nodiscard]] const auto& GetMetaCoA() const { return metaCoA; }
    //[[nodiscard]] const auto& GetLocalizationMapper() const { return localizationMapper; }
-   //[[nodiscard]] const auto& GetAlliancePairs() const { return relations.getAlliancePairs(); }
    //[[nodiscard]] const auto& GetRivalPairs() const { return opinions.getRivalPairs(); }
    //[[nodiscard]] const auto& GetWars() const { return wars.getWars(); }
    //[[nodiscard]] const auto& GetArtifacts() const { return artifacts.getArtifacts(); }
@@ -82,8 +83,8 @@ class CK3World
    // HouseNameScraper houseNameScraper;
    Confederations confederations_;
    VassalContracts vassal_contracts_;
+   Relations relations_;
    CouncillorTasks councillor_tasks_;
-   // Relations relations;
    // Opinions opinions;
    // Wars wars;
    // Artifacts artifacts;
