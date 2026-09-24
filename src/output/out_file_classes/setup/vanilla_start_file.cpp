@@ -2,13 +2,13 @@
 
 #include <external/commonItems/Log.h>
 
+#include <algorithm>
 #include <fstream>
 #include <iterator>
 #include <regex>
 #include <sstream>
 #include <string>
 #include <utility>
-#include <vector>
 
 namespace
 {
@@ -29,25 +29,11 @@ int DepthChange(const std::string& line)
    }
    return change;
 }
-
-bool OnlyAbout(const std::vector<std::string>& lines, const std::set<std::string>& allowed_tags)
-{
-   for (const auto& line: lines)
-   {
-      const auto code = WithoutComment(line);
-      for (auto match = std::sregex_iterator(code.begin(), code.end(), kTag); match != std::sregex_iterator(); ++match)
-      {
-         if (!allowed_tags.contains(match->str()))
-         {
-            return false;
-         }
-      }
-   }
-   return true;
-}
 }  // namespace
 
-std::string out::KeepEntriesAbout(const std::string& contents, const int entry_depth, const std::set<std::string>& allowed_tags)
+std::string out::TransformEntries(const std::string& contents,
+    const int entry_depth,
+    const std::function<std::optional<std::string>(const std::string& entry)>& transform)
 {
    std::istringstream input(contents);
    std::ostringstream output;
@@ -66,22 +52,48 @@ std::string out::KeepEntriesAbout(const std::string& contents, const int entry_d
       }
 
       // Gather the whole entry: this line, and any lines its braces open.
-      std::vector<std::string> entry{line};
+      std::string entry = line + "\n";
       int entry_depth_change = DepthChange(line);
       while (entry_depth_change > 0 && std::getline(input, line))
       {
-         entry.push_back(line);
+         entry += line + "\n";
          entry_depth_change += DepthChange(line);
       }
-      if (OnlyAbout(entry, allowed_tags))
+      if (const auto replacement = transform(entry); replacement.has_value())
       {
-         for (const auto& entry_line: entry)
-         {
-            output << entry_line << "\n";
-         }
+         output << *replacement;
       }
    }
    return output.str();
+}
+
+std::set<std::string> out::TagsNamedIn(const std::string& text)
+{
+   std::set<std::string> tags;
+   std::istringstream lines(text);
+   std::string line;
+   while (std::getline(lines, line))
+   {
+      const auto code = WithoutComment(line);
+      for (auto match = std::sregex_iterator(code.begin(), code.end(), kTag); match != std::sregex_iterator(); ++match)
+      {
+         tags.insert(match->str());
+      }
+   }
+   return tags;
+}
+
+std::string out::KeepEntriesAbout(const std::string& contents, const int entry_depth, const std::set<std::string>& allowed_tags)
+{
+   return TransformEntries(contents, entry_depth, [&allowed_tags](const std::string& entry) -> std::optional<std::string> {
+      if (std::ranges::all_of(TagsNamedIn(entry), [&allowed_tags](const std::string& tag) {
+             return allowed_tags.contains(tag);
+          }))
+      {
+         return entry;
+      }
+      return std::nullopt;
+   });
 }
 
 namespace out

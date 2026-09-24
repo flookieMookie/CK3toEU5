@@ -611,6 +611,7 @@ link = { ck3 = k_tarraconensis eu5 = ARA }
 link = { ck3 = d_aragon eu5 = ARA }
 link = { ck3 = d_tarraconensis eu5 = ARA }
 link = { ck3 = c_alto_aragon eu5 = ARA }
+link = { ck3 = k_papal_state eu5 = PAP } # EU5's Catholic religion names PAP its important country, and its Church is led by PAP
 link = { ck3 = k_castille eu5 = CAS }
 link = { ck3 = d_castilla eu5 = CAS }
 link = { ck3 = k_catalonia eu5 = CAT }

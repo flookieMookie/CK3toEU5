@@ -2,6 +2,8 @@
 #define OUT_VANILLA_START_FILE_H
 
 #include <filesystem>
+#include <functional>
+#include <optional>
 #include <set>
 #include <string>
 
@@ -12,6 +14,13 @@
 namespace out
 {
 
+// Walks the entries of one of EU5's own start files - anything beginning entry_depth braces in - and
+// replaces each with what transform returns for it, dropping it when that is empty. Everything
+// outside the entries is kept as it is.
+[[nodiscard]] std::string TransformEntries(const std::string& contents,
+    int entry_depth,
+    const std::function<std::optional<std::string>(const std::string& entry)>& transform);
+
 // Keeps the entries of one of EU5's own start files that concern only the given countries.
 //
 // The file is copied line by line; an entry is anything that begins at entry_depth braces in, and
@@ -20,6 +29,9 @@ namespace out
 [[nodiscard]] std::string KeepEntriesAbout(const std::string& contents,
     int entry_depth,
     const std::set<std::string>& allowed_tags);
+
+// Every country tag - three letter uppercase token - named outside comments.
+[[nodiscard]] std::set<std::string> TagsNamedIn(const std::string& text);
 
 // Writes one of EU5's start files - wars, rivals, opinions, armies, AI personalities - keeping only
 // what concerns the vanilla countries the conversion keeps on land CK3 doesn't cover.
