@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <string>
 
+#include "ModLoader/ModFilesystem.h"
 #include "src/eu5_world/eu5_world.hpp"
 #include "src/output/out_file_classes/output_file.hpp"
 
@@ -32,7 +33,7 @@ class CoatOfArmsTextures: public OutputFile
    CoatOfArmsTextures(const std::string& name,
        FileWriter& file_writer,
        const eu5::EU5World& eu5_world,
-       std::filesystem::path ck3_directory,
+       commonItems::ModFilesystem ck3_files,
        std::filesystem::path eu5_directory);
 
    // folder_path is the mod's gfx/coat_of_arms folder; the art goes into its subfolders.
@@ -40,7 +41,7 @@ class CoatOfArmsTextures: public OutputFile
 
   private:
    const eu5::EU5World& eu5_world_;
-   std::filesystem::path ck3_directory_;
+   commonItems::ModFilesystem ck3_files_;
    std::filesystem::path eu5_directory_;
 };
 

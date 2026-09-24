@@ -48,11 +48,11 @@ void CoatsOfArmsFile::Create(const std::filesystem::path& folder_path)
 CoatOfArmsTextures::CoatOfArmsTextures(const std::string& name,
     FileWriter& file_writer,
     const eu5::EU5World& eu5_world,
-    std::filesystem::path ck3_directory,
+    commonItems::ModFilesystem ck3_files,
     std::filesystem::path eu5_directory):
     OutputFile(name, file_writer),
     eu5_world_(eu5_world),
-    ck3_directory_(std::move(ck3_directory)),
+    ck3_files_(std::move(ck3_files)),
     eu5_directory_(std::move(eu5_directory))
 {
 }
@@ -67,7 +67,6 @@ void CoatOfArmsTextures::Create(const std::filesystem::path& folder_path)
       textures.insert(coat_of_arms.textures.begin(), coat_of_arms.textures.end());
    }
 
-   const auto ck3_art = ck3_directory_ / "game" / "gfx" / "coat_of_arms";
    const auto eu5_art = eu5_directory_ / "game" / "main_menu" / "gfx" / "coat_of_arms";
    int copied = 0;
    int missing = 0;
@@ -82,10 +81,11 @@ void CoatOfArmsTextures::Create(const std::filesystem::path& folder_path)
             found = true;  // EU5 has it already
             break;
          }
-         if (const auto source = ck3_art / subfolder / texture; std::filesystem::is_regular_file(source, error))
+         // CK3's own art, or a mod's where the save used one that adds or redraws it.
+         if (const auto source = ck3_files_.GetActualFileLocation(std::filesystem::path("gfx") / "coat_of_arms" / subfolder / texture))
          {
             std::filesystem::create_directories(folder_path / subfolder, error);
-            std::filesystem::copy_file(source,
+            std::filesystem::copy_file(*source,
                 folder_path / subfolder / texture,
                 std::filesystem::copy_options::overwrite_existing,
                 error);

@@ -4,6 +4,7 @@
 #include <Date.h>
 
 #include "GameVersion.h"
+#include "ModLoader/Mod.h"
 #include "Parser.h"
 #include "characters/characters.hpp"
 #include "coats_of_arms/coats_of_arms.hpp"
@@ -34,7 +35,6 @@ class CK3World
    [[nodiscard]] const auto& GetCultures() const { return cultures_; }
 
    [[nodiscard]] const auto& GetConversionDate() const { return end_date_; }
-   //[[nodiscard]] const auto& GetMods() const { return mods; }
    [[nodiscard]] const auto& GetTitles() const { return titles_; }
    [[nodiscard]] const auto& GetCharacters() const { return characters_; }
    [[nodiscard]] const auto& GetDynasties() const { return dynasties_; }
@@ -49,6 +49,8 @@ class CK3World
    [[nodiscard]] const auto& GetRealms() const { return realms_; }
    [[nodiscard]] const auto& GetMetaTitleName() const { return meta_realm_title_; }
    [[nodiscard]] const auto& GetUsedMods() const { return used_mods_; }
+   // The save's mods that are installed here, in load order.
+   [[nodiscard]] const auto& GetMods() const { return mods_; }
    //[[nodiscard]] const auto& GetMetaCoA() const { return metaCoA; }
    //[[nodiscard]] const auto& GetLocalizationMapper() const { return localizationMapper; }
    //[[nodiscard]] const auto& GetRivalPairs() const { return opinions.getRivalPairs(); }
@@ -59,6 +61,7 @@ class CK3World
   private:
    void ParseGamestate(std::istream& input_stream, const commonItems::ConverterVersion& converter_version);
    void ParseMeta(std::istream& input_stream);
+   void LoadMods(const configuration::Configuration& configuration);
    void LoadLandedTitles(const configuration::Configuration& configuration);
 
    // savegame processing
@@ -68,12 +71,12 @@ class CK3World
 
    // meta
    std::optional<std::string> meta_realm_title_;
-   // Mods the save declares. Their content is not loaded; this only drives a warning.
+   // The mod descriptors the save lists.
    std::vector<std::string> used_mods_;
 
    GameVersion ck3_version_;
    Flags flags_;
-   // Mods mods_;
+   std::vector<Mod> mods_;
 
    // world
    Titles titles_;

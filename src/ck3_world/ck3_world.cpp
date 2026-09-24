@@ -22,6 +22,7 @@
 #include "flags/flags.hpp"
 #include "geography/county_details.hpp"
 #include "geography/province_holdings.hpp"
+#include "mods/ck3_mods.hpp"
 #include "realms/realms.hpp"
 #include "religions/religions.hpp"
 #include "save_melter.hpp"
@@ -48,6 +49,7 @@ ck3::CK3World::CK3World(const configuration::Configuration& configuration,
    Log(LogLevel::Progress) << "20 %";
 
    Log(LogLevel::Info) << "* Gamestate Parsing Complete, Parsing Game Files *";
+   LoadMods(configuration);
    LoadLandedTitles(configuration);
    Log(LogLevel::Progress) << "25 %";
 
@@ -224,21 +226,9 @@ void ck3::CK3World::ParseGamestate(std::istream& input_stream, const commonItems
 void ck3::CK3World::ParseMeta(std::istream& input_stream)
 {
    commonItems::parser meta_parser;
-   // TODO(Kmiotek): load the mods rather than only warning about them.
-   //
-   // CK3 writes this key only when the save used mods. Until mod content is actually loaded, a
-   // modded save is read as though it were vanilla: titles the mod added are missing from the game
-   // files, so realms silently lose land or vanish, and nothing in the output says why. Warning is
-   // the least that can be done.
+   // CK3 writes this key only when the save used mods, as their descriptors: "mod/ugc_2834284159.mod".
    meta_parser.registerKeyword("mods", [this](std::istream& input_stream) {
       used_mods_ = commonItems::getStrings(input_stream);
-      Log(LogLevel::Warning) << "!!! This save used " << used_mods_.size()
-                             << " mod(s). The converter does not load mod content, so anything a mod";
-      Log(LogLevel::Warning) << "!!! added or changed will be missing and the conversion will be wrong:";
-      for (const auto& mod: used_mods_)
-      {
-         Log(LogLevel::Warning) << "!!!    " << mod;
-      }
    });
    meta_parser.registerKeyword("meta_title_name", [this](std::istream& input_stream) {
       // The realm name as CK3 displays it (e.g. "the Yamamoto Empire") - dynamic nomad/adventurer
@@ -256,12 +246,37 @@ void ck3::CK3World::ParseMeta(std::istream& input_stream)
    meta_parser.clearRegisteredKeywords();
 }
 
+void ck3::CK3World::LoadMods(const configuration::Configuration& configuration)
+{
+   if (used_mods_.empty())
+   {
+      return;
+   }
+   Log(LogLevel::Info) << "-> Loading the save's " << used_mods_.size() << " mod(s).";
+   mods_ = ResolveMods(configuration.GetCK3DocDirectory(), used_mods_);
+   for (const auto& mod: mods_)
+   {
+      Log(LogLevel::Info) << "	" << mod.name;
+      if (ChangesMap(mod))
+      {
+         Log(LogLevel::Warning) << "!!! " << mod.name << " changes CK3's map. The converter's province mappings are "
+                                << "for CK3's own map, so land will end up in the wrong places or nowhere.";
+      }
+   }
+   if (mods_.size() < used_mods_.size())
+   {
+      Log(LogLevel::Warning) << "!!! " << used_mods_.size() - mods_.size() << " of the save's mods are not installed. "
+                             << "Anything they added - titles, cultures, names - will be missing from the conversion.";
+   }
+   Log(LogLevel::Info) << "<> Loaded " << mods_.size() << " mod(s): their titles, culture and dynasty names and coat "
+                       << "of arms art are used.";
+}
+
 void ck3::CK3World::LoadLandedTitles(const configuration::Configuration& configuration)
 {
    Log(LogLevel::Info) << "-> Loading Landed Titles.";
-   const std::vector<Mod> empty_vector;  // TODO(Kmiotek): when implementing mod support change this
-   const commonItems::ModFilesystem mod_filesystem(configuration.GetCK3Directory(), empty_vector);
-   for (const auto& file: mod_filesystem.GetAllFilesInFolder("game/common/landed_titles"))
+   const auto mod_filesystem = CK3Files(configuration.GetCK3Directory(), mods_);
+   for (const auto& file: mod_filesystem.GetAllFilesInFolder("common/landed_titles"))
    {
       if (file.extension() == ".txt")
       {

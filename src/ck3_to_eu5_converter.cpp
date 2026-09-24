@@ -8,6 +8,7 @@
 
 #include "ck3_world/ck3_world.hpp"
 #include "ck3_world/cultures/culture_localization.hpp"
+#include "ck3_world/mods/ck3_mods.hpp"
 #include "configuration/configuration.hpp"
 #include "eu5_world/eu5_world.hpp"
 #include "mappers/mappers.hpp"
@@ -49,8 +50,8 @@ void Converter::Convert()
    Log(LogLevel::Info) << "Outputting mod";
    const eu5::VanillaCountries vanilla_countries(configuration_.GetEU5Directory());
    const eu5::VanillaCharacters vanilla_characters(configuration_.GetEU5Directory());
-   const auto ck3_culture_names = ck3::LoadCultureLocalization(configuration_.GetCK3Directory());
-   const auto ck3_dynasty_names = ck3::LoadDynastyLocalization(configuration_.GetCK3Directory());
+   const auto ck3_culture_names = ck3::LoadCultureLocalization(configuration_.GetCK3Directory(), ck3_world.GetMods());
+   const auto ck3_dynasty_names = ck3::LoadDynastyLocalization(configuration_.GetCK3Directory(), ck3_world.GetMods());
    out::Output output =
        out::Output(configuration_.GetOutputName(),
        converter_version_,
@@ -59,7 +60,7 @@ void Converter::Convert()
        vanilla_countries,
        vanilla_characters,
        configuration_.GetEU5Directory(),
-       configuration_.GetCK3Directory(),
+       ck3::CK3Files(configuration_.GetCK3Directory(), ck3_world.GetMods()),
        ck3_culture_names,
        ck3_dynasty_names);
    output.GenerateOutputMod();

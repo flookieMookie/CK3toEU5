@@ -43,7 +43,7 @@ Output::Output(std::string name,
     const eu5::VanillaCountries& vanilla_countries,
     const eu5::VanillaCharacters& vanilla_characters,
     const std::filesystem::path& eu5_directory,
-    const std::filesystem::path& ck3_directory,
+    const commonItems::ModFilesystem& ck3_files,
     const commonItems::LocalizationDatabase& ck3_culture_names,
     const commonItems::LocalizationDatabase& ck3_dynasty_names):
     mod_name_(std::move(name)),
@@ -159,7 +159,7 @@ Output::Output(std::string name,
    auto gfx_folder = std::make_unique<OutputFolder>("gfx", folder_manager_);
    auto art_folder = std::make_unique<OutputFolder>("coat_of_arms", folder_manager_);
    art_folder->RegisterFileOrResource(std::make_unique<CoatOfArmsTextures>(
-       "coat_of_arms_art", file_writer_, eu5_world, ck3_directory, eu5_directory));
+       "coat_of_arms_art", file_writer_, eu5_world, ck3_files, eu5_directory));
    gfx_folder->RegisterSubfolder(std::move(art_folder));
    main_menu_folder->RegisterSubfolder(std::move(gfx_folder));
 
