@@ -80,6 +80,14 @@ void WriteGovernment(std::ostringstream& output, const eu5::Country& country)
    const auto government = GovernmentFor(country.GetSourceRealm()->GetGovernment());
    output << "\t\t\tgovernment = {\n";
    output << "\t\t\t\ttype = " << government << "\n";
+   const auto& holder = country.GetSourceRealm()->GetHolder();
+   if (holder && holder->GetCharacterRealm())
+   {
+      if (const auto heir_selection = out::HeirSelectionFor(government, holder->GetCharacterRealm()->GetLaws()))
+      {
+         output << "\t\t\t\their_selection = " << *heir_selection << "\n";
+      }
+   }
    if (country.HasRuler())
    {
       output << "\t\t\t\truler = " << country.GetRulerId() << "\n";
@@ -161,6 +169,33 @@ int WriteUntouchedVanillaCountries(std::ostringstream& output,
    return preserved;
 }
 }  // namespace
+
+std::optional<std::string> out::HeirSelectionFor(const std::string& government, const std::set<std::string>& ck3_laws)
+{
+   if (government != "monarchy")
+   {
+      return std::nullopt;
+   }
+   // Every CK3 partition law - confederate, high, the clans' - divides the realm among the sons.
+   if (std::ranges::any_of(ck3_laws, [](const std::string& law) {
+          return law.contains("partition_succession_law");
+       }))
+   {
+      return "partition_inheritance";
+   }
+   if (ck3_laws.contains("male_only_law"))
+   {
+      return "salic_law";
+   }
+   // EU5 has no law preferring or requiring women; equal primogeniture is the nearest.
+   if (ck3_laws.contains("equal_law") || ck3_laws.contains("female_preference_law") ||
+       ck3_laws.contains("female_only_law"))
+   {
+      return "absolute_cognatic_primogeniture";
+   }
+   // Male preference, and anything a campaign or mod adds, is EU5's own default.
+   return "cognatic_primogeniture";
+}
 
 namespace out
 {

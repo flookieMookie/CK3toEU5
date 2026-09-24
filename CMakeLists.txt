@@ -406,6 +406,7 @@ set(TEST_SOURCES ${TEST_SOURCES} "test/ck3_world/coats_of_arms/coats_of_arms_tes
 set(TEST_SOURCES ${TEST_SOURCES} "test/output/vanilla_start_file_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/output/international_organizations_file_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/output/wars_file_tests.cpp")
+set(TEST_SOURCES ${TEST_SOURCES} "test/output/countries_file_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/culture_group_mapper/culture_group_mapper_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/tag_mapper/tag_mapper_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/province_mapper/province_mapper_tests.cpp")
