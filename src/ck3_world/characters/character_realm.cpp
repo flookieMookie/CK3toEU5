@@ -94,17 +94,19 @@ void ck3::CharacterRealm::Link(const std::map<long long, std::shared_ptr<Title>>
       }
    }
    council_ = replacement_council;
-   for (auto& title: domain_)
-   {
+   // A title missing from the save is dropped from the domain rather than aborting the conversion.
+   std::erase_if(domain_, [&id_title_map, character_id](const auto& title) {
       if (id_title_map.contains(title.GetID()))
       {
-         title.SetPointer(id_title_map.at(title.GetID()));
+         return false;
       }
-      else
-      {
-         throw std::runtime_error("Character " + std::to_string(character_id) + " domain title " +
-                                  std::to_string(title.GetID()) + " with no definition!");
-      }
+      Log(LogLevel::Warning) << "Character " << character_id << " domain title " << title.GetID()
+                             << " has no definition, ignoring it.";
+      return true;
+   });
+   for (auto& title: domain_)
+   {
+      title.SetPointer(id_title_map.at(title.GetID()));
    }
    if (realm_capital_.has_value())  // no capital for realms consisting only of noble family and/or ceremonial titles
    {
@@ -114,8 +116,9 @@ void ck3::CharacterRealm::Link(const std::map<long long, std::shared_ptr<Title>>
       }
       else
       {
-         throw std::runtime_error("Character " + std::to_string(character_id) + " realm capital title " +
-                                  std::to_string(realm_capital_->GetID()) + " with no definition.");
+         Log(LogLevel::Warning) << "Character " << character_id << " realm capital title " << realm_capital_->GetID()
+                                << " has no definition, ignoring it.";
+         realm_capital_.reset();
       }
    }
 }

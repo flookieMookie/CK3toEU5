@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "CommonRegexes.h"
+#include "Log.h"
 #include "Parser.h"
 #include "ParserHelpers.h"
 #include "src/ck3_world/cultures/culture.hpp"
@@ -45,8 +46,9 @@ void ck3::CountyDetail::LinkCulture(const std::map<long long, std::shared_ptr<Cu
    }
    else
    {
-      throw std::runtime_error("County details " + county_key_ + " has culture " + std::to_string(culture_.GetID()) +
-                               " that doens't exist in save!");
+      // The link is left empty rather than aborting the conversion; everything reading it checks.
+      Log(LogLevel::Warning) << "County details " << county_key_ << " has culture " << culture_.GetID()
+                             << " which has no definition, ignoring it.";
    }
 }
 void ck3::CountyDetail::LinkFaith(const std::map<long long, std::shared_ptr<Faith>>& faiths_map)
@@ -57,7 +59,7 @@ void ck3::CountyDetail::LinkFaith(const std::map<long long, std::shared_ptr<Fait
    }
    else
    {
-      throw std::runtime_error("County details " + county_key_ + " has faith " + std::to_string(faith_.GetID()) +
-                               " that doens't exist in save!");
+      Log(LogLevel::Warning) << "County details " << county_key_ << " has faith " << faith_.GetID()
+                             << " which has no definition, ignoring it.";
    }
 }

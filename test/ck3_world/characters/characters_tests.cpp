@@ -98,7 +98,7 @@ TEST(CK3WorldCharactersTests, CulturesCanBeLinked)  // NOLINT : clang-tidy doens
            ->GetTemplate());
 }
 
-TEST(CK3WorldCharactersTests, LinkingMissingCultureThrowsException)  // NOLINT : clang-tidy doens't like gtest
+TEST(CK3WorldCharactersTests, LinkingMissingCultureIsIgnored)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream input;
    input << "cultures={\n";
@@ -112,7 +112,7 @@ TEST(CK3WorldCharactersTests, LinkingMissingCultureThrowsException)  // NOLINT :
    ck3::Characters characters;
    characters.ParseCharacters(input2);
 
-   ASSERT_THROW(characters.LinkCultures(cultures), std::runtime_error);  // NOLINT : clang-tidy doens't like gtest
+   EXPECT_NO_THROW(characters.LinkCultures(cultures));  // NOLINT : clang-tidy doens't like gtest
 }
 
 TEST(CK3WorldCharactersTests, LinkingCharacterWithoutCultureDoesntThrow)  // NOLINT : clang-tidy doens't like gtest
@@ -153,7 +153,7 @@ TEST(CK3WorldCharactersTests, FaithsCanBeLinked)  // NOLINT : clang-tidy doens't
        character2->second->GetFaith()->GetPointer().lock()->GetTag());  // NOLINT(bugprone-unchecked-optional-access)
 }
 
-TEST(CK3WorldCharactersTests, LinkingMissingFaithThrowsException)  // NOLINT : clang-tidy doens't like gtest
+TEST(CK3WorldCharactersTests, LinkingMissingFaithIsIgnored)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream input;
    input << "faiths={\n";
@@ -167,7 +167,7 @@ TEST(CK3WorldCharactersTests, LinkingMissingFaithThrowsException)  // NOLINT : c
    ck3::Characters characters;
    characters.ParseCharacters(input2);
 
-   ASSERT_THROW(characters.LinkFaiths(religions), std::runtime_error);  // NOLINT : clang-tidy doens't like gtest
+   EXPECT_NO_THROW(characters.LinkFaiths(religions));  // NOLINT : clang-tidy doens't like gtest
 }
 
 TEST(CK3WorldCharactersTests, LinkingCharacterWithoutFaithDoesntThrow)  // NOLINT : clang-tidy doens't like gtest
@@ -208,7 +208,7 @@ TEST(CK3WorldCharactersTests, HousesCanBeLinked)  // NOLINT : clang-tidy doens't
        character2->second->GetHouse()->GetPointer().lock()->GetName());  // NOLINT(bugprone-unchecked-optional-access)
 }
 
-TEST(CK3WorldCharactersTests, LinkingMissingHouseThrowsException)  // NOLINT : clang-tidy doens't like gtest
+TEST(CK3WorldCharactersTests, LinkingMissingHouseIsIgnored)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream input;
    input << "dynasty_house={\n";
@@ -222,7 +222,7 @@ TEST(CK3WorldCharactersTests, LinkingMissingHouseThrowsException)  // NOLINT : c
    ck3::Characters characters;
    characters.ParseCharacters(input2);
 
-   ASSERT_THROW(characters.LinkHouses(dynasties), std::runtime_error);  // NOLINT : clang-tidy doens't like gtest
+   EXPECT_NO_THROW(characters.LinkHouses(dynasties));  // NOLINT : clang-tidy doens't like gtest
 }
 
 TEST(CK3WorldCharactersTests, LinkingCharacterWithoutHouseDoesntThrow)  // NOLINT : clang-tidy doens't like gtest

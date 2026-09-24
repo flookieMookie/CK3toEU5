@@ -150,7 +150,7 @@ TEST(CK3WorldFaithsTests, ReligionsCanBeLinked)  // NOLINT : clang-tidy doens't 
    ASSERT_EQ("theravada", religion1->second->GetFaiths()[1].GetPointer().lock()->GetTag());
 }
 
-TEST(CK3WorldFaithsTests, LinkingMissingReligionThrowsError)  // NOLINT : clang-tidy doens't like gtest
+TEST(CK3WorldFaithsTests, LinkingMissingReligionIsIgnored)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream input;
    input << "religions={\n";
@@ -162,10 +162,10 @@ TEST(CK3WorldFaithsTests, LinkingMissingReligionThrowsError)  // NOLINT : clang-
    input << "}";
    Religions religions(input);
 
-   ASSERT_THROW(religions.LinkReligions(), std::runtime_error);  // NOLINT : clang-tidy doens't like gtest
+   EXPECT_NO_THROW(religions.LinkReligions());  // NOLINT : clang-tidy doens't like gtest
 }
 
-TEST(CK3WorldFaithsTests, LinkingMissingFaithThrowsError)  // NOLINT : clang-tidy doens't like gtest
+TEST(CK3WorldFaithsTests, LinkingMissingFaithIsIgnored)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream input;
    input << "religions={\n";
@@ -177,7 +177,7 @@ TEST(CK3WorldFaithsTests, LinkingMissingFaithThrowsError)  // NOLINT : clang-tid
    input << "}";
    Religions religions(input);
 
-   ASSERT_THROW(religions.LinkReligions(), std::runtime_error);  // NOLINT : clang-tidy doens't like gtest
+   EXPECT_NO_THROW(religions.LinkReligions());  // NOLINT : clang-tidy doens't like gtest
 }
 
 }  // namespace ck3

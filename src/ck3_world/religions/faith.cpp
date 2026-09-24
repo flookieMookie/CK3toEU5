@@ -110,7 +110,8 @@ void ck3::Faith::LinkReligion(const std::map<long long, std::shared_ptr<Religion
    }
    else
    {
-      throw std::runtime_error("Faith " + std::to_string(faith_id_) + " belongs to a religion " +
-                               std::to_string(religion_.GetID()) + " that doens't exist in save!");
+      // The link is left empty rather than aborting the conversion.
+      Log(LogLevel::Warning) << "Faith " << faith_id_ << " belongs to religion " << religion_.GetID()
+                             << " which has no definition, ignoring it.";
    }
 }

@@ -138,7 +138,7 @@ TEST(CK3WorldCharactersTests,  // NOLINT : clang-tidy doens't like gtest
    std::cout.rdbuf(cout_buffer);
 }
 
-TEST(CK3WorldCharactersTests, ThrowsWhenNonexistentTitleDuringLinking)  // NOLINT : clang-tidy doens't like gtest
+TEST(CK3WorldCharactersTests, IgnoresNonexistentTitleDuringLinking)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream input;
    input << "landed_titles={\n";
@@ -167,13 +167,12 @@ TEST(CK3WorldCharactersTests, ThrowsWhenNonexistentTitleDuringLinking)  // NOLIN
       id_title_map.insert(std::pair(title.second->GetID(), title.second));
    }
 
-   ASSERT_THROW(character_realm.Link(id_title_map,  // NOLINT : clang-tidy doens't like gtest
+   EXPECT_NO_THROW(character_realm.Link(id_title_map,  // NOLINT : clang-tidy doens't like gtest
                     councillor_tasks.GetCouncillorTasks(),
-                    100),  // NOLINT(readability-magic-numbers) : "magic number"
-       std::runtime_error);
+                    100));  // NOLINT : clang-tidy doens't like gtest
 }
 
-TEST(CK3WorldCharactersTests, ThrowsWhenNonexistentCapitalDuringLinking)  // NOLINT : clang-tidy doens't like gtest
+TEST(CK3WorldCharactersTests, IgnoresNonexistentCapitalDuringLinking)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream input;
    input << "landed_titles={\n";
@@ -202,10 +201,9 @@ TEST(CK3WorldCharactersTests, ThrowsWhenNonexistentCapitalDuringLinking)  // NOL
       id_title_map.insert(std::pair(title.second->GetID(), title.second));
    }
 
-   ASSERT_THROW(character_realm.Link(id_title_map,  // NOLINT : clang-tidy doens't like gtest
+   EXPECT_NO_THROW(character_realm.Link(id_title_map,  // NOLINT : clang-tidy doens't like gtest
                     councillor_tasks.GetCouncillorTasks(),
-                    100),  // NOLINT(readability-magic-numbers) : "magic number"
-       std::runtime_error);
+                    100));  // NOLINT : clang-tidy doens't like gtest
 }
 
 }  // namespace ck3

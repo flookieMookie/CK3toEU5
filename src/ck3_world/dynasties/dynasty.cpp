@@ -7,6 +7,7 @@
 #include <string>
 
 #include "CommonRegexes.h"
+#include "Log.h"
 #include "ParserHelpers.h"
 #include "src/ck3_world/characters/character.hpp"
 #include "src/ck3_world/id_pointer_pair.hpp"
@@ -43,8 +44,11 @@ void ck3::Dynasty::LinkCharacters(const std::map<long long, std::shared_ptr<Char
       }
       else
       {
-         throw std::runtime_error("Dynasty " + std::to_string(savegame_dynasty_id_) + " has dynasty head " +
-                                  std::to_string(dynasty_head_->GetID()) + " which has no definition!");
+         // CK3 prunes characters over a long campaign, so on a save played towards 1337 plenty of
+         // dynasties name a head who is no longer in it. That is expected, not a reason to abort.
+         Log(LogLevel::Debug) << "Dynasty " << savegame_dynasty_id_ << " has dynasty head " << dynasty_head_->GetID()
+                              << " who is no longer in the save, ignoring them.";
+         dynasty_head_.reset();
       }
    }
 }

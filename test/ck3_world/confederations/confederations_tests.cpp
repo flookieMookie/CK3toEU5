@@ -99,7 +99,7 @@ TEST(CK3WorldConfederationsTests, CharactersCanBeLinked)  // NOLINT : clang-tidy
            ->GetName());
 }
 
-TEST(CK3WorldConfederationsTests, LinkingMissingCharacterThrows)  // NOLINT : clang-tidy doens't like gtest
+TEST(CK3WorldConfederationsTests, LinkingMissingCharacterIsIgnored)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream input;
    input << "database={\n";
@@ -115,8 +115,7 @@ TEST(CK3WorldConfederationsTests, LinkingMissingCharacterThrows)  // NOLINT : cl
    ck3::Characters characters;
    characters.ParseCharacters(input2);
 
-   ASSERT_THROW(confederations.LinkCharacters(characters),  // NOLINT : clang-tidy doens't like gtest
-       std::runtime_error);
+   EXPECT_NO_THROW(confederations.LinkCharacters(characters));  // NOLINT : clang-tidy doens't like gtest
 }
 
 TEST(CK3WorldConfederationsTests, HousesCanBeLinked)  // NOLINT : clang-tidy doens't like gtest
@@ -155,7 +154,7 @@ TEST(CK3WorldConfederationsTests, HousesCanBeLinked)  // NOLINT : clang-tidy doe
            ->GetName());
 }
 
-TEST(CK3WorldConfederationsTests, LinkingMissingHouseThrows)  // NOLINT : clang-tidy doens't like gtest
+TEST(CK3WorldConfederationsTests, LinkingMissingHouseIsIgnored)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream input;
    input << "database={\n";
@@ -172,11 +171,10 @@ TEST(CK3WorldConfederationsTests, LinkingMissingHouseThrows)  // NOLINT : clang-
    input2 << "}";
    const ck3::Dynasties dynasties(input2);
 
-   ASSERT_THROW(confederations.LinkHouses(dynasties),  // NOLINT : clang-tidy doens't like gtest
-       std::runtime_error);
+   EXPECT_NO_THROW(confederations.LinkHouses(dynasties));  // NOLINT : clang-tidy doens't like gtest
 }
 
-TEST(CK3WorldConfederationsTests, LinkingMissingLeaderHouseThrows)  // NOLINT : clang-tidy doens't like gtest
+TEST(CK3WorldConfederationsTests, LinkingMissingLeaderHouseIsIgnored)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream input;
    input << "database={\n";
@@ -193,6 +191,5 @@ TEST(CK3WorldConfederationsTests, LinkingMissingLeaderHouseThrows)  // NOLINT : 
    input2 << "}";
    const ck3::Dynasties dynasties(input2);
 
-   ASSERT_THROW(confederations.LinkHouses(dynasties),  // NOLINT : clang-tidy doens't like gtest
-       std::runtime_error);
+   EXPECT_NO_THROW(confederations.LinkHouses(dynasties));  // NOLINT : clang-tidy doens't like gtest
 }

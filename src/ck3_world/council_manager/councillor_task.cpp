@@ -7,6 +7,7 @@
 #include <string>
 
 #include "CommonRegexes.h"
+#include "Log.h"
 #include "Parser.h"
 #include "ParserHelpers.h"
 #include "src/ck3_world/id_pointer_pair.hpp"
@@ -37,22 +38,23 @@ void ck3::CouncillorTask::LinkCharacters(const std::map<long long, std::shared_p
       // Frozen or broken task
       return;
    }
-   if (characters.contains(holder_->GetID()))
+   // CK3 prunes characters over a long campaign. A task left pointing at one is treated like the
+   // frozen tasks above rather than aborting the conversion.
+   if (!characters.contains(holder_->GetID()))
    {
-      holder_->SetPointer(characters.at(holder_->GetID()));
+      Log(LogLevel::Debug) << "Councillor task " << task_id_ << " has holder " << holder_->GetID()
+                           << " who is no longer in the save, ignoring the task.";
+      holder_.reset();
+      return;
    }
-   else
-   {
-      throw std::runtime_error("Councillor task " + std::to_string(task_id_) + " has holder (owner) " +
-                               std::to_string(holder_->GetID()) + " who doens't exist in save!");
-   }
+   holder_->SetPointer(characters.at(holder_->GetID()));
    if (characters.contains(court_owner_.GetID()))
    {
       court_owner_.SetPointer(characters.at(court_owner_.GetID()));
    }
    else
    {
-      throw std::runtime_error("Councillor task " + std::to_string(task_id_) + " has court owner " +
-                               std::to_string(court_owner_.GetID()) + " who doens't exist in save!");
+      Log(LogLevel::Debug) << "Councillor task " << task_id_ << " has court owner " << court_owner_.GetID()
+                           << " who is no longer in the save.";
    }
 }

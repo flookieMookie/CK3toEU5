@@ -325,8 +325,11 @@ void ck3::Character::LinkCulture(const std::map<long long, std::shared_ptr<Cultu
    }
    else
    {
-      throw std::runtime_error("Character " + std::to_string(character_id_) + " " + name_ + " has culture " +
-                               std::to_string(culture_->GetID()) + " which has no definition!");
+      // A missing culture should not abort the whole conversion; the character is simply treated as
+      // having none, which the realm code already falls back from.
+      Log(LogLevel::Warning) << "Character " << character_id_ << " " << name_ << " has culture " << culture_->GetID()
+                             << " which has no definition, ignoring it.";
+      culture_.reset();
    }
 }
 
@@ -343,8 +346,9 @@ void ck3::Character::LinkFaith(const std::map<long long, std::shared_ptr<Faith>>
    }
    else
    {
-      throw std::runtime_error("Character " + std::to_string(character_id_) + " " + name_ + " has faith " +
-                               std::to_string(faith_->GetID()) + " which has no definition!");
+      Log(LogLevel::Warning) << "Character " << character_id_ << " " << name_ << " has faith " << faith_->GetID()
+                             << " which has no definition, ignoring it.";
+      faith_.reset();
    }
 }
 
@@ -361,8 +365,9 @@ void ck3::Character::LinkHouse(const std::map<long long, std::shared_ptr<House>>
    }
    else
    {
-      throw std::runtime_error("Character " + std::to_string(character_id_) + " " + name_ + " has house " +
-                               std::to_string(house_->GetID()) + " which has no definition!");
+      Log(LogLevel::Warning) << "Character " << character_id_ << " " << name_ << " has house " << house_->GetID()
+                             << " which has no definition, ignoring it.";
+      house_.reset();
    }
 }
 

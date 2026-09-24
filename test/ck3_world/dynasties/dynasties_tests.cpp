@@ -118,7 +118,7 @@ TEST(CK3WorldDynastiesTests, CharactersCanBeLinked)  // NOLINT : clang-tidy doen
            ->GetName());
 }
 
-TEST(CK3WorldDynastiesTests, LinkingMissingDynastyHeadThrows)  // NOLINT : clang-tidy doens't like gtest
+TEST(CK3WorldDynastiesTests, LinkingMissingDynastyHeadIsIgnored)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream input;
    input << "dynasties={\n";
@@ -133,8 +133,12 @@ TEST(CK3WorldDynastiesTests, LinkingMissingDynastyHeadThrows)  // NOLINT : clang
    ck3::Characters characters;
    characters.ParseCharacters(input2);
 
-   ASSERT_THROW(dynasties.LinkCharacters(characters),  // NOLINT : clang-tidy doens't like gtest
-       std::runtime_error);
+   // CK3 prunes dead characters, so a save played towards 1337 names heads who are gone. A player's
+   // conversion aborted on exactly this.
+   EXPECT_NO_THROW(dynasties.LinkCharacters(characters));  // NOLINT : clang-tidy doens't like gtest
+   const auto dynasty = dynasties.GetDynasties().find(15);  // NOLINT(readability-magic-numbers) : "magic number"
+   ASSERT_NE(dynasties.GetDynasties().end(), dynasty);
+   EXPECT_FALSE(dynasty->second->GetDynastyHead().has_value());
 }
 
 TEST(CK3WorldDynastiesTests, HouseHeadsCanBeLinked)  // NOLINT : clang-tidy doens't like gtest
@@ -165,7 +169,7 @@ TEST(CK3WorldDynastiesTests, HouseHeadsCanBeLinked)  // NOLINT : clang-tidy doen
            ->GetName());
 }
 
-TEST(CK3WorldDynastiesTests, LinkingMissingHouseHeadThrows)  // NOLINT : clang-tidy doens't like gtest
+TEST(CK3WorldDynastiesTests, LinkingMissingHouseHeadIsIgnored)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream input;
    input << "dynasty_house={\n";
@@ -180,8 +184,7 @@ TEST(CK3WorldDynastiesTests, LinkingMissingHouseHeadThrows)  // NOLINT : clang-t
    ck3::Characters characters;
    characters.ParseCharacters(input2);
 
-   ASSERT_THROW(dynasties.LinkCharacters(characters),  // NOLINT : clang-tidy doens't like gtest
-       std::runtime_error);
+   EXPECT_NO_THROW(dynasties.LinkCharacters(characters));  // NOLINT : clang-tidy doens't like gtest
 }
 
 TEST(CK3WorldDynastiesTests, HouseCanBeLinked)  // NOLINT : clang-tidy doens't like gtest
@@ -209,7 +212,7 @@ TEST(CK3WorldDynastiesTests, HouseCanBeLinked)  // NOLINT : clang-tidy doens't l
            ->GetDynastyID());
 }
 
-TEST(CK3WorldDynastiesTests, LinkingMissingDynastyThrows)  // NOLINT : clang-tidy doens't like gtest
+TEST(CK3WorldDynastiesTests, LinkingMissingDynastyIsIgnored)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream input;
    input << "dynasty_house={\n";
@@ -222,6 +225,5 @@ TEST(CK3WorldDynastiesTests, LinkingMissingDynastyThrows)  // NOLINT : clang-tid
    input << "}";
    ck3::Dynasties dynasties(input);
 
-   ASSERT_THROW(dynasties.LinkDynasties(),  // NOLINT : clang-tidy doens't like gtest
-       std::runtime_error);
+   EXPECT_NO_THROW(dynasties.LinkDynasties());  // NOLINT : clang-tidy doens't like gtest
 }

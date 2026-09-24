@@ -7,6 +7,7 @@
 #include <string>
 
 #include "CommonRegexes.h"
+#include "Log.h"
 #include "ParserHelpers.h"
 #include "dynasty.hpp"
 #include "src/ck3_world/characters/character.hpp"
@@ -53,8 +54,10 @@ void ck3::House::LinkHouseHead(const std::map<long long, std::shared_ptr<Charact
       }
       else
       {
-         throw std::runtime_error("House " + std::to_string(house_id_) + " has a house head " +
-                                  std::to_string(house_head_->GetID()) + " which has no definition!");
+         // As with dynasties, a pruned house head is expected on a long campaign.
+         Log(LogLevel::Debug) << "House " << house_id_ << " has house head " << house_head_->GetID()
+                              << " who is no longer in the save, ignoring them.";
+         house_head_.reset();
       }
    }
 }
@@ -67,7 +70,8 @@ void ck3::House::LinkDynasty(const std::map<long long, std::shared_ptr<Dynasty>>
    }
    else
    {
-      throw std::runtime_error("House " + std::to_string(house_id_) + " belongs to the dynasty " +
-                               std::to_string(dynasty_.GetID()) + " which has no definition!");
+      // The link is left empty rather than aborting the conversion.
+      Log(LogLevel::Warning) << "House " << house_id_ << " belongs to dynasty " << dynasty_.GetID()
+                             << " which has no definition, ignoring it.";
    }
 }

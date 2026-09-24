@@ -54,7 +54,7 @@ TEST(CK3WorldCouncillorTaskTests, CouncillorTaskLinksCharacters)  // NOLINT : cl
 }
 
 TEST(CK3WorldCouncillorTaskTests,  // NOLINT : clang-tidy doens't like gtest
-    CouncillorTaskLinkingThrowsErrorWhenCourtOwnerMissing)
+    CouncillorTaskLinkingToleratesMissingCourtOwner)
 {
    std::stringstream input;
    input << "type=task_foreign_affairs owner=1 court_owner = 2\n";
@@ -65,13 +65,11 @@ TEST(CK3WorldCouncillorTaskTests,  // NOLINT : clang-tidy doens't like gtest
    ck3::Characters characters;
    characters.ParseCharacters(input2);
 
-   ASSERT_THROW(  // NOLINT : clang-tidy doens't like gtest
-       councillor_task.LinkCharacters(characters.GetAliveCharacters()),
-       std::runtime_error);
+   EXPECT_NO_THROW(councillor_task.LinkCharacters(characters.GetAliveCharacters()));  // NOLINT : clang-tidy doens't like gtest
 }
 
 TEST(CK3WorldCouncillorTaskTests,  // NOLINT : clang-tidy doens't like gtest
-    CouncillorTaskLinkingThrowsErrorWhenHolderMissing)
+    CouncillorTaskLinkingToleratesMissingHolder)
 {
    std::stringstream input;
    input << "type=task_foreign_affairs owner=1 court_owner = 2\n";
@@ -82,9 +80,7 @@ TEST(CK3WorldCouncillorTaskTests,  // NOLINT : clang-tidy doens't like gtest
    ck3::Characters characters;
    characters.ParseCharacters(input2);
 
-   ASSERT_THROW(  // NOLINT : clang-tidy doens't like gtest
-       councillor_task.LinkCharacters(characters.GetAliveCharacters()),
-       std::runtime_error);
+   EXPECT_NO_THROW(councillor_task.LinkCharacters(characters.GetAliveCharacters()));  // NOLINT : clang-tidy doens't like gtest
 }
 
 TEST(CK3WorldCouncillorTaskTests, CouncillorTaskLinkingSkipsWhenNoHolder)  // NOLINT : clang-tidy doens't like gtest

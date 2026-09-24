@@ -61,7 +61,7 @@ TEST(CK3WorldCountyDetailsTests, FaithsCanBeLinked)  // NOLINT : clang-tidy doen
    ASSERT_EQ("theravada", county3->second->GetFaith().GetPointer().lock()->GetTag());
 }
 
-TEST(CK3WorldCountyDetailsTests, LinkingMissingFaithThrowsError)  // NOLINT : clang-tidy doens't like gtest
+TEST(CK3WorldCountyDetailsTests, LinkingMissingFaithIsIgnored)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream input;
    input << "counties = {\n";
@@ -77,8 +77,7 @@ TEST(CK3WorldCountyDetailsTests, LinkingMissingFaithThrowsError)  // NOLINT : cl
    input2 << "}";
    const ck3::Religions religions(input2);
 
-   ASSERT_THROW(details.LinkReligions(religions),  // NOLINT : clang-tidy doens't like gtest
-       std::runtime_error);
+   EXPECT_NO_THROW(details.LinkReligions(religions));  // NOLINT : clang-tidy doens't like gtest
 }
 
 TEST(CK3WorldCountyDetailsTests, CulturesCanBeLinked)  // NOLINT : clang-tidy doens't like gtest
@@ -105,7 +104,7 @@ TEST(CK3WorldCountyDetailsTests, CulturesCanBeLinked)  // NOLINT : clang-tidy do
    ASSERT_EQ("kru", county3->second->GetCulture().GetPointer().lock()->GetTemplate());
 }
 
-TEST(CK3WorldCountyDetailsTests, LinkingMissingCultureThrowsError)  // NOLINT : clang-tidy doens't like gtest
+TEST(CK3WorldCountyDetailsTests, LinkingMissingCultureIsIgnored)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream input;
    input << "counties = {\n";
@@ -121,6 +120,5 @@ TEST(CK3WorldCountyDetailsTests, LinkingMissingCultureThrowsError)  // NOLINT : 
    input2 << "}\n";
    const ck3::Cultures cultures(input2);
 
-   ASSERT_THROW(details.LinkCultures(cultures),  // NOLINT : clang-tidy doens't like gtest
-       std::runtime_error);
+   EXPECT_NO_THROW(details.LinkCultures(cultures));  // NOLINT : clang-tidy doens't like gtest
 }

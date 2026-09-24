@@ -7,6 +7,7 @@
 #include <string>
 
 #include "CommonRegexes.h"
+#include "Log.h"
 #include "ParserHelpers.h"
 #include "src/ck3_world/dynasties/house.hpp"
 #include "src/ck3_world/id_pointer_pair.hpp"
@@ -46,17 +47,20 @@ void ck3::Confederation::ParseConfederation(std::istream& input_stream)
 
 void ck3::Confederation::LinkCharacters(const std::map<long long, std::shared_ptr<Character>>& characters_map)
 {
-   for (auto& member: members_)
-   {
+   // CK3 prunes characters over a long campaign, so a member missing from the save is expected
+   // rather than a reason to abort. They are dropped.
+   std::erase_if(members_, [this, &characters_map](const auto& member) {
       if (characters_map.contains(member.GetID()))
       {
-         member.SetPointer(characters_map.at(member.GetID()));
+         return false;
       }
-      else
-      {
-         throw std::runtime_error("Confederation " + std::to_string(confederation_id_) + " has character member " +
-                                  std::to_string(member.GetID()) + " which has no definition!");
-      }
+      Log(LogLevel::Debug) << "Confederation " << confederation_id_ << " has character member " << member.GetID()
+                           << " who is no longer in the save, dropping them.";
+      return true;
+   });
+   for (auto& member: members_)
+   {
+      member.SetPointer(characters_map.at(member.GetID()));
    }
 }
 
@@ -70,20 +74,22 @@ void ck3::Confederation::LinkHouses(const std::map<long long, std::shared_ptr<Ho
       }
       else
       {
-         throw std::runtime_error("Confederation " + std::to_string(confederation_id_) + " has house leader " +
-                                  std::to_string(leader_house_->GetID()) + " which has no definition!");
+         Log(LogLevel::Warning) << "Confederation " << confederation_id_ << " has house leader " << leader_house_->GetID()
+                                << " which has no definition, ignoring it.";
+         leader_house_.reset();
       }
    }
-   for (auto& house: houses_)
-   {
+   std::erase_if(houses_, [this, &houses_map](const auto& house) {
       if (houses_map.contains(house.GetID()))
       {
-         house.SetPointer(houses_map.at(house.GetID()));
+         return false;
       }
-      else
-      {
-         throw std::runtime_error("Confederation " + std::to_string(confederation_id_) + " has house member " +
-                                  std::to_string(house.GetID()) + " which has no definition!");
-      }
+      Log(LogLevel::Warning) << "Confederation " << confederation_id_ << " has house member " << house.GetID()
+                             << " which has no definition, ignoring it.";
+      return true;
+   });
+   for (auto& house: houses_)
+   {
+      house.SetPointer(houses_map.at(house.GetID()));
    }
 }
