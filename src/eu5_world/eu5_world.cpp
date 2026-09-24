@@ -1126,6 +1126,8 @@ void eu5::EU5World::LogLandReport() const
                           << " could not, their ruler having no country or already being a subject.";
    }
    Log(LogLevel::Info) << "   " << alliances_.size() << " alliances between independent countries.";
+   Log(LogLevel::Info) << "   " << overlords_raised_to_subject_nations_
+                       << " overlords start at technology level 2 so EU5 lets them keep their vassals.";
    Log(LogLevel::Info) << "   " << wars_.size() << " CK3 wars carry on in EU5; " << wars_skipped_
                        << " could not, a side having no independent country.";
    Log(LogLevel::Info) << "   " << family_members_ << " family members converted alongside their rulers, " << heirs_
@@ -1340,6 +1342,26 @@ void eu5::EU5World::AssignDevelopment()
       else
       {
          country->SetTechnologyLevel(0);
+      }
+   }
+
+   // EU5 only lets a country hold vassals once it has Subject Nations, which needs Codified Laws - an
+   // advance countries start with from technology level 2. Every one of EU5's own overlords starts
+   // there or higher; a converted one below it has its vassals dissolved on the first day.
+   constexpr int kSubjectNationsLevel = 2;
+   std::map<std::string, std::shared_ptr<Country>> country_of_tag;
+   for (const auto& country: countries_)
+   {
+      country_of_tag.emplace(country->GetTag(), country);
+   }
+   for (const auto& dependency: dependencies_)
+   {
+      const auto liege = country_of_tag.find(dependency.liege_tag);
+      if (dependency.subject_type == "vassal" && liege != country_of_tag.end() &&
+          liege->second->GetTechnologyLevel() < kSubjectNationsLevel)
+      {
+         liege->second->SetTechnologyLevel(kSubjectNationsLevel);
+         ++overlords_raised_to_subject_nations_;
       }
    }
 }
