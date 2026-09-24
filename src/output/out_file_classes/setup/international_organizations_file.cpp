@@ -6,7 +6,6 @@
 #include <fstream>
 #include <iterator>
 #include <regex>
-#include <sstream>
 #include <string>
 #include <utility>
 
@@ -40,25 +39,6 @@ std::optional<std::string> ReligionOf(const std::string& organization)
       }
    }
    return std::nullopt;
-}
-
-// Removes each line naming a character the mod doesn't define: ruler terms of popes, patriarchs and
-// emperors from EU5's own history.
-std::string WithoutMissingCharacters(const std::string& organization, const std::set<std::string>& characters)
-{
-   std::istringstream lines(organization);
-   std::ostringstream kept;
-   std::string line;
-   while (std::getline(lines, line))
-   {
-      std::smatch character;
-      if (std::regex_search(line, character, kCharacter) && !characters.contains(character[1].str()))
-      {
-         continue;
-      }
-      kept << line << "\n";
-   }
-   return kept.str();
 }
 }  // namespace
 
@@ -143,7 +123,8 @@ void InternationalOrganizationsFile::Create(const std::filesystem::path& folder_
    }
 
    OrganizationMembership membership;
-   for (const auto* country: vanilla_countries_.GetUntouched(eu5_world_.GetConvertedLocations()))
+   const auto kept_countries = vanilla_countries_.GetUntouched(eu5_world_.GetConvertedLocations());
+   for (const auto* country: kept_countries)
    {
       membership.kept_tags.insert(country->tag);
    }
@@ -156,13 +137,7 @@ void InternationalOrganizationsFile::Create(const std::filesystem::path& folder_
    }
    // Converted characters never appear in EU5's own history, so only the vanilla ones carried over
    // for kept countries can be named there.
-   for (const auto& character: vanilla_characters_.GetCharacters())
-   {
-      if (membership.kept_tags.contains(character.tag))
-      {
-         membership.characters.insert(character.id);
-      }
-   }
+   membership.characters = KeptVanillaCharacters(vanilla_characters_, kept_countries);
 
    int kept = 0;
    int dropped = 0;

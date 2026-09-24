@@ -113,11 +113,12 @@ Output::Output(std::string name,
           file_name, file_writer_, eu5_world, vanilla_countries, eu5_directory, entry_depth));
    }
 
-   // EU5's own buildings and cardinals' seats, handed to whoever holds their land now.
-   for (const auto* file_name: {"07_cities_and_buildings.txt", "13_religion.txt"})
+   // EU5's own buildings, cardinals' seats, saints and works of art: buildings handed to whoever
+   // holds their land now, people who never lived in the converted world taken out.
+   for (const auto* file_name: {"07_cities_and_buildings.txt", "11_art.txt", "13_religion.txt"})
    {
-      start_folder->RegisterFileOrResource(
-          std::make_unique<VanillaBuildingsFile>(file_name, file_writer_, eu5_world, vanilla_countries, eu5_directory));
+      start_folder->RegisterFileOrResource(std::make_unique<VanillaLocationsFile>(
+          file_name, file_writer_, eu5_world, vanilla_countries, vanilla_characters, eu5_directory));
    }
 
    setup_folder->RegisterSubfolder(std::move(start_folder));

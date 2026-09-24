@@ -7,7 +7,9 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <vector>
 
+#include "src/eu5_world/eu5_vanilla_characters.hpp"
 #include "src/eu5_world/eu5_vanilla_countries.hpp"
 #include "src/eu5_world/eu5_world.hpp"
 #include "src/output/out_file_classes/output_file.hpp"
@@ -33,6 +35,16 @@ namespace out
 
 // Every country tag - three letter uppercase token - named outside comments.
 [[nodiscard]] std::set<std::string> TagsNamedIn(const std::string& text);
+
+// The text with every mention of a character the mod doesn't define taken out: lines naming one as
+// character = X - a saint, a pope's ruler term - go, and an artist = X is dropped from its work of
+// art, which stays. EU5's own history names people who never lived in a world converted from CK3.
+[[nodiscard]] std::string WithoutMissingCharacters(const std::string& text, const std::set<std::string>& characters);
+
+// The ids of the vanilla characters the mod keeps: those the vanilla countries kept on land CK3
+// doesn't cover need. See VanillaCharacters::KeptFor.
+[[nodiscard]] std::set<std::string> KeptVanillaCharacters(const eu5::VanillaCharacters& vanilla_characters,
+    const std::vector<const eu5::VanillaCountry*>& kept_countries);
 
 // Who holds what in the converted world, for handing EU5's own buildings to their new owners.
 struct BuildingOwnership
@@ -78,15 +90,18 @@ class VanillaStartFile: public OutputFile
    int entry_depth_;
 };
 
-// Writes EU5's own buildings - 07_cities_and_buildings, and the cardinals' seats in 13_religion - with
-// each building passed to whoever holds its location in the converted world. See FitBuilding.
-class VanillaBuildingsFile: public OutputFile
+// Writes one of EU5's start files about places - buildings in 07_cities_and_buildings, cardinals'
+// seats and saints in 13_religion, works of art in 11_art - fitted to the converted world: each
+// building passes to whoever holds its location now (see FitBuilding), and characters who no longer
+// exist are taken out (see WithoutMissingCharacters).
+class VanillaLocationsFile: public OutputFile
 {
   public:
-   VanillaBuildingsFile(const std::string& name,
+   VanillaLocationsFile(const std::string& name,
        FileWriter& file_writer,
        const eu5::EU5World& eu5_world,
        const eu5::VanillaCountries& vanilla_countries,
+       const eu5::VanillaCharacters& vanilla_characters,
        std::filesystem::path eu5_directory);
 
    void Create(const std::filesystem::path& folder_path) override;
@@ -94,6 +109,7 @@ class VanillaBuildingsFile: public OutputFile
   private:
    const eu5::EU5World& eu5_world_;
    const eu5::VanillaCountries& vanilla_countries_;
+   const eu5::VanillaCharacters& vanilla_characters_;
    std::filesystem::path eu5_directory_;
 };
 

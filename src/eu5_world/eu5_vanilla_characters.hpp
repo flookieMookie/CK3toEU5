@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include "src/eu5_world/eu5_vanilla_countries.hpp"
+
 namespace eu5
 {
 
@@ -31,6 +33,12 @@ class VanillaCharacters
    explicit VanillaCharacters(std::istream& input_stream);
 
    [[nodiscard]] const auto& GetCharacters() const { return characters_; }
+
+   // The characters the given kept countries need, in file order: their own, then any belonging to
+   // a country the conversion replaced that they name - Magnus Eriksson of Sweden ruling Greenland in
+   // personal union. Those are adopted into the first kept country naming them, their family links
+   // to characters left behind removed.
+   [[nodiscard]] std::vector<VanillaCharacter> KeptFor(const std::vector<const VanillaCountry*>& kept_countries) const;
 
   private:
    void Parse(std::istream& input_stream);

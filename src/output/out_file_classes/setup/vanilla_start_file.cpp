@@ -96,6 +96,40 @@ std::string out::KeepEntriesAbout(const std::string& contents, const int entry_d
    });
 }
 
+std::string out::WithoutMissingCharacters(const std::string& text, const std::set<std::string>& characters)
+{
+   static const std::regex kCharacter(R"(\bcharacter\s*=\s*([a-z0-9_]+))");
+   static const std::regex kArtist(R"(\bartist\s*=\s*([a-z0-9_]+)\s*)");
+   std::istringstream lines(text);
+   std::ostringstream kept;
+   std::string line;
+   while (std::getline(lines, line))
+   {
+      const auto code = WithoutComment(line);
+      if (std::smatch character; std::regex_search(code, character, kCharacter) && !characters.contains(character[1].str()))
+      {
+         continue;
+      }
+      if (std::smatch artist; std::regex_search(code, artist, kArtist) && !characters.contains(artist[1].str()))
+      {
+         line = artist.prefix().str() + artist.suffix().str() + line.substr(code.size());
+      }
+      kept << line << "\n";
+   }
+   return kept.str();
+}
+
+std::set<std::string> out::KeptVanillaCharacters(const eu5::VanillaCharacters& vanilla_characters,
+    const std::vector<const eu5::VanillaCountry*>& kept_countries)
+{
+   std::set<std::string> characters;
+   for (const auto& character: vanilla_characters.KeptFor(kept_countries))
+   {
+      characters.insert(character.id);
+   }
+   return characters;
+}
+
 std::optional<std::string> out::FitBuilding(const std::string& entry, const BuildingOwnership& ownership)
 {
    static const std::regex kOwner(R"(\btag\s*=\s*([A-Z0-9]{3})\b)");
@@ -188,19 +222,21 @@ void VanillaStartFile::Create(const std::filesystem::path& folder_path)
 namespace out
 {
 
-VanillaBuildingsFile::VanillaBuildingsFile(const std::string& name,
+VanillaLocationsFile::VanillaLocationsFile(const std::string& name,
     FileWriter& file_writer,
     const eu5::EU5World& eu5_world,
     const eu5::VanillaCountries& vanilla_countries,
+    const eu5::VanillaCharacters& vanilla_characters,
     std::filesystem::path eu5_directory):
     OutputFile(name, file_writer),
     eu5_world_(eu5_world),
     vanilla_countries_(vanilla_countries),
+    vanilla_characters_(vanilla_characters),
     eu5_directory_(std::move(eu5_directory))
 {
 }
 
-void VanillaBuildingsFile::Create(const std::filesystem::path& folder_path)
+void VanillaLocationsFile::Create(const std::filesystem::path& folder_path)
 {
    Log(LogLevel::Info) << "\tCreating " << GetName();
 
@@ -224,7 +260,8 @@ void VanillaBuildingsFile::Create(const std::filesystem::path& folder_path)
          ownership.vanilla_owners.emplace(location, country.tag);
       }
    }
-   for (const auto* country: vanilla_countries_.GetUntouched(eu5_world_.GetConvertedLocations()))
+   const auto kept_countries = vanilla_countries_.GetUntouched(eu5_world_.GetConvertedLocations());
+   for (const auto* country: kept_countries)
    {
       ownership.kept_tags.insert(country->tag);
       for (const auto& location: country->locations)
@@ -250,13 +287,15 @@ void VanillaBuildingsFile::Create(const std::filesystem::path& folder_path)
 
    int kept = 0;
    int dropped = 0;
-   const auto fitted = TransformEntries(contents, 1, [&](const std::string& entry) {
+   const auto buildings_fitted = TransformEntries(contents, 1, [&](const std::string& entry) {
       auto result = FitBuilding(entry, ownership);
       ++(result.has_value() ? kept : dropped);
       return result;
    });
-   Log(LogLevel::Info) << "\t<> " << GetName() << ": kept " << kept << " entries with their buildings passed to the "
-                       << "converted owners, dropped " << dropped << ".";
+   const auto fitted =
+       WithoutMissingCharacters(buildings_fitted, KeptVanillaCharacters(vanilla_characters_, kept_countries));
+   Log(LogLevel::Info) << "\t<> " << GetName() << ": kept " << kept << " entries fitted to the converted world, "
+                       << "dropped " << dropped << ".";
    UseFileWriter().CreateEmptyAndWrite(folder_path / GetName(), "\xEF\xBB\xBF" + fitted);
 }
 

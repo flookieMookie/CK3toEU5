@@ -134,4 +134,33 @@ TEST(OutputVanillaStartFileTests, EntriesWithoutAnOwnerAreKept)  // NOLINT : cla
    EXPECT_EQ(location, FitBuilding(location, MakeOwnership()));
 }
 
+TEST(OutputVanillaStartFileTests, SaintsWhoNeverLivedGo)  // NOLINT : clang-tidy doens't like gtest
+{
+   const std::string religion =
+       "\tcatholic = {\n"
+       "\t\tsaint = { character = eng_edward_the_confessor country = ENG }\n"
+       "\t\tsaint = { character = inc_pachacuti country = INC }\n"
+       "\t\t#saint = { character = hun_istvan_i_arpad country = HUN } # not yet scripted\n"
+       "\t}\n";
+
+   EXPECT_EQ(
+       "\tcatholic = {\n"
+       "\t\tsaint = { character = inc_pachacuti country = INC }\n"
+       "\t\t#saint = { character = hun_istvan_i_arpad country = HUN } # not yet scripted\n"
+       "\t}\n",
+       WithoutMissingCharacters(religion, {"inc_pachacuti"}));
+}
+
+TEST(OutputVanillaStartFileTests, WorksOfArtOutliveTheirMissingArtists)  // NOLINT : clang-tidy doens't like gtest
+{
+   const std::string art =
+       "\tpainting = { artist = pap_simone_martini location = naples quality = 50 } # Saint Louis\n"
+       "\tregalia = { artist = inc_goldsmith location = cuzco quality = 40 }\n";
+
+   EXPECT_EQ(
+       "\tpainting = { location = naples quality = 50 } # Saint Louis\n"
+       "\tregalia = { artist = inc_goldsmith location = cuzco quality = 40 }\n",
+       WithoutMissingCharacters(art, {"inc_goldsmith"}));
+}
+
 }  // namespace out

@@ -3,7 +3,6 @@
 #include <Date.h>
 #include <external/commonItems/Log.h>
 
-#include <set>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -122,19 +121,12 @@ void CharactersFile::Create(const std::filesystem::path& folder_path)
    }
 
    // The vanilla countries kept on land CK3 doesn't cover name their own rulers, heirs and regents.
-   std::set<std::string> kept_tags;
-   for (const auto* vanilla: vanilla_countries_.GetUntouched(eu5_world_.GetConvertedLocations()))
-   {
-      kept_tags.insert(vanilla->tag);
-   }
    int kept = 0;
-   for (const auto& character: vanilla_characters_.GetCharacters())
+   const auto kept_countries = vanilla_countries_.GetUntouched(eu5_world_.GetConvertedLocations());
+   for (const auto& character: vanilla_characters_.KeptFor(kept_countries))
    {
-      if (kept_tags.contains(character.tag))
-      {
-         output << "\n" << character.block;
-         ++kept;
-      }
+      output << "\n" << character.block;
+      ++kept;
    }
 
    output << "}\n";
