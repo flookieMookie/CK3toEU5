@@ -134,3 +134,10 @@ int eu5::StartingGoldFor(const double ck3_gold)
    constexpr double kHighest = 2500.0;
    return static_cast<int>(std::lround(std::clamp(ck3_gold, kLowest, kHighest)));
 }
+
+int eu5::AbilityFromSkill(const int ck3_skill)
+{
+   constexpr int kBase = 15;
+   constexpr int kPerSkillPoint = 6;
+   return std::clamp(kBase + kPerSkillPoint * ck3_skill, 0, 100);
+}

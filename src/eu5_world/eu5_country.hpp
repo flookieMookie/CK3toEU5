@@ -32,6 +32,12 @@ namespace eu5
 // from -500, a country deep in debt, to 2500 - so a late campaign's hoard doesn't break the economy.
 [[nodiscard]] int StartingGoldFor(double ck3_gold);
 
+// An EU5 ability - adm, dip or mil, 0 to 100 - from the CK3 skill it corresponds to: stewardship,
+// diplomacy, martial. The save holds base skills, which among CK3's landed characters average 5 with
+// a spread of about 3; EU5's own characters average about 46 with a spread of about 20. The scale
+// lines the two up, so an average CK3 ruler is an average EU5 one and a 14 is as good as EU5 gets.
+[[nodiscard]] int AbilityFromSkill(int ck3_skill);
+
 // Someone from the ruler's family converted alongside them. Parents and spouse are EU5 character
 // IDs, set only where that person is converted too.
 struct FamilyMember

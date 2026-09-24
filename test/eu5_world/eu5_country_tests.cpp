@@ -26,4 +26,13 @@ TEST(EU5WorldCountryTests, StartingGoldCarriesOverWithinEU5sRange)  // NOLINT : 
    EXPECT_EQ(-120, StartingGoldFor(-120.4));
 }
 
+TEST(EU5WorldCountryTests, SkillsBecomeAbilitiesOnEU5sScale)  // NOLINT : clang-tidy doens't like gtest
+{
+   EXPECT_EQ(15, AbilityFromSkill(0));
+   EXPECT_EQ(45, AbilityFromSkill(5));  // CK3's average ruler, EU5's average character
+   EXPECT_EQ(75, AbilityFromSkill(10));
+   EXPECT_EQ(100, AbilityFromSkill(30));
+   EXPECT_EQ(0, AbilityFromSkill(-5));
+}
+
 }  // namespace eu5

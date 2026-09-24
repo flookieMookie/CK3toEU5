@@ -24,6 +24,14 @@ date AgeOntoStartDate(const date& birth_date, const date& conversion_date)
    shifted.ChangeByYears(kGameStartDate.getYear() - conversion_date.getYear());
    return shifted;
 }
+
+// A character's EU5 abilities, from the CK3 skills they correspond to.
+void WriteAbilities(std::ostringstream& output, const ck3::Character& character)
+{
+   const auto& skills = character.GetSkills();
+   output << "\t\tadm = " << eu5::AbilityFromSkill(skills.stewardship) << " dip = " << eu5::AbilityFromSkill(skills.diplomacy)
+          << " mil = " << eu5::AbilityFromSkill(skills.martial) << "\n";
+}
 }  // namespace
 
 namespace out
@@ -64,6 +72,7 @@ void CharactersFile::Create(const std::filesystem::path& folder_path)
       output << "\t\tfirst_name = { name = " << country->GetRulerNameKey() << " }\n";
       output << "\t\tculture = " << *country->GetCulture() << "\n";
       output << "\t\treligion = " << *country->GetReligion() << "\n";
+      WriteAbilities(output, *holder);
       if (holder->IsFemale())
       {
          output << "\t\tfemale = yes\n";
@@ -90,6 +99,7 @@ void CharactersFile::Create(const std::filesystem::path& folder_path)
          output << "\t\tfirst_name = { name = " << eu5::CharacterNameKey(name) << " }\n";
          output << "\t\tculture = " << *country->GetCulture() << "\n";
          output << "\t\treligion = " << *country->GetReligion() << "\n";
+         WriteAbilities(output, *member.character);
          if (member.character->IsFemale())
          {
             output << "\t\tfemale = yes\n";
