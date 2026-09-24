@@ -124,3 +124,19 @@ std::string ck3::Realm::GetGovernment() const
    const auto& government = holder_->GetCharacterRealm()->GetGovernmentType();
    return government.empty() ? kUnknownName : government;
 }
+
+std::shared_ptr<ck3::Faith> ck3::Realm::GetFaith() const
+{
+   if (holder_ && holder_->GetFaith().has_value())
+   {
+      if (auto faith = holder_->GetFaith()->GetPointer().lock(); faith)
+      {
+         return faith;
+      }
+   }
+   if (capital_details_)
+   {
+      return capital_details_->GetFaith().GetPointer().lock();
+   }
+   return nullptr;
+}

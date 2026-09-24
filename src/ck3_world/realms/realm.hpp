@@ -11,6 +11,7 @@
 namespace ck3
 {
 class Character;
+class Faith;
 class CountyDetail;
 
 // An independent CK3 realm: a ruler, the top level titles they hold, and every county under them
@@ -31,6 +32,8 @@ class Realm
    [[nodiscard]] std::string GetRulerName() const;
    [[nodiscard]] std::string GetCultureName() const;
    [[nodiscard]] std::string GetFaithName() const;
+   // The faith itself, with the same fallback to the capital. Null when neither has one.
+   [[nodiscard]] std::shared_ptr<Faith> GetFaith() const;
    [[nodiscard]] std::string GetGovernment() const;
 
    void SetCapitalCounty(std::shared_ptr<Title> capital) { capital_county_ = std::move(capital); }

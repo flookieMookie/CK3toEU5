@@ -18,6 +18,7 @@
 #include "src/ck3_world/realms/realm.hpp"
 #include "src/ck3_world/realms/realms.hpp"
 #include "src/ck3_world/religions/faith.hpp"
+#include "src/ck3_world/religions/religion.hpp"
 #include "src/ck3_world/titles/landed_title.hpp"
 #include "src/ck3_world/titles/landed_titles.hpp"
 #include "src/ck3_world/titles/title.hpp"
@@ -37,6 +38,16 @@ IdTitleMap MapTitlesById(const ck3::Titles& titles)
       id_title_map.insert(std::pair(title.second->GetID(), title.second));
    }
    return id_title_map;
+}
+
+std::string JoinNames(const std::set<std::string>& names)
+{
+   std::string joined;
+   for (const auto& name: names)
+   {
+      joined += name + " ";
+   }
+   return joined;
 }
 
 long long ProvinceOfBarony(const std::string& barony_key, const ck3::LandedTitles& landed_titles)
@@ -467,20 +478,22 @@ void eu5::EU5World::AssignCapitalFaithAndCulture(Country& country,
 {
    const auto& definitions = context.game_definitions;
 
-   // religion_map has the same EU4 era drift - shiite for shia, and religions EU5 simply does not
-   // have. Anything EU5 would reject falls back to what it already believes the capital is.
+   // A faith that maps to nothing EU5 has, even through a relative, falls back to what EU5 already
+   // believes the capital is.
    const auto vanilla_religion =
        capital_location.has_value() ? context.location_data.GetDominantReligion(*capital_location) : std::string{};
-   const auto mapped_religion = context.mappers.GetReligionMapper().GetEU5Religion(realm.GetFaithName());
-   if (mapped_religion.has_value() && (!definitions.IsLoaded() || definitions.HasReligion(*mapped_religion)))
+   const auto faith = realm.GetFaith();
+   const auto mapped_religion = faith ? MapFaith(*faith, context) : std::nullopt;
+   if (mapped_religion.has_value())
    {
       country.SetReligion(*mapped_religion);
    }
    else if (!vanilla_religion.empty())
    {
-      if (mapped_religion.has_value())
+      if (faith)
       {
          ++religions_replaced_;
+         unmapped_faiths_.insert(faith->GetCustomName().empty() ? faith->GetTag() : faith->GetCustomName());
       }
       country.SetReligion(vanilla_religion);
    }
@@ -545,9 +558,7 @@ eu5::EU5World::CountyData eu5::EU5World::ReadCountyData(const ck3::Title& county
    // The county's own faith, not the ruler's, so religious minorities within a realm survive.
    if (const auto faith = county_detail->second->GetFaith().GetPointer().lock(); faith)
    {
-      const auto mapped = context.mappers.GetReligionMapper().GetEU5Religion(faith->GetTag());
-      const auto& definitions = context.game_definitions;
-      if (mapped.has_value() && (!definitions.IsLoaded() || definitions.HasReligion(*mapped)))
+      if (const auto mapped = MapFaith(*faith, context); mapped.has_value())
       {
          county_data.religion = *mapped;
       }
@@ -825,6 +836,43 @@ void eu5::EU5World::AssignFlags(const ck3::CK3World& ck3_world)
    }
 }
 
+std::optional<std::string> eu5::EU5World::MapFaith(const ck3::Faith& faith, const Context& context)
+{
+   const auto& mapper = context.mappers.GetReligionMapper();
+   const auto defined = [&context](const std::optional<std::string>& religion) {
+      return religion.has_value() &&
+             (!context.game_definitions.IsLoaded() || context.game_definitions.HasReligion(*religion));
+   };
+   if (auto religion = mapper.GetEU5Religion(faith.GetTag()); defined(religion))
+   {
+      return religion;
+   }
+
+   // A faith a campaign creates - a reformed pagan faith, a heresy - has no mapping of its own, and
+   // neither do a few of CK3's. Rather than let the land fall back to whatever EU5 put there, which
+   // may be another religion altogether, it takes the religion of the nearest faith that does map:
+   // the first of its own CK3 religion's faiths, so a heresy stays in its family.
+   const auto religion = faith.GetReligion().GetPointer().lock();
+   if (!religion)
+   {
+      return std::nullopt;
+   }
+   for (const auto& sibling_link: religion->GetFaiths())
+   {
+      const auto sibling = sibling_link.GetPointer().lock();
+      if (!sibling || sibling->GetID() == faith.GetID())
+      {
+         continue;
+      }
+      if (auto mapped = mapper.GetEU5Religion(sibling->GetTag()); defined(mapped))
+      {
+         faiths_by_relative_.insert(faith.GetCustomName().empty() ? faith.GetTag() : faith.GetCustomName());
+         return mapped;
+      }
+   }
+   return std::nullopt;
+}
+
 std::map<long long, std::shared_ptr<eu5::Country>> eu5::EU5World::MapCountriesByRuler() const
 {
    std::map<long long, std::shared_ptr<Country>> country_of_ruler;
@@ -959,10 +1007,17 @@ void eu5::EU5World::LogTagReport() const
 
 void eu5::EU5World::LogFaithAndCultureReport() const
 {
+   if (!faiths_by_relative_.empty())
+   {
+      Log(LogLevel::Info) << "   " << faiths_by_relative_.size()
+                          << " CK3 faiths with no EU5 religion of their own take their nearest relative's: "
+                          << JoinNames(faiths_by_relative_);
+   }
    if (religions_replaced_ > 0)
    {
       Log(LogLevel::Warning) << "   " << religions_replaced_
-                             << " countries had a mapped religion EU5 does not define, replaced with the capital's.";
+                             << " countries' faith maps to no EU5 religion even through a relative; they take the "
+                                "capital's. " << JoinNames(unmapped_faiths_);
    }
    Log(LogLevel::Info) << "   " << cultures_replaced_
                        << " locations had a culture CK3 disagrees with, rewritten from the county.";

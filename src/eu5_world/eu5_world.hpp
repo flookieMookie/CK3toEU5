@@ -23,6 +23,7 @@ namespace ck3
 class CK3World;
 class Character;
 class Culture;
+class Faith;
 class House;
 class Realm;
 class Title;
@@ -141,7 +142,10 @@ class EU5World
        const std::optional<std::string>& capital_location,
        const Context& context);
    void AddCounty(Country& country, const ck3::Title& county, Context& context);
-   [[nodiscard]] static CountyData ReadCountyData(const ck3::Title& county, const Context& context);
+   [[nodiscard]] CountyData ReadCountyData(const ck3::Title& county, const Context& context);
+   // The EU5 religion for a CK3 faith, falling back to its nearest mapped relative for the faiths a
+   // campaign creates and the few religion_map misses.
+   [[nodiscard]] std::optional<std::string> MapFaith(const ck3::Faith& faith, const Context& context);
    void ClaimLocation(Country& country,
        const std::string& location,
        const CountyData& county_data,
@@ -182,6 +186,10 @@ class EU5World
    std::size_t tributaries_skipped_ = 0;
    std::size_t family_members_ = 0;
    std::size_t heirs_ = 0;
+   // CK3 faiths with no religion of their own that took a relative's, by name.
+   std::set<std::string> faiths_by_relative_;
+   // CK3 faiths nothing maps, not even a relative, by name.
+   std::set<std::string> unmapped_faiths_;
    std::set<std::string> undefined_tags_;
 };
 
