@@ -59,6 +59,7 @@ void Converter::Convert()
        vanilla_countries,
        vanilla_characters,
        configuration_.GetEU5Directory(),
+       configuration_.GetCK3Directory(),
        ck3_culture_names,
        ck3_dynasty_names);
    output.GenerateOutputMod();

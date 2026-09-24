@@ -6,6 +6,7 @@
 #include "GameVersion.h"
 #include "Parser.h"
 #include "characters/characters.hpp"
+#include "coats_of_arms/coats_of_arms.hpp"
 #include "confederations/confederations.hpp"
 #include "contracts/vassal_contracts.hpp"
 #include "council_manager/councillor_tasks.hpp"
@@ -40,6 +41,7 @@ class CK3World
    [[nodiscard]] const auto& GetConfederations() const { return confederations_; }
    [[nodiscard]] const auto& GetVassalContracts() const { return vassal_contracts_; }
    [[nodiscard]] const auto& GetRelations() const { return relations_; }
+   [[nodiscard]] const auto& GetCoatsOfArms() const { return coats_of_arms_; }
    [[nodiscard]] const auto& GetCountyDetails() const { return county_details_; }
    [[nodiscard]] const auto& GetLandedTitles() const { return landed_titles_; }
    [[nodiscard]] const auto& GetRealms() const { return realms_; }
@@ -77,13 +79,13 @@ class CK3World
    Characters characters_;
    Dynasties dynasties_;
    Religions religions_;
-   // CoatsOfArms coats;
    CountyDetails county_details_;
    Cultures cultures_;
    // HouseNameScraper houseNameScraper;
    Confederations confederations_;
    VassalContracts vassal_contracts_;
    Relations relations_;
+   CoatsOfArms coats_of_arms_;
    CouncillorTasks councillor_tasks_;
    // Opinions opinions;
    // Wars wars;

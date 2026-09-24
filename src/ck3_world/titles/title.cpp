@@ -36,6 +36,9 @@ void ck3::Title::ParseTitle(std::istream& input_stream)
    parser.registerKeyword("key", [this](const std::string&, std::istream& input_stream) {
       key_ = commonItems::singleString(input_stream).getString();
    });
+   parser.registerKeyword("coat_of_arms_id", [this](const std::string&, std::istream& input_stream) {
+      coat_of_arms_id_ = commonItems::singleLlong(input_stream).getLlong();
+   });
    parser.registerKeyword("date", [this](const std::string&, std::istream& input_stream) {
       last_holder_change_date_ = date(commonItems::singleString(input_stream).getString());
    });

@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "eu5_country.hpp"
+#include "src/ck3_world/coats_of_arms/coats_of_arms.hpp"
 #include "eu5_culture_resolver.hpp"
 #include "eu5_game_definitions.hpp"
 #include "eu5_location_data.hpp"
@@ -82,6 +83,8 @@ class EU5World
    // Each allied pair of independent countries, as tags, once.
    [[nodiscard]] const auto& GetAlliances() const { return alliances_; }
    [[nodiscard]] const auto& GetDynasties() const { return dynasties_; }
+   // Country tag to the CK3 coat of arms it flies, for the tags the conversion invents.
+   [[nodiscard]] const auto& GetFlags() const { return flags_; }
    // The EU5 dynasty a converted character belongs to, or empty.
    [[nodiscard]] std::string DynastyIdOf(const ck3::Character& character) const;
    [[nodiscard]] const auto& GetDevelopmentBonuses() const { return development_bonuses_; }
@@ -97,6 +100,8 @@ class EU5World
    void AssignFamilies(const ck3::CK3World& ck3_world);
    // The houses of everyone converted, as EU5 dynasties.
    void AssignDynasties();
+   // Arms from CK3 for the countries EU5 has no flag for.
+   void AssignFlags(const ck3::CK3World& ck3_world);
    // The country each CK3 ruler became, among those written to the mod.
    [[nodiscard]] std::map<long long, std::shared_ptr<Country>> MapCountriesByRuler() const;
    // Vassals cannot outrank their liege, so ranks are settled after every country exists.
@@ -159,6 +164,7 @@ class EU5World
    std::vector<Dependency> dependencies_;
    std::set<std::pair<std::string, std::string>> alliances_;
    std::map<long long, ConvertedDynasty> dynasties_;
+   std::map<std::string, ck3::CoatOfArms> flags_;
    // EU5 location to the CK3 development of the county it came from, and the bonus that becomes.
    std::map<std::string, int> location_development_;
    std::map<std::string, int> development_bonuses_;

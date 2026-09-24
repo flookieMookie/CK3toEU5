@@ -221,6 +221,7 @@ set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/de
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/country_definitions_file.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/culture_definitions_file.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/dynasties_file.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/coats_of_arms_file.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/localization/country_names_file.cpp")
 
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/ck3_world.cpp")
@@ -230,6 +231,7 @@ set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/cultures/cultures.cpp"
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/cultures/culture_localization.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/contracts/vassal_contracts.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/relations/relations.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/coats_of_arms/coats_of_arms.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/characters/character.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/council_manager/councillor_task.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/council_manager/councillor_tasks.cpp")
@@ -395,6 +397,7 @@ set(TEST_SOURCES ${TEST_SOURCES} "test/ck3_world/contracts/vassal_contracts_test
 set(TEST_SOURCES ${TEST_SOURCES} "test/ck3_world/relations/relations_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/eu5_world/vanilla_characters_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/eu5_world/eu5_country_tests.cpp")
+set(TEST_SOURCES ${TEST_SOURCES} "test/ck3_world/coats_of_arms/coats_of_arms_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/culture_group_mapper/culture_group_mapper_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/tag_mapper/tag_mapper_tests.cpp")
 set(TEST_SOURCES ${TEST_SOURCES} "test/mappers/province_mapper/province_mapper_tests.cpp")

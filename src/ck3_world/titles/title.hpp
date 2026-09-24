@@ -45,6 +45,7 @@ class Title
    [[nodiscard]] const auto& GetClaimants() const { return claimants_; }
    [[nodiscard]] const auto& GetElectors() const { return electors_; }
    [[nodiscard]] const auto& GetLaws() const { return laws_; }
+   [[nodiscard]] const auto& GetCoatOfArmsId() const { return coat_of_arms_id_; }
    [[nodiscard]] const auto& GetHolder() const { return holder_; }
 
    [[nodiscard]] Level GetLevel() const { return level_; }
@@ -73,6 +74,7 @@ class Title
    date last_holder_change_date_;            // Date of the last holder change 9999.1.1 for never-held titles
 
    std::set<std::string> laws_;
+   std::optional<long long> coat_of_arms_id_;
    Level level_ = Level::kUnknown;
 
    // capital title is a COUNTY, even for county itself and baronies beneath it!

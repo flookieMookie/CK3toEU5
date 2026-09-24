@@ -371,6 +371,7 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
    AssignAlliances(ck3_world.GetRelations());
    AssignFamilies(ck3_world);
    AssignDynasties();
+   AssignFlags(ck3_world);
    AssignRanks();
    AssignDevelopment();
 
@@ -801,6 +802,29 @@ std::string eu5::EU5World::DynastyIdOf(const ck3::Character& character) const
    return dynasty == dynasties_.end() ? std::string{} : dynasty->second.id;
 }
 
+void eu5::EU5World::AssignFlags(const ck3::CK3World& ck3_world)
+{
+   const auto& coats_of_arms = ck3_world.GetCoatsOfArms().GetCoatsOfArms();
+   for (const auto& country: countries_)
+   {
+      // A tag EU5 defines has a flag EU5's artists drew for it, which is kept. The tags the
+      // conversion invents have none, and would fly a blank.
+      if (!country->IsWritten() || !country->NeedsDefinition())
+      {
+         continue;
+      }
+      const auto& coat_of_arms_id = country->GetSourceRealm()->GetPrimaryTitle()->GetCoatOfArmsId();
+      if (!coat_of_arms_id.has_value())
+      {
+         continue;
+      }
+      if (const auto coat_of_arms = coats_of_arms.find(*coat_of_arms_id); coat_of_arms != coats_of_arms.end())
+      {
+         flags_.emplace(country->GetTag(), coat_of_arms->second);
+      }
+   }
+}
+
 std::map<long long, std::shared_ptr<eu5::Country>> eu5::EU5World::MapCountriesByRuler() const
 {
    std::map<long long, std::shared_ptr<Country>> country_of_ruler;
@@ -906,6 +930,7 @@ void eu5::EU5World::LogLandReport() const
    Log(LogLevel::Info) << "   " << family_members_ << " family members converted alongside their rulers, " << heirs_
                        << " of the countries with a named heir.";
    Log(LogLevel::Info) << "   " << dynasties_.size() << " CK3 houses become EU5 dynasties.";
+   Log(LogLevel::Info) << "   " << flags_.size() << " countries without an EU5 flag fly their CK3 coat of arms.";
 }
 
 void eu5::EU5World::LogTagReport() const

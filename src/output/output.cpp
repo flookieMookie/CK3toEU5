@@ -11,6 +11,7 @@
 #include "out_file_classes/localization/country_names_file.hpp"
 #include "out_file_classes/metadata/metadata.hpp"
 #include "out_file_classes/output_folder.hpp"
+#include "out_file_classes/setup/coats_of_arms_file.hpp"
 #include "out_file_classes/setup/characters_file.hpp"
 #include "out_file_classes/setup/countries_file.hpp"
 #include "out_file_classes/setup/country_definitions_file.hpp"
@@ -39,6 +40,7 @@ Output::Output(std::string name,
     const eu5::VanillaCountries& vanilla_countries,
     const eu5::VanillaCharacters& vanilla_characters,
     const std::filesystem::path& eu5_directory,
+    const std::filesystem::path& ck3_directory,
     const commonItems::LocalizationDatabase& ck3_culture_names,
     const commonItems::LocalizationDatabase& ck3_dynasty_names):
     mod_name_(std::move(name)),
@@ -111,6 +113,24 @@ Output::Output(std::string name,
       localization_folder->RegisterSubfolder(std::move(language_folder));
    }
    main_menu_folder->RegisterSubfolder(std::move(localization_folder));
+
+   // Coats of arms, also under main_menu as in the game: the definitions in common, and the CK3 art
+   // they need that EU5 lacks in gfx.
+   auto common_folder = std::make_unique<OutputFolder>("common", folder_manager_);
+   auto common_coat_of_arms_folder = std::make_unique<OutputFolder>("coat_of_arms", folder_manager_);
+   auto definitions_folder = std::make_unique<OutputFolder>("coat_of_arms", folder_manager_);
+   definitions_folder->RegisterFileOrResource(
+       std::make_unique<CoatsOfArmsFile>("00_converted_coats_of_arms.txt", file_writer_, eu5_world));
+   common_coat_of_arms_folder->RegisterSubfolder(std::move(definitions_folder));
+   common_folder->RegisterSubfolder(std::move(common_coat_of_arms_folder));
+   main_menu_folder->RegisterSubfolder(std::move(common_folder));
+
+   auto gfx_folder = std::make_unique<OutputFolder>("gfx", folder_manager_);
+   auto art_folder = std::make_unique<OutputFolder>("coat_of_arms", folder_manager_);
+   art_folder->RegisterFileOrResource(std::make_unique<CoatOfArmsTextures>(
+       "coat_of_arms_art", file_writer_, eu5_world, ck3_directory, eu5_directory));
+   gfx_folder->RegisterSubfolder(std::move(art_folder));
+   main_menu_folder->RegisterSubfolder(std::move(gfx_folder));
 
    mod_folder->RegisterSubfolder(std::move(main_menu_folder));
 
