@@ -3,13 +3,16 @@
 #include <Date.h>
 #include <external/commonItems/Log.h>
 
+#include <set>
 #include <sstream>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "src/ck3_world/characters/character.hpp"
 #include "src/ck3_world/realms/realm.hpp"
 #include "src/eu5_world/eu5_country.hpp"
+#include "src/eu5_world/eu5_ruler_traits.hpp"
 
 namespace
 {
@@ -25,12 +28,28 @@ date AgeOntoStartDate(const date& birth_date, const date& conversion_date)
    return shifted;
 }
 
-// A character's EU5 abilities, from the CK3 skills they correspond to.
-void WriteAbilities(std::ostringstream& output, const ck3::Character& character)
+// A character's EU5 abilities, from the CK3 skills they correspond to, and the ruler traits their
+// CK3 traits become.
+void WriteAbilities(std::ostringstream& output, const ck3::Character& character, const std::vector<std::string>& trait_names)
 {
    const auto& skills = character.GetSkills();
-   output << "\t\tadm = " << eu5::AbilityFromSkill(skills.stewardship) << " dip = " << eu5::AbilityFromSkill(skills.diplomacy)
-          << " mil = " << eu5::AbilityFromSkill(skills.martial) << "\n";
+   const eu5::Abilities abilities{.adm = eu5::AbilityFromSkill(skills.stewardship),
+       .dip = eu5::AbilityFromSkill(skills.diplomacy),
+       .mil = eu5::AbilityFromSkill(skills.martial)};
+   output << "\t\tadm = " << abilities.adm << " dip = " << abilities.dip << " mil = " << abilities.mil << "\n";
+
+   std::set<std::string> ck3_traits;
+   for (const auto trait_id: character.GetTraits())
+   {
+      if (trait_id >= 0 && static_cast<std::size_t>(trait_id) < trait_names.size())
+      {
+         ck3_traits.insert(trait_names[static_cast<std::size_t>(trait_id)]);
+      }
+   }
+   for (const auto& trait: eu5::RulerTraitsFor(ck3_traits, abilities))
+   {
+      output << "\t\truler_trait = " << trait << "\n";
+   }
 }
 }  // namespace
 
@@ -72,7 +91,7 @@ void CharactersFile::Create(const std::filesystem::path& folder_path)
       output << "\t\tfirst_name = { name = " << country->GetRulerNameKey() << " }\n";
       output << "\t\tculture = " << *country->GetCulture() << "\n";
       output << "\t\treligion = " << *country->GetReligion() << "\n";
-      WriteAbilities(output, *holder);
+      WriteAbilities(output, *holder, eu5_world_.GetCK3TraitNames());
       if (holder->IsFemale())
       {
          output << "\t\tfemale = yes\n";
@@ -99,7 +118,7 @@ void CharactersFile::Create(const std::filesystem::path& folder_path)
          output << "\t\tfirst_name = { name = " << eu5::CharacterNameKey(name) << " }\n";
          output << "\t\tculture = " << *country->GetCulture() << "\n";
          output << "\t\treligion = " << *country->GetReligion() << "\n";
-         WriteAbilities(output, *member.character);
+         WriteAbilities(output, *member.character, eu5_world_.GetCK3TraitNames());
          if (member.character->IsFemale())
          {
             output << "\t\tfemale = yes\n";

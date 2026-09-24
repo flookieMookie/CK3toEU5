@@ -196,6 +196,10 @@ void ck3::CK3World::ParseGamestate(std::istream& input_stream, const commonItems
       coats_of_arms_ = CoatsOfArms(input_stream);
       Log(LogLevel::Info) << "<> Loaded " << coats_of_arms_.GetCoatsOfArms().size() << " coats of arms.";
    });
+   // Characters name their traits by position in this list.
+   parser.registerKeyword("traits_lookup", [this](const std::string&, std::istream& input_stream) {
+      trait_names_ = commonItems::getStrings(input_stream);
+   });
    parser.registerKeyword("wars", [this](const std::string&, std::istream& input_stream) {
       Log(LogLevel::Info) << "-> Loading wars.";
       wars_ = Wars(input_stream);

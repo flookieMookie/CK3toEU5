@@ -305,6 +305,7 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
     const GameDefinitions& game_definitions,
     const LocationData& location_data):
     conversion_date_(ck3_world.GetConversionDate()),
+    ck3_trait_names_(ck3_world.GetTraitNames()),
     culture_resolver_(game_definitions, mappers.GetCultureGroupMapper(), mappers.GetLanguageMapper())
 {
    Context context{ck3_world,

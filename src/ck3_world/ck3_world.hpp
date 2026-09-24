@@ -43,6 +43,8 @@ class CK3World
    [[nodiscard]] const auto& GetVassalContracts() const { return vassal_contracts_; }
    [[nodiscard]] const auto& GetRelations() const { return relations_; }
    [[nodiscard]] const auto& GetWars() const { return wars_; }
+   // Trait names, indexed by the IDs characters' traits carry.
+   [[nodiscard]] const auto& GetTraitNames() const { return trait_names_; }
    [[nodiscard]] const auto& GetCoatsOfArms() const { return coats_of_arms_; }
    [[nodiscard]] const auto& GetCountyDetails() const { return county_details_; }
    [[nodiscard]] const auto& GetLandedTitles() const { return landed_titles_; }
@@ -91,6 +93,7 @@ class CK3World
    VassalContracts vassal_contracts_;
    Relations relations_;
    Wars wars_;
+   std::vector<std::string> trait_names_;
    CoatsOfArms coats_of_arms_;
    CouncillorTasks councillor_tasks_;
    // Opinions opinions;

@@ -96,6 +96,8 @@ class EU5World
    // The CK3 save's date, so converted rulers can be aged onto EU5's start date instead of being
    // born five centuries before the campaign begins.
    [[nodiscard]] const auto& GetConversionDate() const { return conversion_date_; }
+   // CK3's trait names, indexed by the IDs its characters' traits carry.
+   [[nodiscard]] const auto& GetCK3TraitNames() const { return ck3_trait_names_; }
    [[nodiscard]] const auto& GetLocationReligions() const { return location_religions_; }
    [[nodiscard]] const auto& GetLocationCultures() const { return location_cultures_; }
    [[nodiscard]] const auto& GetCultureResolver() const { return culture_resolver_; }
@@ -184,6 +186,7 @@ class EU5World
 
    std::vector<std::shared_ptr<Country>> countries_;
    date conversion_date_ = date("1.1.1");
+   std::vector<std::string> ck3_trait_names_;
    // EU5 location to the religion of the CK3 county it was converted from.
    std::map<std::string, std::string> location_religions_;
    // EU5 location to the culture converted from the CK3 county, where the two disagree.
