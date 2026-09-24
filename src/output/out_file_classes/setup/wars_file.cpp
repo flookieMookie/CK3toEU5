@@ -74,6 +74,40 @@ std::string out::WriteWar(const eu5::ConvertedWar& war, const date& conversion_d
    return output.str();
 }
 
+std::string out::WriteLevies(const std::vector<eu5::ConvertedWar>& wars,
+    const std::map<std::string, std::string>& capitals,
+    const eu5::MapAreas& map_areas)
+{
+   std::set<std::string> raised;
+   std::ostringstream output;
+   for (const auto& war: wars)
+   {
+      for (const auto* side: {&war.attackers, &war.defenders})
+      {
+         for (const auto& participant: *side)
+         {
+            const auto capital = capitals.find(participant.tag);
+            if (capital == capitals.end() || !raised.insert(participant.tag).second)
+            {
+               continue;
+            }
+            const auto area = map_areas.AreaOf(capital->second);
+            if (!area.has_value())
+            {
+               continue;
+            }
+            output << "\n\tlevy = {\n";
+            output << "\t\tcountry = " << participant.tag << "\n";
+            output << "\t\tarea = " << *area << "\n";
+            output << "\t\tlevy = 1\n";
+            output << "\t\tlocation = " << capital->second << "\n";
+            output << "\t}\n";
+         }
+      }
+   }
+   return output.str();
+}
+
 namespace out
 {
 

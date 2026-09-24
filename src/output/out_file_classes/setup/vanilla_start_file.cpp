@@ -181,12 +181,14 @@ VanillaStartFile::VanillaStartFile(const std::string& name,
     const eu5::EU5World& eu5_world,
     const eu5::VanillaCountries& vanilla_countries,
     std::filesystem::path eu5_directory,
-    const int entry_depth):
+    const int entry_depth,
+    std::function<std::string()> converted_entries):
     OutputFile(name, file_writer),
     eu5_world_(eu5_world),
     vanilla_countries_(vanilla_countries),
     eu5_directory_(std::move(eu5_directory)),
-    entry_depth_(entry_depth)
+    entry_depth_(entry_depth),
+    converted_entries_(std::move(converted_entries))
 {
 }
 
@@ -211,7 +213,12 @@ void VanillaStartFile::Create(const std::filesystem::path& folder_path)
    {
       kept_tags.insert(country->tag);
    }
-   const auto kept = KeepEntriesAbout(contents, entry_depth_, kept_tags);
+   auto kept = KeepEntriesAbout(contents, entry_depth_, kept_tags);
+   if (converted_entries_)
+   {
+      const auto closing = kept.rfind('}');
+      kept.insert(closing == std::string::npos ? kept.size() : closing, converted_entries_());
+   }
    Log(LogLevel::Info) << "\t<> Kept " << GetName() << " only where it concerns the " << kept_tags.size()
                        << " vanilla countries the conversion keeps.";
    UseFileWriter().CreateEmptyAndWrite(folder_path / GetName(), "\xEF\xBB\xBF" + kept);

@@ -3,6 +3,7 @@
 #include <external/commonItems/ConverterVersion.h>
 
 #include <filesystem>
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -105,18 +106,36 @@ Output::Output(std::string name,
    start_folder->RegisterFileOrResource(
        std::make_unique<WarsFile>("16_wars.txt", file_writer_, eu5_world, vanilla_countries, eu5_directory));
 
-   // EU5's own rivalries, opinions, colonial claims, armies and AI personalities, kept only for the
+   // EU5's own rivalries, opinions, colonial claims and AI personalities, kept only for the
    // vanilla countries on land CK3 doesn't cover. Each entry sits one brace in, some two.
    for (const auto& [file_name, entry_depth]: {std::pair{"18_opinions.txt", 1},
             std::pair{"20_rivals.txt", 1},
             std::pair{"23_colonies.txt", 1},
             std::pair{"25_area_preferences.txt", 2},
-            std::pair{"26_ai_personalities.txt", 2},
-            std::pair{"27_armies.txt", 1}})
+            std::pair{"26_ai_personalities.txt", 2}})
    {
       start_folder->RegisterFileOrResource(std::make_unique<VanillaStartFile>(
           file_name, file_writer_, eu5_world, vanilla_countries, eu5_directory, entry_depth));
    }
+
+   // EU5's own armies likewise, and the levies the countries fighting the converted wars have raised.
+   start_folder->RegisterFileOrResource(std::make_unique<VanillaStartFile>("27_armies.txt",
+       file_writer_,
+       eu5_world,
+       vanilla_countries,
+       eu5_directory,
+       1,
+       [&eu5_world, eu5_directory]() {
+          std::map<std::string, std::string> capitals;
+          for (const auto& country: eu5_world.GetCountries())
+          {
+             if (country->IsWritten() && country->GetCapitalLocation().has_value())
+             {
+                capitals.emplace(country->GetTag(), *country->GetCapitalLocation());
+             }
+          }
+          return WriteLevies(eu5_world.GetWars(), capitals, eu5::MapAreas(eu5_directory));
+       }));
 
    // EU5's own buildings, cardinals' seats, saints and works of art: buildings handed to whoever
    // holds their land now, people who never lived in the converted world taken out.

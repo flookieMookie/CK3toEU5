@@ -79,7 +79,8 @@ class VanillaStartFile: public OutputFile
        const eu5::EU5World& eu5_world,
        const eu5::VanillaCountries& vanilla_countries,
        std::filesystem::path eu5_directory,
-       int entry_depth);
+       int entry_depth,
+       std::function<std::string()> converted_entries = {});
 
    void Create(const std::filesystem::path& folder_path) override;
 
@@ -88,6 +89,8 @@ class VanillaStartFile: public OutputFile
    const eu5::VanillaCountries& vanilla_countries_;
    std::filesystem::path eu5_directory_;
    int entry_depth_;
+   // Entries of the converted world's own, added inside the file's outer block after EU5's.
+   std::function<std::string()> converted_entries_;
 };
 
 // Writes one of EU5's start files about places - buildings in 07_cities_and_buildings, cardinals'

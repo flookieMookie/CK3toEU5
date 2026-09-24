@@ -1,3 +1,4 @@
+#include <sstream>
 #include <string>
 
 #include "gtest/gtest.h"
@@ -69,6 +70,24 @@ TEST(OutputWarsFileTests, UnnamedWarsUseEU5sOwnName)  // NOLINT : clang-tidy doe
 
    EXPECT_NE(std::string::npos, written.find("\twar = {\n"));
    EXPECT_NE(std::string::npos, written.find("name = \"NORMAL_WAR_NAME\""));
+}
+
+TEST(OutputWarsFileTests, EveryoneAtWarRaisesTheirLevyAtHome)  // NOLINT : clang-tidy doens't like gtest
+{
+   std::stringstream definitions;
+   definitions << "africa = { maghreb = { ifriqiya_region = { tunis_area = { tunis_province = { tunis carthage } } } } }\n";
+   definitions << "europe = { italy = { south_italy_region = { sicily_area = { palermo_province = { palermo } } } } }\n";
+   const eu5::MapAreas areas(definitions);
+   auto second_war = MakeWar();
+   second_war.attackers = {{"EGY", "Instigator", ""}};  // already raised for the first war
+
+   const auto levies =
+       WriteLevies({MakeWar(), second_war}, {{"TUN", "tunis"}, {"BYZ", "palermo"}, {"EGY", "cairo"}}, areas);
+
+   EXPECT_EQ(
+       "\n\tlevy = {\n\t\tcountry = TUN\n\t\tarea = tunis_area\n\t\tlevy = 1\n\t\tlocation = tunis\n\t}\n"
+       "\n\tlevy = {\n\t\tcountry = BYZ\n\t\tarea = sicily_area\n\t\tlevy = 1\n\t\tlocation = palermo\n\t}\n",
+       levies);
 }
 
 }  // namespace out
