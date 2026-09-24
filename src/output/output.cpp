@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "out_file_classes/localization/country_names_file.hpp"
 #include "out_file_classes/metadata/metadata.hpp"
@@ -20,6 +21,13 @@
 
 
 
+namespace
+{
+// The languages EU5 1.3 ships localisation for.
+const std::vector<std::string> kEU5Languages =
+    {"braz_por", "english", "french", "german", "japanese", "korean", "polish", "russian", "simp_chinese", "spanish", "turkish"};
+}  // namespace
+
 namespace out
 {
 
@@ -28,7 +36,8 @@ Output::Output(std::string name,
     const eu5::EU5World& eu5_world,
     const eu5::LocationData& location_data,
     const eu5::VanillaCountries& vanilla_countries,
-    const std::filesystem::path& eu5_directory):
+    const std::filesystem::path& eu5_directory,
+    const commonItems::LocalizationDatabase& ck3_culture_names):
     mod_name_(std::move(name)),
     converter_version_(std::move(converter_version)),
     output_path_(std::filesystem::path("output"))
@@ -78,15 +87,20 @@ Output::Output(std::string name,
    setup_folder->RegisterSubfolder(std::move(start_folder));
    main_menu_folder->RegisterSubfolder(std::move(setup_folder));
 
-   // Localisation sits under main_menu too, matching the game and its DLC.
+   // Localisation sits under main_menu too, matching the game and its DLC. Every language EU5 ships
+   // gets a file, or players outside English see raw keys where converted names should be.
    auto localization_folder = std::make_unique<OutputFolder>("localization", folder_manager_);
-   auto english_folder = std::make_unique<OutputFolder>("english", folder_manager_);
-
-   auto country_names_file =
-       std::make_unique<CountryNamesFile>("00_converted_countries_l_english.yml", file_writer_, eu5_world);
-   english_folder->RegisterFileOrResource(std::move(country_names_file));
-
-   localization_folder->RegisterSubfolder(std::move(english_folder));
+   for (const auto& language: kEU5Languages)
+   {
+      auto language_folder = std::make_unique<OutputFolder>(language, folder_manager_);
+      auto names_file = std::make_unique<CountryNamesFile>("00_converted_names_l_" + language + ".yml",
+          file_writer_,
+          eu5_world,
+          ck3_culture_names,
+          language);
+      language_folder->RegisterFileOrResource(std::move(names_file));
+      localization_folder->RegisterSubfolder(std::move(language_folder));
+   }
    main_menu_folder->RegisterSubfolder(std::move(localization_folder));
 
    mod_folder->RegisterSubfolder(std::move(main_menu_folder));

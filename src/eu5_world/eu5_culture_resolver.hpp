@@ -14,6 +14,11 @@ namespace ck3
 class Culture;
 }
 
+namespace commonItems
+{
+class LocalizationDatabase;
+}
+
 namespace mappers
 {
 class CultureGroupMapper;
@@ -78,6 +83,13 @@ class CultureResolver
    std::set<std::string> unresolved_;
 };
 
+
+// What a generated culture is called in one of EU5's languages: CK3's own name for it in that
+// language where CK3 has one, then in English, then the name the campaign gave it, then its key.
+[[nodiscard]] std::string CultureDisplayName(const std::string& key,
+    const CultureDefinition& definition,
+    const commonItems::LocalizationDatabase& ck3_names,
+    const std::string& language);
 }  // namespace eu5
 
 #endif  // EU5_CULTURE_RESOLVER_H

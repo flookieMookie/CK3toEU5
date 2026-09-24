@@ -2,6 +2,7 @@
 #define OUT_OUTPUT_MOD_H
 
 #include <external/commonItems/ConverterVersion.h>
+#include <external/commonItems/Localization/LocalizationDatabase.h>
 
 #include <ostream>
 #include <utility>
@@ -24,7 +25,8 @@ class Output  // class with the structure of the output mod
        const eu5::EU5World& eu5_world,
        const eu5::LocationData& location_data,
        const eu5::VanillaCountries& vanilla_countries,
-       const std::filesystem::path& eu5_directory);
+       const std::filesystem::path& eu5_directory,
+       const commonItems::LocalizationDatabase& ck3_culture_names);
 
    ~Output() = default;
 

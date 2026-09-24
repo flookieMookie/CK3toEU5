@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cctype>
 
+#include "eu5_country.hpp"
+#include "external/commonItems/Localization/LocalizationDatabase.h"
 #include "src/ck3_world/cultures/culture.hpp"
 #include "src/mappers/culture_group_mapper/culture_group_mapper.hpp"
 #include "src/mappers/language_mapper/language_mapper.hpp"
@@ -211,7 +213,8 @@ std::string eu5::CultureResolver::Resolve(const ck3::Culture& ck3_culture)
       generated_name = name + "_" + std::to_string(suffix++);
    }
 
-   generated_cultures_.insert_or_assign(generated_name, CultureDefinition{*language, groups});
+   generated_cultures_.insert_or_assign(generated_name,
+       CultureDefinition{*language, groups, ck3_culture.GetTemplate().value_or(""), ck3_culture.GetLocalizedName().value_or("")});
    resolved_.emplace(key, generated_name);
    return generated_name;
 }
@@ -232,4 +235,42 @@ std::map<std::string, eu5::CultureDefinition> eu5::CultureResolver::GetUsedGener
       }
    }
    return used;
+}
+
+std::string eu5::CultureDisplayName(const std::string& key,
+    const CultureDefinition& definition,
+    const commonItems::LocalizationDatabase& ck3_names,
+    const std::string& language)
+{
+   if (!definition.ck3_template.empty())
+   {
+      if (const auto block = ck3_names.GetLocalizationBlock(definition.ck3_template); block.has_value())
+      {
+         // A few CK3 names are built from other keys, which EU5 would show raw.
+         if (auto name = block->GetLocalization(language); !name.empty() && name.find_first_of("$[") == std::string::npos)
+         {
+            return name;
+         }
+      }
+   }
+   // A vanilla culture's name in the save is just its key again, which is no better than the key.
+   if (!definition.ck3_name.empty() && definition.ck3_name != definition.ck3_template)
+   {
+      return CleanCK3Name(definition.ck3_name);
+   }
+
+   std::string name;
+   bool start_of_word = true;
+   for (const char character: key)
+   {
+      if (character == '_')
+      {
+         name += ' ';
+         start_of_word = true;
+         continue;
+      }
+      name += start_of_word ? static_cast<char>(std::toupper(static_cast<unsigned char>(character))) : character;
+      start_of_word = false;
+   }
+   return name;
 }

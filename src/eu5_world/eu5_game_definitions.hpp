@@ -17,6 +17,11 @@ struct CultureDefinition
 {
    std::string language;
    std::vector<std::string> groups;
+   // Only for cultures the converter generates: the CK3 culture they came from, so they can be
+   // given CK3's name for it. The template is set for CK3's own cultures, the name for a
+   // campaign's hybrid and divergent ones.
+   std::string ck3_template;
+   std::string ck3_name;
 };
 
 // What EU5 actually defines: country tags, cultures and religions, scraped from the install.

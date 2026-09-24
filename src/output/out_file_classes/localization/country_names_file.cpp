@@ -5,6 +5,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include "src/ck3_world/realms/realm.hpp"
 #include "src/ck3_world/titles/title.hpp"
@@ -35,14 +36,38 @@ std::string Sanitize(const std::string& name)
    }
    return clean;
 }
+
+void WriteEntry(std::ostringstream& output, const std::string& key, const std::string& text)
+{
+   output << " " << key << ": \"" << Sanitize(text) << "\"\n";
+}
+
+// EU5 shows a country's adjective wherever it describes something as belonging to the country - its
+// army, its people. CK3 keeps one for every title; where it doesn't, the name reads better than a
+// raw key.
+std::string AdjectiveFor(const ck3::Realm& realm, const std::string& name)
+{
+   const auto& primary_title = realm.GetPrimaryTitle();
+   if (primary_title && !primary_title->GetAdjective().empty())
+   {
+      return eu5::CleanCK3Name(primary_title->GetAdjective());
+   }
+   return name;
+}
 }  // namespace
 
 namespace out
 {
 
-CountryNamesFile::CountryNamesFile(const std::string& name, FileWriter& file_writer, const eu5::EU5World& eu5_world):
+CountryNamesFile::CountryNamesFile(const std::string& name,
+    FileWriter& file_writer,
+    const eu5::EU5World& eu5_world,
+    const commonItems::LocalizationDatabase& ck3_culture_names,
+    std::string language):
     OutputFile(name, file_writer),
-    eu5_world_(eu5_world)
+    eu5_world_(eu5_world),
+    ck3_culture_names_(ck3_culture_names),
+    language_(std::move(language))
 {
 }
 
@@ -51,7 +76,7 @@ void CountryNamesFile::Create(const std::filesystem::path& folder_path)
    Log(LogLevel::Info) << "\tCreating " << GetName();
 
    std::ostringstream output;
-   output << kByteOrderMark << "l_english:\n";
+   output << kByteOrderMark << "l_" << language_ << ":\n";
 
    int written = 0;
    std::set<std::string> ruler_names;
@@ -61,12 +86,13 @@ void CountryNamesFile::Create(const std::filesystem::path& folder_path)
       {
          continue;
       }
-      const auto name = Sanitize(eu5::CleanCK3Name(country->GetSourceRealm()->GetRealmName()));
-      if (name.empty())
+      const auto name = eu5::CleanCK3Name(country->GetSourceRealm()->GetRealmName());
+      if (Sanitize(name).empty())
       {
          continue;
       }
-      output << " " << country->GetTag() << ": \"" << name << "\"\n";
+      WriteEntry(output, country->GetTag(), name);
+      WriteEntry(output, country->GetTag() + "_ADJ", AdjectiveFor(*country->GetSourceRealm(), name));
       ++written;
 
       // Ruler names are written as keys so the game shows them properly rather than a raw token.
@@ -75,12 +101,19 @@ void CountryNamesFile::Create(const std::filesystem::path& folder_path)
          const auto key = country->GetRulerNameKey();
          if (!key.empty() && ruler_names.insert(key).second)
          {
-            output << " " << key << ": \"" << Sanitize(country->GetRulerName()) << "\"\n";
+            WriteEntry(output, key, country->GetRulerName());
          }
       }
    }
 
-   Log(LogLevel::Info) << "\t<> Wrote " << written << " country names.";
+   const auto cultures = eu5_world_.GetCultureResolver().GetUsedGeneratedCultures();
+   for (const auto& [key, definition]: cultures)
+   {
+      WriteEntry(output, key, eu5::CultureDisplayName(key, definition, ck3_culture_names_, language_));
+   }
+
+   Log(LogLevel::Info) << "\t<> Wrote " << written << " country names and " << cultures.size() << " culture names in "
+                       << language_ << ".";
    UseFileWriter().CreateEmptyAndWrite(folder_path / GetName(), output.str());
 }
 
