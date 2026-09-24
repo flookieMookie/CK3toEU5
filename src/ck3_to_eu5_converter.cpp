@@ -48,6 +48,7 @@ void Converter::Convert()
 
    Log(LogLevel::Info) << "Outputting mod";
    const eu5::VanillaCountries vanilla_countries(configuration_.GetEU5Directory());
+   const eu5::VanillaCharacters vanilla_characters(configuration_.GetEU5Directory());
    const auto ck3_culture_names = ck3::LoadCultureLocalization(configuration_.GetCK3Directory());
    out::Output output =
        out::Output(configuration_.GetOutputName(),
@@ -55,6 +56,7 @@ void Converter::Convert()
        eu5_world,
        location_data,
        vanilla_countries,
+       vanilla_characters,
        configuration_.GetEU5Directory(),
        ck3_culture_names);
    output.GenerateOutputMod();

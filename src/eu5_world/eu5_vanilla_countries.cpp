@@ -1,5 +1,6 @@
 #include "eu5_vanilla_countries.hpp"
 
+#include <algorithm>
 #include <cctype>
 #include <fstream>
 #include <regex>
@@ -85,4 +86,21 @@ void eu5::VanillaCountries::Parse(const std::filesystem::path& file_path)
       CollectLocations(country.block, country.locations);
       countries_.emplace_back(std::move(country));
    }
+}
+
+std::vector<const eu5::VanillaCountry*> eu5::VanillaCountries::GetUntouched(
+    const std::set<std::string>& converted_locations) const
+{
+   std::vector<const VanillaCountry*> untouched;
+   for (const auto& country: countries_)
+   {
+      const bool overlaps = std::ranges::any_of(country.locations, [&converted_locations](const auto& location) {
+         return converted_locations.contains(location);
+      });
+      if (!country.locations.empty() && !overlaps)
+      {
+         untouched.push_back(&country);
+      }
+   }
+   return untouched;
 }

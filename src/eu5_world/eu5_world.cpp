@@ -985,3 +985,13 @@ void eu5::EU5World::AssignDevelopment()
       }
    }
 }
+
+std::set<std::string> eu5::EU5World::GetConvertedLocations() const
+{
+   std::set<std::string> locations;
+   for (const auto& country: countries_)
+   {
+      locations.insert(country->GetLocations().begin(), country->GetLocations().end());
+   }
+   return locations;
+}

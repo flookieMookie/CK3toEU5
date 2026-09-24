@@ -3,6 +3,7 @@
 #include <Date.h>
 #include <external/commonItems/Log.h>
 
+#include <set>
 #include <sstream>
 #include <string>
 
@@ -28,9 +29,15 @@ date AgeOntoStartDate(const date& birth_date, const date& conversion_date)
 namespace out
 {
 
-CharactersFile::CharactersFile(const std::string& name, FileWriter& file_writer, const eu5::EU5World& eu5_world):
+CharactersFile::CharactersFile(const std::string& name,
+    FileWriter& file_writer,
+    const eu5::EU5World& eu5_world,
+    const eu5::VanillaCountries& vanilla_countries,
+    const eu5::VanillaCharacters& vanilla_characters):
     OutputFile(name, file_writer),
-    eu5_world_(eu5_world)
+    eu5_world_(eu5_world),
+    vanilla_countries_(vanilla_countries),
+    vanilla_characters_(vanilla_characters)
 {
 }
 
@@ -45,7 +52,7 @@ void CharactersFile::Create(const std::filesystem::path& folder_path)
    int written = 0;
    for (const auto& country: eu5_world_.GetCountries())
    {
-      if (country->GetLocations().empty() || !country->HasRuler())
+      if (!country->IsWritten() || !country->HasRuler())
       {
          continue;
       }
@@ -56,6 +63,10 @@ void CharactersFile::Create(const std::filesystem::path& folder_path)
       output << "\t\tfirst_name = { name = " << country->GetRulerNameKey() << " }\n";
       output << "\t\tculture = " << *country->GetCulture() << "\n";
       output << "\t\treligion = " << *country->GetReligion() << "\n";
+      if (holder->IsFemale())
+      {
+         output << "\t\tfemale = yes\n";
+      }
       output << "\t\tbirth_date = "
              << AgeOntoStartDate(holder->GetBirthDate(), eu5_world_.GetConversionDate()).toString() << "\n";
       if (country->GetCapitalLocation().has_value())
@@ -67,9 +78,26 @@ void CharactersFile::Create(const std::filesystem::path& folder_path)
       ++written;
    }
 
+   // The vanilla countries kept on land CK3 doesn't cover name their own rulers, heirs and regents.
+   std::set<std::string> kept_tags;
+   for (const auto* vanilla: vanilla_countries_.GetUntouched(eu5_world_.GetConvertedLocations()))
+   {
+      kept_tags.insert(vanilla->tag);
+   }
+   int kept = 0;
+   for (const auto& character: vanilla_characters_.GetCharacters())
+   {
+      if (kept_tags.contains(character.tag))
+      {
+         output << "\n" << character.block;
+         ++kept;
+      }
+   }
+
    output << "}\n";
 
-   Log(LogLevel::Info) << "\t<> Wrote " << written << " rulers.";
+   Log(LogLevel::Info) << "\t<> Wrote " << written << " rulers and kept " << kept
+                       << " vanilla characters of the countries CK3 doesn't cover.";
    UseFileWriter().CreateEmptyAndWrite(folder_path / GetName(), output.str());
 }
 

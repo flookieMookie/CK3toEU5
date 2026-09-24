@@ -65,6 +65,8 @@ class EU5World
    [[nodiscard]] const auto& GetLocationCultures() const { return location_cultures_; }
    [[nodiscard]] const auto& GetCultureResolver() const { return culture_resolver_; }
    [[nodiscard]] const auto& GetDependencies() const { return dependencies_; }
+   // Every EU5 location any converted country holds.
+   [[nodiscard]] std::set<std::string> GetConvertedLocations() const;
    // Each allied pair of independent countries, as tags, once.
    [[nodiscard]] const auto& GetAlliances() const { return alliances_; }
    [[nodiscard]] const auto& GetDevelopmentBonuses() const { return development_bonuses_; }

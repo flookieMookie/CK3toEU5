@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "out_file_classes/output_folder.hpp"
+#include "src/eu5_world/eu5_vanilla_characters.hpp"
 #include "src/eu5_world/eu5_vanilla_countries.hpp"
 #include "src/eu5_world/eu5_world.hpp"
 #include "utils/file_writer_impl.hpp"
@@ -25,6 +26,7 @@ class Output  // class with the structure of the output mod
        const eu5::EU5World& eu5_world,
        const eu5::LocationData& location_data,
        const eu5::VanillaCountries& vanilla_countries,
+       const eu5::VanillaCharacters& vanilla_characters,
        const std::filesystem::path& eu5_directory,
        const commonItems::LocalizationDatabase& ck3_culture_names);
 

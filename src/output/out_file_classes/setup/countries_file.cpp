@@ -137,24 +137,10 @@ int WriteUntouchedVanillaCountries(std::ostringstream& output,
     const eu5::EU5World& eu5_world,
     const eu5::VanillaCountries& vanilla_countries)
 {
-   std::set<std::string> converted_locations;
-   for (const auto& country: eu5_world.GetCountries())
-   {
-      converted_locations.insert(country->GetLocations().begin(), country->GetLocations().end());
-   }
-
    int preserved = 0;
-   for (const auto& vanilla: vanilla_countries.GetCountries())
+   for (const auto* vanilla: vanilla_countries.GetUntouched(eu5_world.GetConvertedLocations()))
    {
-      // A country the conversion took any land from has been replaced by a converted one.
-      const bool overlaps = std::ranges::any_of(vanilla.locations, [&converted_locations](const auto& location) {
-         return converted_locations.contains(location);
-      });
-      if (vanilla.locations.empty() || overlaps)
-      {
-         continue;
-      }
-      output << "\n" << vanilla.block;
+      output << "\n" << vanilla->block;
       ++preserved;
    }
    return preserved;

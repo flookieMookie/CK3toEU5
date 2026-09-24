@@ -36,6 +36,7 @@ Output::Output(std::string name,
     const eu5::EU5World& eu5_world,
     const eu5::LocationData& location_data,
     const eu5::VanillaCountries& vanilla_countries,
+    const eu5::VanillaCharacters& vanilla_characters,
     const std::filesystem::path& eu5_directory,
     const commonItems::LocalizationDatabase& ck3_culture_names):
     mod_name_(std::move(name)),
@@ -71,7 +72,8 @@ Output::Output(std::string name,
        std::make_unique<CountriesFile>("10_countries.txt", file_writer_, eu5_world, vanilla_countries);
    start_folder->RegisterFileOrResource(std::move(countries_file));
 
-   auto characters_file = std::make_unique<CharactersFile>("05_characters.txt", file_writer_, eu5_world);
+   auto characters_file = std::make_unique<CharactersFile>(
+       "05_characters.txt", file_writer_, eu5_world, vanilla_countries, vanilla_characters);
    start_folder->RegisterFileOrResource(std::move(characters_file));
 
    auto pops_file = std::make_unique<PopsFile>("06_pops.txt", file_writer_, eu5_world, location_data);
