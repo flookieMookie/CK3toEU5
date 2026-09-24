@@ -65,6 +65,104 @@ const std::vector<std::string> kNeutralSocietyAxes = {"spiritualist_vs_humanist"
     "capital_economy_vs_traditional_economy",
     "individualism_vs_communalism",
     "outward_vs_inward"};
+
+bool ShouldWrite(const eu5::Country& country)
+{
+   if (country.GetLocations().empty())
+   {
+      return false;
+   }
+   // A tag EU5 does not define needs one written alongside this file. Where that could not be
+   // generated the tag would be rejected, and a rejected block takes the rest of the file with it,
+   // so the country is left out entirely.
+   return !country.NeedsDefinition() || (country.GetCulture().has_value() && country.GetReligion().has_value());
+}
+
+void WriteGovernment(std::ostringstream& output, const eu5::Country& country)
+{
+   const auto government = GovernmentFor(country.GetSourceRealm()->GetGovernment());
+   output << "\t\t\tgovernment = {\n";
+   output << "\t\t\t\ttype = " << government << "\n";
+   if (country.HasRuler())
+   {
+      output << "\t\t\t\truler = " << country.GetRulerId() << "\n";
+   }
+   output << "\t\t\t\tparliament = { parliament_type = " << ParliamentFor(government) << " }\n";
+   // EU5 wants every country placed on its society axes and complains for each one that is not.
+   // CK3 has no equivalent for most of them, so only the two its government type genuinely speaks
+   // to are leaned; the rest sit neutral rather than inventing a position.
+   output << "\t\t\t\tcentralization_vs_decentralization = " << (government == "tribe" ? 40 : -20) << "\n";
+   output << "\t\t\t\ttraditionalist_vs_innovative = " << (government == "tribe" ? -40 : -20) << "\n";
+   for (const auto& axis: kNeutralSocietyAxes)
+   {
+      output << "\t\t\t\t" << axis << " = 0\n";
+   }
+   output << "\t\t\t}\n\n";
+}
+
+void WriteLocations(std::ostringstream& output, const eu5::Country& country)
+{
+   output << "\t\t\town_control_core = {\n";
+   int on_this_line = 0;
+   for (const auto& location: country.GetLocations())
+   {
+      if (on_this_line == 0)
+      {
+         output << "\t\t\t\t";
+      }
+      output << location << " ";
+      if (++on_this_line == kLocationsPerLine)
+      {
+         output << "\n";
+         on_this_line = 0;
+      }
+   }
+   if (on_this_line != 0)
+   {
+      output << "\n";
+   }
+   output << "\t\t\t}\n";
+}
+
+void WriteCountry(std::ostringstream& output, const eu5::Country& country)
+{
+   output << "\n\t\t" << country.GetTag() << " = { # " << country.GetSourceRealm()->GetRealmName() << "\n";
+   output << "\t\t\tcountry_rank = " << country.GetRank() << "\n";
+   output << "\t\t\tstarting_technology_level = " << country.GetTechnologyLevel() << "\n\n";
+   WriteGovernment(output, country);
+   WriteLocations(output, country);
+   output << "\t\t}\n";
+}
+
+// Everything CK3 does not cover - the Americas, Oceania, much of Siberia - would otherwise be left
+// with no owner at all, since this file replaces EU5's wholesale. Vanilla countries whose land the
+// conversion never touched are carried over exactly as EU5 wrote them.
+int WriteUntouchedVanillaCountries(std::ostringstream& output,
+    const eu5::EU5World& eu5_world,
+    const eu5::VanillaCountries& vanilla_countries)
+{
+   std::set<std::string> converted_locations;
+   for (const auto& country: eu5_world.GetCountries())
+   {
+      converted_locations.insert(country->GetLocations().begin(), country->GetLocations().end());
+   }
+
+   int preserved = 0;
+   for (const auto& vanilla: vanilla_countries.GetCountries())
+   {
+      // A country the conversion took any land from has been replaced by a converted one.
+      const bool overlaps = std::ranges::any_of(vanilla.locations, [&converted_locations](const auto& location) {
+         return converted_locations.contains(location);
+      });
+      if (vanilla.locations.empty() || overlaps)
+      {
+         continue;
+      }
+      output << "\n" << vanilla.block;
+      ++preserved;
+   }
+   return preserved;
+}
 }  // namespace
 
 namespace out
@@ -91,92 +189,13 @@ void CountriesFile::Create(const std::filesystem::path& folder_path)
 
    for (const auto& country: eu5_world_.GetCountries())
    {
-      if (country->GetLocations().empty())
+      if (ShouldWrite(*country))
       {
-         continue;
+         WriteCountry(output, *country);
       }
-      // A tag EU5 does not define needs one written alongside this file. Where that could not be
-      // generated the tag would be rejected, and a rejected block takes the rest of the file with
-      // it, so the country is left out entirely.
-      if (country->NeedsDefinition() && (!country->GetCulture().has_value() || !country->GetReligion().has_value()))
-      {
-         continue;
-      }
-      output << "\n\t\t" << country->GetTag() << " = { # " << country->GetSourceRealm()->GetRealmName() << "\n";
-      output << "\t\t\tcountry_rank = " << country->GetRank() << "\n";
-      output << "\t\t\tstarting_technology_level = " << country->GetTechnologyLevel() << "\n\n";
-
-      const auto government = GovernmentFor(country->GetSourceRealm()->GetGovernment());
-      output << "\t\t\tgovernment = {\n";
-      output << "\t\t\t\ttype = " << government << "\n";
-      if (country->HasRuler())
-      {
-         output << "\t\t\t\truler = " << country->GetRulerId() << "\n";
-      }
-      output << "\t\t\t\tparliament = { parliament_type = " << ParliamentFor(government) << " }\n";
-      // EU5 wants every country placed on its society axes and complains for each one that is not.
-      // CK3 has no equivalent for most of them, so only the two its government type genuinely
-      // speaks to are leaned; the rest sit neutral rather than inventing a position.
-      output << "\t\t\t\tcentralization_vs_decentralization = " << (government == "tribe" ? 40 : -20) << "\n";
-      output << "\t\t\t\ttraditionalist_vs_innovative = " << (government == "tribe" ? -40 : -20) << "\n";
-      for (const auto& axis: kNeutralSocietyAxes)
-      {
-         output << "\t\t\t\t" << axis << " = 0\n";
-      }
-      output << "\t\t\t}\n\n";
-
-      output << "\t\t\town_control_core = {\n";
-
-      int on_this_line = 0;
-      for (const auto& location: country->GetLocations())
-      {
-         if (on_this_line == 0)
-         {
-            output << "\t\t\t\t";
-         }
-         output << location << " ";
-         if (++on_this_line == kLocationsPerLine)
-         {
-            output << "\n";
-            on_this_line = 0;
-         }
-      }
-      if (on_this_line != 0)
-      {
-         output << "\n";
-      }
-
-      output << "\t\t\t}\n";
-      output << "\t\t}\n";
    }
 
-   // Everything CK3 does not cover - the Americas, Oceania, much of Siberia - would otherwise be
-   // left with no owner at all, since this file replaces EU5's wholesale. Vanilla countries whose
-   // land the conversion never touched are carried over exactly as EU5 wrote them.
-   std::set<std::string> converted_locations;
-   for (const auto& country: eu5_world_.GetCountries())
-   {
-      converted_locations.insert(country->GetLocations().begin(), country->GetLocations().end());
-   }
-
-   int preserved = 0;
-   for (const auto& vanilla: vanilla_countries_.GetCountries())
-   {
-      if (vanilla.locations.empty())
-      {
-         continue;
-      }
-      // A country the conversion took any land from has been replaced by a converted one.
-      const bool overlaps = std::ranges::any_of(vanilla.locations, [&converted_locations](const auto& location) {
-         return converted_locations.contains(location);
-      });
-      if (overlaps)
-      {
-         continue;
-      }
-      output << "\n" << vanilla.block;
-      ++preserved;
-   }
+   const auto preserved = WriteUntouchedVanillaCountries(output, eu5_world_, vanilla_countries_);
    Log(LogLevel::Info) << "\t<> Kept " << preserved << " vanilla countries on land the conversion did not reach.";
 
    output << "\t}\n";

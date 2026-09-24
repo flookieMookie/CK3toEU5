@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <vector>
@@ -18,6 +19,9 @@
 namespace ck3
 {
 class CK3World;
+class Culture;
+class Realm;
+class Title;
 }
 
 namespace mappers
@@ -65,6 +69,51 @@ class EU5World
    void AssignRanks();
    // Carries CK3 development onto EU5 and derives a technology level from it.
    void AssignDevelopment();
+
+   // The steps each CK3 ruler goes through on its way to becoming a country, in the order the
+   // constructor runs them.
+   struct Context;
+   struct TagChoice
+   {
+      std::string tag;
+      bool generated = false;
+   };
+   // What a CK3 county carries onto every EU5 location made from it.
+   struct CountyData
+   {
+      std::string religion;
+      int development = -1;
+      std::shared_ptr<ck3::Culture> culture;
+   };
+   struct PopulationWeights
+   {
+      std::map<std::string, double> culture;
+      std::map<std::string, double> religion;
+   };
+
+   [[nodiscard]] static std::optional<std::string> ResolveCapitalLocation(const ck3::Realm& realm,
+       const Context& context);
+   [[nodiscard]] std::optional<TagChoice> ChooseTag(const ck3::Realm& realm,
+       const std::optional<std::string>& capital_location,
+       Context& context);
+   void MarkForDefinition(Country& country, const TagChoice& tag_choice, const Context& context);
+   void AssignCapitalFaithAndCulture(Country& country,
+       const ck3::Realm& realm,
+       const std::optional<std::string>& capital_location,
+       const Context& context);
+   void AddCounty(Country& country, const ck3::Title& county, Context& context);
+   [[nodiscard]] static CountyData ReadCountyData(const ck3::Title& county, const Context& context);
+   void ClaimLocation(Country& country,
+       const std::string& location,
+       const CountyData& county_data,
+       const Context& context);
+   [[nodiscard]] PopulationWeights WeighPopulation(const Country& country, const Context& context) const;
+   void AssignPopulationFaithAndCulture(Country& country, const Context& context);
+
+   void LogLandReport() const;
+   void LogTagReport() const;
+   void LogFaithAndCultureReport() const;
+   void LogCountryList() const;
 
    std::vector<std::shared_ptr<Country>> countries_;
    date conversion_date_ = date("1.1.1");
