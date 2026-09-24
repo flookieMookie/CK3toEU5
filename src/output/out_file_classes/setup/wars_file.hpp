@@ -21,6 +21,9 @@ namespace out
 // rulers' birthdays are.
 [[nodiscard]] std::string WriteWar(const eu5::ConvertedWar& war, const date& conversion_date);
 
+// A converted truce as EU5 writes its own, running on from the day EU5's own wars last acted.
+[[nodiscard]] std::string WriteTruce(const eu5::ConvertedTruce& truce);
+
 // The levies raised for the converted wars, as EU5 writes them in 27_armies: every country fighting
 // one raises its levy in the area of its capital, and it musters there - as EU5 starts Venice and
 // Verona, the countries at war in 1337.
@@ -29,7 +32,7 @@ namespace out
     const eu5::MapAreas& map_areas);
 
 // Writes 16_wars.txt: EU5's own wars among the vanilla countries the conversion keeps, and the
-// wars the CK3 save was in the middle of.
+// wars the CK3 save was in the middle of and the truces it held.
 class WarsFile: public OutputFile
 {
   public:

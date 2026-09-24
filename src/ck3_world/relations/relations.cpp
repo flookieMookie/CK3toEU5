@@ -1,6 +1,7 @@
 #include "relations.hpp"
 
 #include <algorithm>
+#include <optional>
 #include <sstream>
 #include <string>
 
@@ -26,6 +27,7 @@ void ck3::Relations::ParseActiveRelations(std::istream& input_stream)
       long long first = 0;
       long long second = 0;
       bool allied = false;
+      std::optional<date> truce_end;
       commonItems::parser relation_parser;
       relation_parser.registerKeyword("first", [&first](std::istream& value_stream) {
          first = commonItems::getLlong(value_stream);
@@ -37,13 +39,37 @@ void ck3::Relations::ParseActiveRelations(std::istream& input_stream)
          allied = true;
          commonItems::ignoreItem("alliances", value_stream);
       });
+      relation_parser.registerRegex(R"(truce_\d+)", [&truce_end](const std::string&, std::istream& truce_stream) {
+         commonItems::parser truce_parser;
+         truce_parser.registerKeyword("date", [&truce_end](std::istream& value_stream) {
+            const date end(commonItems::getString(value_stream));
+            if (!truce_end.has_value() || *truce_end < end)
+            {
+               truce_end = end;
+            }
+         });
+         truce_parser.registerRegex(commonItems::catchallRegex, commonItems::ignoreItem);
+         truce_parser.parseStream(truce_stream);
+      });
       relation_parser.registerRegex(commonItems::catchallRegex, commonItems::ignoreItem);
       auto blob_stream = std::stringstream(blob);
       relation_parser.parseStream(blob_stream);
 
-      if (allied && first != 0 && second != 0 && first != second)
+      if (first == 0 || second == 0 || first == second)
       {
-         alliances_.emplace(std::min(first, second), std::max(first, second));
+         continue;
+      }
+      const auto pair = std::pair(std::min(first, second), std::max(first, second));
+      if (allied)
+      {
+         alliances_.insert(pair);
+      }
+      if (truce_end.has_value())
+      {
+         if (const auto [known, added] = truces_.emplace(pair, *truce_end); !added && known->second < *truce_end)
+         {
+            known->second = *truce_end;
+         }
       }
    }
 }

@@ -90,4 +90,10 @@ TEST(OutputWarsFileTests, EveryoneAtWarRaisesTheirLevyAtHome)  // NOLINT : clang
        levies);
 }
 
+TEST(OutputWarsFileTests, TrucesRunOnFromEU5sStart)  // NOLINT : clang-tidy doens't like gtest
+{
+   EXPECT_EQ("\ttruce = {\n\t\tattacker = LAD\n\t\tdefender = RUT\n\t\tstart_date = 1337.3.1\n\t\tmonths = 40\n\t}\n",
+       WriteTruce({"LAD", "RUT", 40}));
+}
+
 }  // namespace out

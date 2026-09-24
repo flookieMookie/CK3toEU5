@@ -74,6 +74,18 @@ std::string out::WriteWar(const eu5::ConvertedWar& war, const date& conversion_d
    return output.str();
 }
 
+std::string out::WriteTruce(const eu5::ConvertedTruce& truce)
+{
+   std::ostringstream output;
+   output << "\ttruce = {\n";
+   output << "\t\tattacker = " << truce.first_tag << "\n";
+   output << "\t\tdefender = " << truce.second_tag << "\n";
+   output << "\t\tstart_date = " << kLastAction << "\n";
+   output << "\t\tmonths = " << truce.months << "\n";
+   output << "\t}\n";
+   return output.str();
+}
+
 std::string out::WriteLevies(const std::vector<eu5::ConvertedWar>& wars,
     const std::map<std::string, std::string>& capitals,
     const eu5::MapAreas& map_areas)
@@ -151,10 +163,15 @@ void WarsFile::Create(const std::filesystem::path& folder_path)
    {
       converted += "\n" + WriteWar(war, eu5_world_.GetConversionDate());
    }
+   for (const auto& truce: eu5_world_.GetTruces())
+   {
+      converted += "\n" + WriteTruce(truce);
+   }
    const auto closing = wars.rfind('}');
    wars.insert(closing == std::string::npos ? wars.size() : closing, converted);
 
-   Log(LogLevel::Info) << "\t<> Wrote " << eu5_world_.GetWars().size() << " wars from the CK3 save.";
+   Log(LogLevel::Info) << "\t<> Wrote " << eu5_world_.GetWars().size() << " wars and " << eu5_world_.GetTruces().size()
+                       << " truces from the CK3 save.";
    UseFileWriter().CreateEmptyAndWrite(folder_path / GetName(), "\xEF\xBB\xBF" + wars);
 }
 

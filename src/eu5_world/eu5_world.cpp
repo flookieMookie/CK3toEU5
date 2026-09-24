@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <map>
 #include <set>
 #include <string>
@@ -382,6 +383,7 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
    AssignTributaries(ck3_world.GetVassalContracts());
    AssignAlliances(ck3_world.GetRelations());
    AssignWars(context);
+   AssignTruces(ck3_world.GetRelations());
    AssignFamilies(ck3_world);
    AssignDynasties();
    AssignFlags(ck3_world);
@@ -693,6 +695,56 @@ void eu5::EU5World::AssignAlliances(const ck3::Relations& relations)
       }
       alliances_.emplace(std::min(first->second->GetTag(), second->second->GetTag()),
           std::max(first->second->GetTag(), second->second->GetTag()));
+   }
+}
+
+void eu5::EU5World::AssignTruces(const ck3::Relations& relations)
+{
+   const auto country_of_ruler = MapCountriesByRuler();
+   std::set<std::pair<std::string, std::string>> at_war;
+   for (const auto& war: wars_)
+   {
+      for (const auto& attacker: war.attackers)
+      {
+         for (const auto& defender: war.defenders)
+         {
+            at_war.emplace(std::min(attacker.tag, defender.tag), std::max(attacker.tag, defender.tag));
+         }
+      }
+   }
+
+   std::map<std::pair<std::string, std::string>, int> months_left;
+   for (const auto& [characters, end]: relations.GetTruces())
+   {
+      const auto first = country_of_ruler.find(characters.first);
+      const auto second = country_of_ruler.find(characters.second);
+      // Truces bind rulers; only those of independent countries mean anything in EU5, where a subject
+      // makes no peace of its own.
+      if (first == country_of_ruler.end() || second == country_of_ruler.end() || first->second == second->second ||
+          !first->second->GetLiegeTag().empty() || !second->second->GetLiegeTag().empty())
+      {
+         continue;
+      }
+      const auto pair = std::pair(std::min(first->second->GetTag(), second->second->GetTag()),
+          std::max(first->second->GetTag(), second->second->GetTag()));
+      if (at_war.contains(pair))
+      {
+         continue;
+      }
+      // What was left of it when CK3 saved is what is left of it when EU5 starts.
+      const auto months = static_cast<int>(std::ceil(end.diffInYears(conversion_date_) * 12.0F));
+      if (months <= 0)
+      {
+         continue;
+      }
+      if (const auto [known, added] = months_left.emplace(pair, months); !added)
+      {
+         known->second = std::max(known->second, months);
+      }
+   }
+   for (const auto& [pair, months]: months_left)
+   {
+      truces_.push_back({pair.first, pair.second, months});
    }
 }
 
@@ -1126,6 +1178,7 @@ void eu5::EU5World::LogLandReport() const
                           << " could not, their ruler having no country or already being a subject.";
    }
    Log(LogLevel::Info) << "   " << alliances_.size() << " alliances between independent countries.";
+   Log(LogLevel::Info) << "   " << truces_.size() << " truces between independent countries.";
    Log(LogLevel::Info) << "   " << overlords_raised_to_subject_nations_
                        << " overlords start at technology level 2 so EU5 lets them keep their vassals.";
    Log(LogLevel::Info) << "   " << wars_.size() << " CK3 wars carry on in EU5; " << wars_skipped_

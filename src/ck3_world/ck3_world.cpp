@@ -208,7 +208,8 @@ void ck3::CK3World::ParseGamestate(std::istream& input_stream, const commonItems
    parser.registerKeyword("relations", [this](const std::string&, std::istream& input_stream) {
       Log(LogLevel::Info) << "-> Loading relations.";
       relations_ = Relations(input_stream);
-      Log(LogLevel::Info) << "<> Loaded " << relations_.GetAlliances().size() << " alliances.";
+      Log(LogLevel::Info) << "<> Loaded " << relations_.GetAlliances().size() << " alliances and "
+                          << relations_.GetTruces().size() << " truces.";
    });
    // registerKeyword("opinions", [this](const std::string&, std::istream& input_stream) {
    //	Log(LogLevel::Info) << "-> Loading opinions.";

@@ -69,6 +69,15 @@ struct ConvertedWar
    std::vector<WarParticipant> defenders;
 };
 
+// A CK3 truce between rulers who both became independent countries, with the months it still has
+// to run from EU5's start.
+struct ConvertedTruce
+{
+   std::string first_tag;
+   std::string second_tag;
+   int months = 0;
+};
+
 // A CK3 house written as an EU5 dynasty. EU5's dynasty is the family name a character carries,
 // which in CK3 is the house - Karling - rather than the wider dynasty.
 struct ConvertedDynasty
@@ -108,6 +117,7 @@ class EU5World
    [[nodiscard]] const auto& GetAlliances() const { return alliances_; }
    [[nodiscard]] const auto& GetDynasties() const { return dynasties_; }
    [[nodiscard]] const auto& GetWars() const { return wars_; }
+   [[nodiscard]] const auto& GetTruces() const { return truces_; }
    // Country tag to the CK3 coat of arms it flies, for the tags the conversion invents.
    [[nodiscard]] const auto& GetFlags() const { return flags_; }
    // The EU5 dynasty a converted character belongs to, or empty.
@@ -121,6 +131,8 @@ class EU5World
    void AssignTributaries(const ck3::VassalContracts& contracts);
    // Alliances between CK3 rulers who both became independent countries.
    void AssignAlliances(const ck3::Relations& relations);
+   // Truces between CK3 rulers who both became independent countries, and aren't at war again.
+   void AssignTruces(const ck3::Relations& relations);
    // Each converted ruler's living spouse, children and heir, as characters alongside them.
    void AssignFamilies(const ck3::CK3World& ck3_world);
    // The houses of everyone converted, as EU5 dynasties.
@@ -195,6 +207,7 @@ class EU5World
    std::vector<Dependency> dependencies_;
    std::set<std::pair<std::string, std::string>> alliances_;
    std::vector<ConvertedWar> wars_;
+   std::vector<ConvertedTruce> truces_;
    int wars_skipped_ = 0;
    int overlords_raised_to_subject_nations_ = 0;
    std::map<long long, ConvertedDynasty> dynasties_;
