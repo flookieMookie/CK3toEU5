@@ -28,7 +28,8 @@ class Output  // class with the structure of the output mod
        const eu5::VanillaCountries& vanilla_countries,
        const eu5::VanillaCharacters& vanilla_characters,
        const std::filesystem::path& eu5_directory,
-       const commonItems::LocalizationDatabase& ck3_culture_names);
+       const commonItems::LocalizationDatabase& ck3_culture_names,
+       const commonItems::LocalizationDatabase& ck3_dynasty_names);
 
    ~Output() = default;
 

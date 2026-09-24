@@ -6,7 +6,14 @@
 #include <string>
 #include <system_error>
 
-commonItems::LocalizationDatabase ck3::LoadCultureLocalization(const std::filesystem::path& ck3_directory)
+namespace
+{
+// Reads one family of CK3 localisation files - localization/<language>/<folder>/<stem>_l_<language>.yml -
+// in every language CK3 ships.
+commonItems::LocalizationDatabase LoadCK3Localization(const std::filesystem::path& ck3_directory,
+    const std::string& folder,
+    const std::string& stem,
+    const std::string& description)
 {
    // The database only reads languages it is told about up front.
    commonItems::LocalizationDatabase localization("english",
@@ -16,7 +23,8 @@ commonItems::LocalizationDatabase ck3::LoadCultureLocalization(const std::filesy
    std::error_code error;
    if (!std::filesystem::is_directory(localization_folder, error))
    {
-      Log(LogLevel::Warning) << "CK3 localisation not found - converted cultures will be named after their keys.";
+      Log(LogLevel::Warning) << "CK3 localisation not found - converted " << description
+                             << " will be named after their keys.";
       return localization;
    }
 
@@ -28,12 +36,24 @@ commonItems::LocalizationDatabase ck3::LoadCultureLocalization(const std::filesy
          continue;
       }
       const auto language = entry.path().filename().string();
-      std::ifstream file(entry.path() / "culture" / ("cultures_l_" + language + ".yml"));
+      std::ifstream file(entry.path() / folder / (stem + "_l_" + language + ".yml"));
       if (file.is_open() && localization.ScrapeStream(file) > 0)
       {
          ++languages;
       }
    }
-   Log(LogLevel::Info) << "<> Loaded " << localization.size() << " CK3 culture names in " << languages << " languages.";
+   Log(LogLevel::Info) << "<> Loaded " << localization.size() << " CK3 " << description << " names in " << languages
+                       << " languages.";
    return localization;
+}
+}  // namespace
+
+commonItems::LocalizationDatabase ck3::LoadCultureLocalization(const std::filesystem::path& ck3_directory)
+{
+   return LoadCK3Localization(ck3_directory, "culture", "cultures", "culture");
+}
+
+commonItems::LocalizationDatabase ck3::LoadDynastyLocalization(const std::filesystem::path& ck3_directory)
+{
+   return LoadCK3Localization(ck3_directory, "dynasties", "dynasty_names", "dynasty");
 }

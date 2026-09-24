@@ -20,7 +20,9 @@
 namespace ck3
 {
 class CK3World;
+class Character;
 class Culture;
+class House;
 class Realm;
 class Title;
 class VassalContracts;
@@ -42,6 +44,16 @@ struct Dependency
    std::string vassal_tag;
    // vassal for CK3 vassalage, tributary for CK3 tributaries.
    std::string subject_type = "vassal";
+};
+
+// A CK3 house written as an EU5 dynasty. EU5's dynasty is the family name a character carries,
+// which in CK3 is the house - Karling - rather than the wider dynasty.
+struct ConvertedDynasty
+{
+   std::string id;
+   std::shared_ptr<ck3::House> house;
+   // An EU5 location, required for every dynasty: the capital of the first country it rules.
+   std::string home;
 };
 
 // Turns the independent CK3 realms into EU5 countries: a tag, a capital, and the EU5 locations the
@@ -69,6 +81,9 @@ class EU5World
    [[nodiscard]] std::set<std::string> GetConvertedLocations() const;
    // Each allied pair of independent countries, as tags, once.
    [[nodiscard]] const auto& GetAlliances() const { return alliances_; }
+   [[nodiscard]] const auto& GetDynasties() const { return dynasties_; }
+   // The EU5 dynasty a converted character belongs to, or empty.
+   [[nodiscard]] std::string DynastyIdOf(const ck3::Character& character) const;
    [[nodiscard]] const auto& GetDevelopmentBonuses() const { return development_bonuses_; }
 
    void LogReport() const;
@@ -80,6 +95,8 @@ class EU5World
    void AssignAlliances(const ck3::Relations& relations);
    // Each converted ruler's living spouse, children and heir, as characters alongside them.
    void AssignFamilies(const ck3::CK3World& ck3_world);
+   // The houses of everyone converted, as EU5 dynasties.
+   void AssignDynasties();
    // The country each CK3 ruler became, among those written to the mod.
    [[nodiscard]] std::map<long long, std::shared_ptr<Country>> MapCountriesByRuler() const;
    // Vassals cannot outrank their liege, so ranks are settled after every country exists.
@@ -141,6 +158,7 @@ class EU5World
    CultureResolver culture_resolver_;
    std::vector<Dependency> dependencies_;
    std::set<std::pair<std::string, std::string>> alliances_;
+   std::map<long long, ConvertedDynasty> dynasties_;
    // EU5 location to the CK3 development of the county it came from, and the bonus that becomes.
    std::map<std::string, int> location_development_;
    std::map<std::string, int> development_bonuses_;

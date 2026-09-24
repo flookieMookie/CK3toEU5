@@ -17,6 +17,7 @@
 #include "out_file_classes/setup/culture_definitions_file.hpp"
 #include "out_file_classes/setup/development_file.hpp"
 #include "out_file_classes/setup/diplomacy_file.hpp"
+#include "out_file_classes/setup/dynasties_file.hpp"
 #include "out_file_classes/setup/pops_file.hpp"
 
 
@@ -38,7 +39,8 @@ Output::Output(std::string name,
     const eu5::VanillaCountries& vanilla_countries,
     const eu5::VanillaCharacters& vanilla_characters,
     const std::filesystem::path& eu5_directory,
-    const commonItems::LocalizationDatabase& ck3_culture_names):
+    const commonItems::LocalizationDatabase& ck3_culture_names,
+    const commonItems::LocalizationDatabase& ck3_dynasty_names):
     mod_name_(std::move(name)),
     converter_version_(std::move(converter_version)),
     output_path_(std::filesystem::path("output"))
@@ -72,6 +74,10 @@ Output::Output(std::string name,
        std::make_unique<CountriesFile>("10_countries.txt", file_writer_, eu5_world, vanilla_countries);
    start_folder->RegisterFileOrResource(std::move(countries_file));
 
+   auto dynasties_file =
+       std::make_unique<DynastiesFile>("04_dynasties.txt", file_writer_, eu5_world, eu5_directory);
+   start_folder->RegisterFileOrResource(std::move(dynasties_file));
+
    auto characters_file = std::make_unique<CharactersFile>(
        "05_characters.txt", file_writer_, eu5_world, vanilla_countries, vanilla_characters);
    start_folder->RegisterFileOrResource(std::move(characters_file));
@@ -99,6 +105,7 @@ Output::Output(std::string name,
           file_writer_,
           eu5_world,
           ck3_culture_names,
+          ck3_dynasty_names,
           language);
       language_folder->RegisterFileOrResource(std::move(names_file));
       localization_folder->RegisterSubfolder(std::move(language_folder));

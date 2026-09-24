@@ -220,6 +220,7 @@ set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/di
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/development_file.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/country_definitions_file.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/culture_definitions_file.cpp")
+set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/setup/dynasties_file.cpp")
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/output/out_file_classes/localization/country_names_file.cpp")
 
 set(CONVERTER_SOURCES ${CONVERTER_SOURCES} "src/ck3_world/ck3_world.cpp")

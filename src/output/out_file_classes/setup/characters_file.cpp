@@ -69,6 +69,10 @@ void CharactersFile::Create(const std::filesystem::path& folder_path)
       {
          output << "\t\tfemale = yes\n";
       }
+      if (const auto dynasty = eu5_world_.DynastyIdOf(*holder); !dynasty.empty())
+      {
+         output << "\t\tdynasty = " << dynasty << "\n";
+      }
       output << "\t\tbirth_date = "
              << AgeOntoStartDate(holder->GetBirthDate(), eu5_world_.GetConversionDate()).toString() << "\n";
       if (country->GetCapitalLocation().has_value())
@@ -90,6 +94,10 @@ void CharactersFile::Create(const std::filesystem::path& folder_path)
          if (member.character->IsFemale())
          {
             output << "\t\tfemale = yes\n";
+         }
+         if (const auto dynasty = eu5_world_.DynastyIdOf(*member.character); !dynasty.empty())
+         {
+            output << "\t\tdynasty = " << dynasty << "\n";
          }
          output << "\t\tbirth_date = "
                 << AgeOntoStartDate(member.character->GetBirthDate(), eu5_world_.GetConversionDate()).toString()

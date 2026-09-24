@@ -13,6 +13,9 @@ namespace ck3
 // hundreds of megabytes, and the converter needs a few hundred keys of it.
 [[nodiscard]] commonItems::LocalizationDatabase LoadCultureLocalization(const std::filesystem::path& ck3_directory);
 
+// The names CK3 gives its dynasties and houses - dynn_Karling is "Karling" - in the same way.
+[[nodiscard]] commonItems::LocalizationDatabase LoadDynastyLocalization(const std::filesystem::path& ck3_directory);
+
 }  // namespace ck3
 
 #endif  // CK3_CULTURE_LOCALIZATION_H

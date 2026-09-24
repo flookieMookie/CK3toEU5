@@ -2,12 +2,14 @@
 
 #include <external/commonItems/Log.h>
 
+#include <algorithm>
 #include <set>
 #include <sstream>
 #include <string>
 #include <utility>
 
 #include "src/ck3_world/characters/character.hpp"
+#include "src/ck3_world/dynasties/house.hpp"
 #include "src/ck3_world/realms/realm.hpp"
 #include "src/ck3_world/titles/title.hpp"
 #include "src/eu5_world/eu5_country.hpp"
@@ -55,6 +57,33 @@ std::string AdjectiveFor(const ck3::Realm& realm, const std::string& name)
    }
    return name;
 }
+
+// A house's name as CK3 shows it: what the campaign named it, else CK3's own name in this language,
+// else its key without the dynn_ prefix every CK3 house key carries.
+std::string DynastyName(const ck3::House& house,
+    const commonItems::LocalizationDatabase& ck3_dynasty_names,
+    const std::string& language)
+{
+   if (!house.GetLocalizedName().empty())
+   {
+      return eu5::CleanCK3Name(house.GetLocalizedName());
+   }
+   if (const auto block = ck3_dynasty_names.GetLocalizationBlock(house.GetName()); block.has_value())
+   {
+      // A few CK3 names are built from other keys, which EU5 would show raw.
+      if (auto name = block->GetLocalization(language); !name.empty() && name.find_first_of("$[") == std::string::npos)
+      {
+         return name;
+      }
+   }
+   auto name = house.GetName();
+   if (name.starts_with("dynn_"))
+   {
+      name.erase(0, 5);
+   }
+   std::ranges::replace(name, '_', ' ');
+   return name;
+}
 }  // namespace
 
 namespace out
@@ -64,10 +93,12 @@ CountryNamesFile::CountryNamesFile(const std::string& name,
     FileWriter& file_writer,
     const eu5::EU5World& eu5_world,
     const commonItems::LocalizationDatabase& ck3_culture_names,
+    const commonItems::LocalizationDatabase& ck3_dynasty_names,
     std::string language):
     OutputFile(name, file_writer),
     eu5_world_(eu5_world),
     ck3_culture_names_(ck3_culture_names),
+    ck3_dynasty_names_(ck3_dynasty_names),
     language_(std::move(language))
 {
 }
@@ -114,6 +145,11 @@ void CountryNamesFile::Create(const std::filesystem::path& folder_path)
             WriteEntry(output, key, member_name);
          }
       }
+   }
+
+   for (const auto& [house_id, dynasty]: eu5_world_.GetDynasties())
+   {
+      WriteEntry(output, dynasty.id, DynastyName(*dynasty.house, ck3_dynasty_names_, language_));
    }
 
    const auto cultures = eu5_world_.GetCultureResolver().GetUsedGeneratedCultures();

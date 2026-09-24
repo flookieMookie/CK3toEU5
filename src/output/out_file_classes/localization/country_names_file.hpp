@@ -13,10 +13,12 @@ namespace out
 {
 
 // Writes one language's localisation for everything the conversion names: countries and their
-// adjectives, rulers, and the cultures it generates. Without it EU5 shows each as its raw key.
+// adjectives, rulers and their families, their dynasties, and the cultures it generates. Without it
+// EU5 shows each as its raw key.
 //
-// Country and ruler names come from the save, so they are in whatever language CK3 was played in,
-// and are the same in every file. Generated cultures take CK3's own name in each language CK3 ships.
+// Country and character names come from the save, so they are in whatever language CK3 was played
+// in, and are the same in every file. Dynasties and generated cultures take CK3's own name in each
+// language CK3 ships.
 class CountryNamesFile: public OutputFile
 {
   public:
@@ -24,6 +26,7 @@ class CountryNamesFile: public OutputFile
        FileWriter& file_writer,
        const eu5::EU5World& eu5_world,
        const commonItems::LocalizationDatabase& ck3_culture_names,
+       const commonItems::LocalizationDatabase& ck3_dynasty_names,
        std::string language);
 
    void Create(const std::filesystem::path& folder_path) override;
@@ -31,6 +34,7 @@ class CountryNamesFile: public OutputFile
   private:
    const eu5::EU5World& eu5_world_;
    const commonItems::LocalizationDatabase& ck3_culture_names_;
+   const commonItems::LocalizationDatabase& ck3_dynasty_names_;
    std::string language_;
 };
 

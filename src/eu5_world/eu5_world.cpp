@@ -12,6 +12,7 @@
 #include "src/ck3_world/characters/characters.hpp"
 #include "src/ck3_world/ck3_world.hpp"
 #include "src/ck3_world/cultures/culture.hpp"
+#include "src/ck3_world/dynasties/house.hpp"
 #include "src/ck3_world/geography/county_detail.hpp"
 #include "src/ck3_world/geography/county_details.hpp"
 #include "src/ck3_world/realms/realm.hpp"
@@ -369,6 +370,7 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
    AssignTributaries(ck3_world.GetVassalContracts());
    AssignAlliances(ck3_world.GetRelations());
    AssignFamilies(ck3_world);
+   AssignDynasties();
    AssignRanks();
    AssignDevelopment();
 
@@ -760,6 +762,45 @@ void eu5::EU5World::AssignFamilies(const ck3::CK3World& ck3_world)
    }
 }
 
+void eu5::EU5World::AssignDynasties()
+{
+   const auto add_house_of = [this](const ck3::Character& character, const Country& country) {
+      if (!character.GetHouse().has_value() || !country.GetCapitalLocation().has_value())
+      {
+         return;
+      }
+      const auto house = character.GetHouse()->GetPointer().lock();
+      if (!house)
+      {
+         return;
+      }
+      dynasties_.try_emplace(house->GetID(),
+          ConvertedDynasty{"ck3_house_" + std::to_string(house->GetID()), house, *country.GetCapitalLocation()});
+   };
+   for (const auto& country: countries_)
+   {
+      if (!country->IsWritten() || !country->HasRuler())
+      {
+         continue;
+      }
+      add_house_of(*country->GetSourceRealm()->GetHolder(), *country);
+      for (const auto& member: country->GetFamily())
+      {
+         add_house_of(*member.character, *country);
+      }
+   }
+}
+
+std::string eu5::EU5World::DynastyIdOf(const ck3::Character& character) const
+{
+   if (!character.GetHouse().has_value())
+   {
+      return {};
+   }
+   const auto dynasty = dynasties_.find(character.GetHouse()->GetID());
+   return dynasty == dynasties_.end() ? std::string{} : dynasty->second.id;
+}
+
 std::map<long long, std::shared_ptr<eu5::Country>> eu5::EU5World::MapCountriesByRuler() const
 {
    std::map<long long, std::shared_ptr<Country>> country_of_ruler;
@@ -864,6 +905,7 @@ void eu5::EU5World::LogLandReport() const
    Log(LogLevel::Info) << "   " << alliances_.size() << " alliances between independent countries.";
    Log(LogLevel::Info) << "   " << family_members_ << " family members converted alongside their rulers, " << heirs_
                        << " of the countries with a named heir.";
+   Log(LogLevel::Info) << "   " << dynasties_.size() << " CK3 houses become EU5 dynasties.";
 }
 
 void eu5::EU5World::LogTagReport() const
