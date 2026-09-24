@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <utility>
 
 #include "src/ck3_world/realms/realm.hpp"
@@ -125,4 +126,11 @@ std::string eu5::CleanCK3Name(const std::string& name)
       }
    }
    return clean;
+}
+
+int eu5::StartingGoldFor(const double ck3_gold)
+{
+   constexpr double kLowest = -500.0;
+   constexpr double kHighest = 2500.0;
+   return static_cast<int>(std::lround(std::clamp(ck3_gold, kLowest, kHighest)));
 }

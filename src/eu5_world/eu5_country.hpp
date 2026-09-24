@@ -27,6 +27,11 @@ namespace eu5
 // same name, so each is localised once.
 [[nodiscard]] std::string CharacterNameKey(const std::string& clean_name);
 
+// A country's starting treasury from its CK3 ruler's gold. The two games count money on much the same
+// scale at their starts, so it carries over as it is, held within the range EU5's own start data uses -
+// from -500, a country deep in debt, to 2500 - so a late campaign's hoard doesn't break the economy.
+[[nodiscard]] int StartingGoldFor(double ck3_gold);
+
 // Someone from the ruler's family converted alongside them. Parents and spouse are EU5 character
 // IDs, set only where that person is converted too.
 struct FamilyMember

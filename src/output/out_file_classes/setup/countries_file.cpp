@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "src/ck3_world/characters/character.hpp"
 #include "src/ck3_world/realms/realm.hpp"
 #include "src/eu5_world/eu5_country.hpp"
 
@@ -129,7 +130,16 @@ void WriteCountry(std::ostringstream& output, const eu5::Country& country)
 {
    output << "\n\t\t" << country.GetTag() << " = { # " << country.GetSourceRealm()->GetRealmName() << "\n";
    output << "\t\t\tcountry_rank = " << country.GetRank() << "\n";
-   output << "\t\t\tstarting_technology_level = " << country.GetTechnologyLevel() << "\n\n";
+   output << "\t\t\tstarting_technology_level = " << country.GetTechnologyLevel() << "\n";
+   // The ruler's treasury, which EU5 keeps in the same place its own start data does.
+   if (country.HasRuler())
+   {
+      if (const auto gold = eu5::StartingGoldFor(country.GetSourceRealm()->GetHolder()->GetGold()); gold != 0)
+      {
+         output << "\t\t\tcurrency_data = { gold = " << gold << " }\n";
+      }
+   }
+   output << "\n";
    WriteGovernment(output, country);
    WriteLocations(output, country);
    output << "\t\t}\n";

@@ -17,4 +17,13 @@ TEST(EU5WorldCountryTests, NamesWithNothingUsableHaveNoKey)  // NOLINT : clang-t
    EXPECT_TRUE(CharacterNameKey("--").empty());
 }
 
+TEST(EU5WorldCountryTests, StartingGoldCarriesOverWithinEU5sRange)  // NOLINT : clang-tidy doens't like gtest
+{
+   EXPECT_EQ(452, StartingGoldFor(452.03832));
+   EXPECT_EQ(0, StartingGoldFor(0.2));
+   EXPECT_EQ(2500, StartingGoldFor(40000.0));
+   EXPECT_EQ(-500, StartingGoldFor(-9000.0));
+   EXPECT_EQ(-120, StartingGoldFor(-120.4));
+}
+
 }  // namespace eu5
