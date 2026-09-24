@@ -78,4 +78,60 @@ TEST(OutputVanillaStartFileTests, DeeperEntriesAndCommentsAreHandled)  // NOLINT
        kept);
 }
 
+namespace
+{
+BuildingOwnership MakeOwnership()
+{
+   BuildingOwnership ownership;
+   ownership.vanilla_owners = {{"stockholm", "SWE"}, {"visby", "SWE"}, {"bergen", "NOR"}, {"cuzco", "INC"},
+       {"toulouse", "FRA"}, {"lyon", "FRA"}};
+   ownership.current_owners = {{"stockholm", "DAN"}, {"bergen", "NOR"}, {"cuzco", "INC"}, {"toulouse", "TOU"},
+       {"lyon", "FRA"}};
+   ownership.kept_tags = {"INC"};
+   ownership.religions = {{"DAN", "catholic"}, {"NOR", "catholic"}, {"TOU", "catharism"}, {"FRA", "catholic"}};
+   return ownership;
+}
+}  // namespace
+
+TEST(OutputVanillaStartFileTests, ABuildingPassesToTheLandsNewOwner)  // NOLINT : clang-tidy doens't like gtest
+{
+   const auto fitted = FitBuilding("\tcastle = { tag = SWE level = 1 location = stockholm } # the Three Crowns\n", MakeOwnership());
+
+   ASSERT_TRUE(fitted.has_value());
+   EXPECT_EQ("\tcastle = { tag = DAN level = 1 location = stockholm } # the Three Crowns\n", *fitted);
+}
+
+TEST(OutputVanillaStartFileTests, BuildingsOnLandNobodyHoldsGo)  // NOLINT : clang-tidy doens't like gtest
+{
+   EXPECT_FALSE(FitBuilding("\tcastle = { tag = SWE level = 1 location = visby }\n", MakeOwnership()).has_value());
+}
+
+TEST(OutputVanillaStartFileTests, ForeignOwnedBuildingsStayOnlyBetweenKeptCountries)  // NOLINT : clang-tidy doens't like gtest
+{
+   // A Swedish building in Norway describes a 1337 relationship the converted world doesn't have.
+   EXPECT_FALSE(FitBuilding("\tkontor = { tag = SWE level = 1 location = bergen }\n", MakeOwnership()).has_value());
+}
+
+TEST(OutputVanillaStartFileTests, KeptCountriesKeepTheirBuildings)  // NOLINT : clang-tidy doens't like gtest
+{
+   const std::string temple = "\ttemple = { tag = INC level = 2 location = cuzco }\n";
+
+   EXPECT_EQ(temple, FitBuilding(temple, MakeOwnership()));
+}
+
+TEST(OutputVanillaStartFileTests, CardinalsSitOnlyInCatholicLands)  // NOLINT : clang-tidy doens't like gtest
+{
+   EXPECT_FALSE(
+       FitBuilding("\tseat_of_cardinal = { tag = FRA level = 1 location = toulouse }\n", MakeOwnership()).has_value());
+   EXPECT_TRUE(
+       FitBuilding("\tseat_of_cardinal = { tag = FRA level = 1 location = lyon }\n", MakeOwnership()).has_value());
+}
+
+TEST(OutputVanillaStartFileTests, EntriesWithoutAnOwnerAreKept)  // NOLINT : clang-tidy doens't like gtest
+{
+   const std::string location = "\tstockholm = { rank = city }\n";
+
+   EXPECT_EQ(location, FitBuilding(location, MakeOwnership()));
+}
+
 }  // namespace out

@@ -104,11 +104,20 @@ Output::Output(std::string name,
    for (const auto& [file_name, entry_depth]: {std::pair{"16_wars.txt", 1},
             std::pair{"18_opinions.txt", 1},
             std::pair{"20_rivals.txt", 1},
+            std::pair{"23_colonies.txt", 1},
+            std::pair{"25_area_preferences.txt", 2},
             std::pair{"26_ai_personalities.txt", 2},
             std::pair{"27_armies.txt", 1}})
    {
       start_folder->RegisterFileOrResource(std::make_unique<VanillaStartFile>(
           file_name, file_writer_, eu5_world, vanilla_countries, eu5_directory, entry_depth));
+   }
+
+   // EU5's own buildings and cardinals' seats, handed to whoever holds their land now.
+   for (const auto* file_name: {"07_cities_and_buildings.txt", "13_religion.txt"})
+   {
+      start_folder->RegisterFileOrResource(
+          std::make_unique<VanillaBuildingsFile>(file_name, file_writer_, eu5_world, vanilla_countries, eu5_directory));
    }
 
    setup_folder->RegisterSubfolder(std::move(start_folder));

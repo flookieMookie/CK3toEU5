@@ -96,6 +96,49 @@ std::string out::KeepEntriesAbout(const std::string& contents, const int entry_d
    });
 }
 
+std::optional<std::string> out::FitBuilding(const std::string& entry, const BuildingOwnership& ownership)
+{
+   static const std::regex kOwner(R"(\btag\s*=\s*([A-Z0-9]{3})\b)");
+   static const std::regex kLocation(R"(\blocation\s*=\s*([A-Za-z0-9_']+))");
+   const auto code = WithoutComment(entry);
+   std::smatch owner;
+   std::smatch location;
+   if (!std::regex_search(code, owner, kOwner) || !std::regex_search(code, location, kLocation))
+   {
+      return entry;
+   }
+   const auto tag = owner[1].str();
+   const auto place = location[1].str();
+
+   const auto vanilla_owner = ownership.vanilla_owners.find(place);
+   const bool foreign_owned = vanilla_owner == ownership.vanilla_owners.end() || vanilla_owner->second != tag;
+   if (foreign_owned)
+   {
+      if (ownership.kept_tags.contains(tag) && vanilla_owner != ownership.vanilla_owners.end() &&
+          ownership.kept_tags.contains(vanilla_owner->second))
+      {
+         return entry;
+      }
+      return std::nullopt;
+   }
+
+   const auto current_owner = ownership.current_owners.find(place);
+   if (current_owner == ownership.current_owners.end())
+   {
+      return std::nullopt;
+   }
+   if (entry.contains("seat_of_cardinal") && !ownership.kept_tags.contains(current_owner->second))
+   {
+      const auto religion = ownership.religions.find(current_owner->second);
+      if (religion == ownership.religions.end() || religion->second != "catholic")
+      {
+         return std::nullopt;
+      }
+   }
+   // Only the owner changes; the level, the location and any comment stay as EU5 wrote them.
+   return std::regex_replace(entry, kOwner, "tag = " + current_owner->second, std::regex_constants::format_first_only);
+}
+
 namespace out
 {
 
@@ -138,6 +181,83 @@ void VanillaStartFile::Create(const std::filesystem::path& folder_path)
    Log(LogLevel::Info) << "\t<> Kept " << GetName() << " only where it concerns the " << kept_tags.size()
                        << " vanilla countries the conversion keeps.";
    UseFileWriter().CreateEmptyAndWrite(folder_path / GetName(), "\xEF\xBB\xBF" + kept);
+}
+
+}  // namespace out
+
+namespace out
+{
+
+VanillaBuildingsFile::VanillaBuildingsFile(const std::string& name,
+    FileWriter& file_writer,
+    const eu5::EU5World& eu5_world,
+    const eu5::VanillaCountries& vanilla_countries,
+    std::filesystem::path eu5_directory):
+    OutputFile(name, file_writer),
+    eu5_world_(eu5_world),
+    vanilla_countries_(vanilla_countries),
+    eu5_directory_(std::move(eu5_directory))
+{
+}
+
+void VanillaBuildingsFile::Create(const std::filesystem::path& folder_path)
+{
+   Log(LogLevel::Info) << "\tCreating " << GetName();
+
+   std::ifstream vanilla(eu5_directory_ / "game" / "main_menu" / "setup" / "start" / GetName());
+   if (!vanilla.is_open())
+   {
+      Log(LogLevel::Warning) << "\t<> EU5's " << GetName() << " not found - skipping, vanilla will apply.";
+      return;
+   }
+   std::string contents((std::istreambuf_iterator<char>(vanilla)), std::istreambuf_iterator<char>());
+   if (contents.starts_with("\xEF\xBB\xBF"))
+   {
+      contents.erase(0, 3);
+   }
+
+   BuildingOwnership ownership;
+   for (const auto& country: vanilla_countries_.GetCountries())
+   {
+      for (const auto& location: country.locations)
+      {
+         ownership.vanilla_owners.emplace(location, country.tag);
+      }
+   }
+   for (const auto* country: vanilla_countries_.GetUntouched(eu5_world_.GetConvertedLocations()))
+   {
+      ownership.kept_tags.insert(country->tag);
+      for (const auto& location: country->locations)
+      {
+         ownership.current_owners.emplace(location, country->tag);
+      }
+   }
+   for (const auto& country: eu5_world_.GetCountries())
+   {
+      if (!country->IsWritten())
+      {
+         continue;
+      }
+      for (const auto& location: country->GetLocations())
+      {
+         ownership.current_owners.insert_or_assign(location, country->GetTag());
+      }
+      if (country->GetReligion().has_value())
+      {
+         ownership.religions.emplace(country->GetTag(), *country->GetReligion());
+      }
+   }
+
+   int kept = 0;
+   int dropped = 0;
+   const auto fitted = TransformEntries(contents, 1, [&](const std::string& entry) {
+      auto result = FitBuilding(entry, ownership);
+      ++(result.has_value() ? kept : dropped);
+      return result;
+   });
+   Log(LogLevel::Info) << "\t<> " << GetName() << ": kept " << kept << " entries with their buildings passed to the "
+                       << "converted owners, dropped " << dropped << ".";
+   UseFileWriter().CreateEmptyAndWrite(folder_path / GetName(), "\xEF\xBB\xBF" + fitted);
 }
 
 }  // namespace out

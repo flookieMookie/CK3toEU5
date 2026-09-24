@@ -2,6 +2,7 @@
 #define OUT_VANILLA_START_FILE_H
 
 #include <filesystem>
+#include <map>
 #include <functional>
 #include <optional>
 #include <set>
@@ -33,6 +34,24 @@ namespace out
 // Every country tag - three letter uppercase token - named outside comments.
 [[nodiscard]] std::set<std::string> TagsNamedIn(const std::string& text);
 
+// Who holds what in the converted world, for handing EU5's own buildings to their new owners.
+struct BuildingOwnership
+{
+   // Location to the country holding it in 1337, and in the converted world.
+   std::map<std::string, std::string> vanilla_owners;
+   std::map<std::string, std::string> current_owners;
+   // The vanilla countries kept as they are, and the converted countries' religions.
+   std::set<std::string> kept_tags;
+   std::map<std::string, std::string> religions;
+};
+
+// One of EU5's building entries - castle = { tag = SWE level = 1 location = stockholm } - fitted to the
+// converted world. A building is the land's, so it passes to whoever holds its location now. One that
+// was foreign owned in 1337, like a Hanseatic kontor, describes a relationship that doesn't carry
+// over, so it stays only where both sides are kept vanilla countries; a cardinal's seat only where
+// the new owner is Catholic. Entries naming no owner are kept as they are. Empty when it goes.
+[[nodiscard]] std::optional<std::string> FitBuilding(const std::string& entry, const BuildingOwnership& ownership);
+
 // Writes one of EU5's start files - wars, rivals, opinions, armies, AI personalities - keeping only
 // what concerns the vanilla countries the conversion keeps on land CK3 doesn't cover.
 //
@@ -57,6 +76,25 @@ class VanillaStartFile: public OutputFile
    const eu5::VanillaCountries& vanilla_countries_;
    std::filesystem::path eu5_directory_;
    int entry_depth_;
+};
+
+// Writes EU5's own buildings - 07_cities_and_buildings, and the cardinals' seats in 13_religion - with
+// each building passed to whoever holds its location in the converted world. See FitBuilding.
+class VanillaBuildingsFile: public OutputFile
+{
+  public:
+   VanillaBuildingsFile(const std::string& name,
+       FileWriter& file_writer,
+       const eu5::EU5World& eu5_world,
+       const eu5::VanillaCountries& vanilla_countries,
+       std::filesystem::path eu5_directory);
+
+   void Create(const std::filesystem::path& folder_path) override;
+
+  private:
+   const eu5::EU5World& eu5_world_;
+   const eu5::VanillaCountries& vanilla_countries_;
+   std::filesystem::path eu5_directory_;
 };
 
 }  // namespace out
