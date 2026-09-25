@@ -138,13 +138,34 @@ std::string GenerateTag(const std::string& title_key, const std::set<std::string
    return {};
 }
 
+// The highest tier of title each character holds.
+std::map<long long, ck3::Level> MapHighestTitleOfHolder(const IdTitleMap& id_title_map)
+{
+   std::map<long long, ck3::Level> highest;
+   for (const auto& [id, title]: id_title_map)
+   {
+      if (!title || !title->GetHolder().has_value())
+      {
+         continue;
+      }
+      const auto [held, added] = highest.emplace(title->GetHolder()->GetID(), title->GetLevel());
+      if (!added && held->second < title->GetLevel())
+      {
+         held->second = title->GetLevel();
+      }
+   }
+   return highest;
+}
+
 // Walks the de facto tree below a ruler's top titles. Counties reached become their land. A duchy
-// or higher title held by somebody else stops the walk and is reported back as a vassal, so its
-// land goes to the vassal rather than the liege. Counts are deliberately not promoted: EU5 would
-// end up with roughly two thousand countries and the map would no longer resemble CK3's.
+// or higher title held by a vassal who is a king or more stops the walk and is reported back as a
+// vassal, so its land goes to that kingdom, a subject country of its own. Dukes and counts are not
+// promoted: their land is the liege's, so a great realm is one great country in EU5 - Byzantium
+// holds its themes itself rather than ruling a ring of ducal subjects.
 void GatherLandAndVassals(const std::vector<TitlePtr>& top_titles,
     long long holder_id,
     const std::map<long long, std::vector<TitlePtr>>& de_facto_children,
+    const std::map<long long, ck3::Level>& highest_title_of_holder,
     std::vector<TitlePtr>& counties,
     std::map<long long, std::vector<TitlePtr>>& vassal_titles_by_holder)
 {
@@ -158,6 +179,11 @@ void GatherLandAndVassals(const std::vector<TitlePtr>& top_titles,
       }
    }
 
+   const auto is_kingly = [&highest_title_of_holder](const long long vassal_id) {
+      const auto highest = highest_title_of_holder.find(vassal_id);
+      return highest != highest_title_of_holder.end() && highest->second >= ck3::Level::kKingdom;
+   };
+
    std::vector<TitlePtr> to_visit = top_titles;
    while (!to_visit.empty())
    {
@@ -170,7 +196,7 @@ void GatherLandAndVassals(const std::vector<TitlePtr>& top_titles,
 
       const bool is_own_top_title = top_title_ids.contains(title->GetID());
       if (!is_own_top_title && title->GetHolder().has_value() && title->GetHolder()->GetID() != holder_id &&
-          title->GetLevel() >= ck3::Level::kDuchy)
+          title->GetLevel() >= ck3::Level::kDuchy && is_kingly(title->GetHolder()->GetID()))
       {
          vassal_titles_by_holder[title->GetHolder()->GetID()].emplace_back(title);
          continue;
@@ -319,8 +345,10 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
        game_definitions.GetTags(),
        {}};
 
-   // Independent realms first; each one's duchy or higher vassals get appended as they are found,
-   // so the list is walked by index while it grows.
+   const auto highest_title_of_holder = MapHighestTitleOfHolder(context.id_title_map);
+
+   // Independent realms first; each one's vassal kings get appended as they are found, so the list
+   // is walked by index while it grows.
    auto pending = SeedPendingRealms(ck3_world.GetRealms());
    for (std::size_t index = 0; index < pending.size(); ++index)
    {
@@ -355,6 +383,7 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
       GatherLandAndVassals(current.top_titles,
           current.holder_id,
           context.de_facto_children,
+          highest_title_of_holder,
           counties,
           vassal_titles_by_holder);
       for (const auto& county: counties)
