@@ -1,6 +1,7 @@
 #include "launcher_core.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <charconv>
 #include <iterator>
 #include <map>
@@ -248,6 +249,10 @@ std::optional<std::string> launcher::NewestReleaseTag(const std::string& release
 
 std::string launcher::ReleaseDisplayName(const std::string& tag)
 {
+   if (tag.size() > 1 && tag.front() == 'v' && std::isdigit(static_cast<unsigned char>(tag[1])) != 0)
+   {
+      return "version " + tag.substr(1);
+   }
    auto name = tag;
    std::ranges::replace(name, '-', ' ');
    return name;

@@ -189,7 +189,7 @@ void ReadAvailable(wxInputStream* stream, std::string& buffer)
 }  // namespace
 
 launcher::LauncherFrame::LauncherFrame():
-    wxFrame(nullptr, wxID_ANY, "CK3 to EU5 Converter - unofficial " + launcher::ReleaseDisplayName(launcher::kReleaseTag)),
+    wxFrame(nullptr, wxID_ANY, "CK3 to EU5 Converter - " + launcher::ReleaseDisplayName(launcher::kReleaseTag) + " (unofficial)"),
     output_timer_(this)
 {
    BuildInterface();
@@ -248,7 +248,7 @@ void launcher::LauncherFrame::BuildInterface()
    title->SetFont(title_font);
    layout->Add(title, padded);
    auto* subtitle =
-       new wxStaticText(panel, wxID_ANY, "Unofficial preview. Not made or supported by Paradox Game Converters.");
+       new wxStaticText(panel, wxID_ANY, "Unofficial build. Not made or supported by Paradox Game Converters.");
    subtitle->SetForegroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT));
    layout->Add(subtitle, wxSizerFlags().Border(wxLEFT | wxRIGHT, FromDIP(12)));
 

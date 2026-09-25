@@ -191,6 +191,9 @@ TEST(LauncherCoreTests, TheNewestReleaseIsFoundInGitHubsList)  // NOLINT : clang
 TEST(LauncherCoreTests, ReleaseNamesReadLikeWords)  // NOLINT : clang-tidy doens't like gtest
 {
    EXPECT_EQ("preview 2.1", ReleaseDisplayName("preview-2.1"));
+   EXPECT_EQ("version 2.2", ReleaseDisplayName("v2.2"));
+   EXPECT_TRUE(IsNewerRelease("v2.2", "v2.1"));
+   EXPECT_FALSE(IsNewerRelease("preview-2.1", "v2.1"));
 }
 
 }  // namespace launcher
