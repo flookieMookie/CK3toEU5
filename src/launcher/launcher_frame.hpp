@@ -2,6 +2,7 @@
 #define LAUNCHER_LAUNCHER_FRAME_H
 
 #include <wx/filepicker.h>
+#include <wx/hyperlink.h>
 #include <wx/process.h>
 #include <wx/timer.h>
 #include <wx/wx.h>
@@ -9,6 +10,7 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "launcher_core.hpp"
@@ -23,6 +25,11 @@ class LauncherFrame: public wxFrame
 {
   public:
    LauncherFrame();
+   ~LauncherFrame() override;
+   LauncherFrame(const LauncherFrame&) = delete;
+   LauncherFrame& operator=(const LauncherFrame&) = delete;
+   LauncherFrame(LauncherFrame&&) = delete;
+   LauncherFrame& operator=(LauncherFrame&&) = delete;
 
   private:
    // A folder the converter needs, with a note beside it saying whether it was found.
@@ -33,6 +40,9 @@ class LauncherFrame: public wxFrame
    };
 
    void BuildInterface();
+   // Asks GitHub in the background whether there is a newer release, and says so if there is.
+   void StartUpdateCheck();
+   void ShowUpdate(const std::string& tag);
    FolderRow AddFolderRow(wxWindow* parent, wxFlexGridSizer* grid, const wxString& label);
    void LoadSettings();
    void SaveSettings() const;
@@ -70,6 +80,11 @@ class LauncherFrame: public wxFrame
    wxButton* open_mod_folder_ = nullptr;
    wxCheckBox* show_details_ = nullptr;
    wxTextCtrl* log_ = nullptr;
+   wxPanel* panel_ = nullptr;
+   wxBoxSizer* update_row_ = nullptr;
+   wxStaticText* update_text_ = nullptr;
+   wxHyperlinkCtrl* update_link_ = nullptr;
+   std::thread update_check_;
 
    wxTimer output_timer_;
    wxProcess* process_ = nullptr;

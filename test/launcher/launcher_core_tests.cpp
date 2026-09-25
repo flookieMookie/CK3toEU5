@@ -160,4 +160,37 @@ TEST(LauncherCoreTests, CompleteSettingsAreAccepted)  // NOLINT : clang-tidy doe
    EXPECT_TRUE(ValidateSettings(settings).empty());
 }
 
+TEST(LauncherCoreTests, ReleaseTagsAreComparedByVersion)  // NOLINT : clang-tidy doens't like gtest
+{
+   EXPECT_EQ((std::vector<int>{2, 1}), VersionNumbers("preview-2.1"));
+   EXPECT_EQ((std::vector<int>{3}), VersionNumbers("v3"));
+   EXPECT_TRUE(VersionNumbers("nightly").empty());
+
+   EXPECT_TRUE(IsNewerRelease("preview-2.1", "preview-2"));
+   EXPECT_TRUE(IsNewerRelease("preview-2.10", "preview-2.9"));
+   EXPECT_TRUE(IsNewerRelease("v3.0", "preview-2.1"));
+   EXPECT_FALSE(IsNewerRelease("preview-2.0", "preview-2"));
+   EXPECT_FALSE(IsNewerRelease("preview-2", "preview-2.1"));
+   EXPECT_FALSE(IsNewerRelease("nightly", "preview-2.1"));
+}
+
+TEST(LauncherCoreTests, TheNewestReleaseIsFoundInGitHubsList)  // NOLINT : clang-tidy doens't like gtest
+{
+   const std::string releases = R"([
+      {"url": "https://api.github.com/x", "tag_name": "preview-2.1", "name": "unofficial preview 2.1", "prerelease": true},
+      {"tag_name":"preview-3","prerelease":false},
+      {"tag_name": "preview-2", "prerelease": true},
+      {"tag_name": "nightly"}
+   ])";
+
+   EXPECT_EQ("preview-3", NewestReleaseTag(releases));
+   EXPECT_FALSE(NewestReleaseTag("[]").has_value());
+   EXPECT_FALSE(NewestReleaseTag("").has_value());
+}
+
+TEST(LauncherCoreTests, ReleaseNamesReadLikeWords)  // NOLINT : clang-tidy doens't like gtest
+{
+   EXPECT_EQ("preview 2.1", ReleaseDisplayName("preview-2.1"));
+}
+
 }  // namespace launcher

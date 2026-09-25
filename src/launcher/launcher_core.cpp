@@ -193,3 +193,62 @@ std::filesystem::path launcher::FromUtf8(const std::string& text)
    });
    return utf8;
 }
+
+std::vector<int> launcher::VersionNumbers(const std::string& tag)
+{
+   static const std::regex kVersion(R"((\d+(?:\.\d+)*)\s*$)");
+   std::smatch version;
+   if (!std::regex_search(tag, version, kVersion))
+   {
+      return {};
+   }
+   std::vector<int> numbers;
+   std::istringstream parts(version[1].str());
+   for (std::string part; std::getline(parts, part, '.');)
+   {
+      int number = 0;
+      std::from_chars(part.data(), part.data() + part.size(), number);
+      numbers.push_back(number);
+   }
+   return numbers;
+}
+
+bool launcher::IsNewerRelease(const std::string& candidate, const std::string& current)
+{
+   auto candidate_numbers = VersionNumbers(candidate);
+   auto current_numbers = VersionNumbers(current);
+   if (candidate_numbers.empty() || current_numbers.empty())
+   {
+      return false;
+   }
+   // 2 and 2.0 are the same version.
+   const auto length = std::max(candidate_numbers.size(), current_numbers.size());
+   candidate_numbers.resize(length, 0);
+   current_numbers.resize(length, 0);
+   return candidate_numbers > current_numbers;
+}
+
+std::optional<std::string> launcher::NewestReleaseTag(const std::string& releases_json)
+{
+   // Each release in the list carries "tag_name": "...". Drafts never appear to the public API.
+   static const std::regex kTagName(R"re("tag_name"\s*:\s*"([^"]+)")re");
+   std::optional<std::string> newest;
+   for (auto tag = std::sregex_iterator(releases_json.begin(), releases_json.end(), kTagName);
+        tag != std::sregex_iterator();
+        ++tag)
+   {
+      const auto name = (*tag)[1].str();
+      if (!VersionNumbers(name).empty() && (!newest.has_value() || IsNewerRelease(name, *newest)))
+      {
+         newest = name;
+      }
+   }
+   return newest;
+}
+
+std::string launcher::ReleaseDisplayName(const std::string& tag)
+{
+   auto name = tag;
+   std::ranges::replace(name, '-', ' ');
+   return name;
+}

@@ -11,6 +11,14 @@
 namespace launcher
 {
 
+// This release's tag on GitHub. The launcher compares it with the newest release there to tell the
+// player when there is an update, so it changes with every release.
+inline constexpr const char* kReleaseTag = "preview-2.1";
+// Where the fork's releases are published.
+inline constexpr const char* kReleasesApiHost = "api.github.com";
+inline constexpr const char* kReleasesApiPath = "/repos/flookieMookie/CK3toEU5/releases?per_page=30";
+inline constexpr const char* kReleasePageUrl = "https://github.com/flookieMookie/CK3toEU5/releases/tag/";
+
 // Everything the converter needs to know, as the launcher collects it from the player.
 struct Settings
 {
@@ -62,6 +70,15 @@ struct LogLine
 
 // What is wrong with the settings, in words a player can act on. Empty when conversion can start.
 [[nodiscard]] std::vector<std::string> ValidateSettings(const Settings& settings);
+
+// The version numbers in a release tag - preview-2.1 is {2, 1}, v3 is {3}. Empty when there are none.
+[[nodiscard]] std::vector<int> VersionNumbers(const std::string& tag);
+// Whether one release tag is a later version than another: 2.1 after 2, 2.10 after 2.9.
+[[nodiscard]] bool IsNewerRelease(const std::string& candidate, const std::string& current);
+// The latest release tag in GitHub's list of releases (the JSON its API returns), if any.
+[[nodiscard]] std::optional<std::string> NewestReleaseTag(const std::string& releases_json);
+// How a release tag reads to a player: preview-2.1 is "preview 2.1".
+[[nodiscard]] std::string ReleaseDisplayName(const std::string& tag);
 
 // A path as UTF-8 with forward slashes, the way the converter's configuration expects it.
 [[nodiscard]] std::string ToUtf8(const std::filesystem::path& path);

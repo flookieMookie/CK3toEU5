@@ -1,5 +1,7 @@
 #include "launcher_frame.hpp"
 
+#include <windows.h>
+#include <winhttp.h>
 #include <wx/fileconf.h>
 #include <wx/msw/registry.h>
 #include <wx/stdpaths.h>
@@ -18,6 +20,63 @@ constexpr int kOutputPollMilliseconds = 100;
 constexpr int kConversionShare = 90;
 
 const wxColour kGood(0, 128, 0);
+
+// Short waits: the check runs while the player is choosing a save, and is simply skipped when
+// GitHub can't be reached.
+constexpr int kUpdateTimeoutMilliseconds = 5000;
+
+// GitHub's list of the fork's releases, or empty if it couldn't be fetched. Nothing about the
+// player is sent: it is a plain request for a public page.
+std::string FetchReleasesJson()
+{
+   const auto to_wide = [](const char* text) {
+      return std::wstring(text, text + std::char_traits<char>::length(text));
+   };
+   std::string body;
+   HINTERNET session = WinHttpOpen(L"CK3toEU5-launcher", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_NO_PROXY_NAME,
+       WINHTTP_NO_PROXY_BYPASS, 0);
+   if (session == nullptr)
+   {
+      return body;
+   }
+   WinHttpSetTimeouts(session, kUpdateTimeoutMilliseconds, kUpdateTimeoutMilliseconds, kUpdateTimeoutMilliseconds,
+       kUpdateTimeoutMilliseconds);
+   HINTERNET connection = WinHttpConnect(session, to_wide(launcher::kReleasesApiHost).c_str(), INTERNET_DEFAULT_HTTPS_PORT, 0);
+   HINTERNET request = connection == nullptr ? nullptr
+                                             : WinHttpOpenRequest(connection,
+                                                   L"GET",
+                                                   to_wide(launcher::kReleasesApiPath).c_str(),
+                                                   nullptr,
+                                                   WINHTTP_NO_REFERER,
+                                                   WINHTTP_DEFAULT_ACCEPT_TYPES,
+                                                   WINHTTP_FLAG_SECURE);
+   DWORD status = 0;
+   DWORD status_size = sizeof(status);
+   if (request != nullptr &&
+       WinHttpSendRequest(request, L"Accept: application/vnd.github+json\r\n", static_cast<DWORD>(-1L), WINHTTP_NO_REQUEST_DATA, 0, 0, 0) &&
+       WinHttpReceiveResponse(request, nullptr) &&
+       WinHttpQueryHeaders(request, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_HEADER_NAME_BY_INDEX,
+           &status, &status_size, WINHTTP_NO_HEADER_INDEX) &&
+       status == 200)
+   {
+      std::array<char, 8192> chunk{};
+      DWORD read = 0;
+      while (WinHttpReadData(request, chunk.data(), static_cast<DWORD>(chunk.size()), &read) && read > 0)
+      {
+         body.append(chunk.data(), read);
+      }
+   }
+   if (request != nullptr)
+   {
+      WinHttpCloseHandle(request);
+   }
+   if (connection != nullptr)
+   {
+      WinHttpCloseHandle(connection);
+   }
+   WinHttpCloseHandle(session);
+   return body;
+}
 const wxColour kBad(192, 0, 0);
 const wxColour kCaution(170, 100, 0);
 
@@ -130,22 +189,54 @@ void ReadAvailable(wxInputStream* stream, std::string& buffer)
 }  // namespace
 
 launcher::LauncherFrame::LauncherFrame():
-    wxFrame(nullptr, wxID_ANY, "CK3 to EU5 Converter (unofficial preview)"),
+    wxFrame(nullptr, wxID_ANY, "CK3 to EU5 Converter - unofficial " + launcher::ReleaseDisplayName(launcher::kReleaseTag)),
     output_timer_(this)
 {
    BuildInterface();
    LoadSettings();
    DetectMissingFolders();
    UpdateFolderStatus();
+   StartUpdateCheck();
 
    Bind(wxEVT_TIMER, &LauncherFrame::OnOutputTimer, this);
    Bind(wxEVT_END_PROCESS, &LauncherFrame::OnProcessEnd, this);
    Bind(wxEVT_CLOSE_WINDOW, &LauncherFrame::OnClose, this);
 }
 
+launcher::LauncherFrame::~LauncherFrame()
+{
+   // The check gives up within its timeouts, so closing never waits long.
+   if (update_check_.joinable())
+   {
+      update_check_.join();
+   }
+}
+
+void launcher::LauncherFrame::StartUpdateCheck()
+{
+   update_check_ = std::thread([this]() {
+      const auto newest = NewestReleaseTag(FetchReleasesJson());
+      if (newest.has_value() && IsNewerRelease(*newest, kReleaseTag))
+      {
+         CallAfter([this, tag = *newest]() {
+            ShowUpdate(tag);
+         });
+      }
+   });
+}
+
+void launcher::LauncherFrame::ShowUpdate(const std::string& tag)
+{
+   update_text_->SetLabel("A new version is available: " + ReleaseDisplayName(tag) + ".");
+   update_link_->SetURL(std::string(kReleasePageUrl) + tag);
+   update_row_->ShowItems(true);
+   panel_->Layout();
+}
+
 void launcher::LauncherFrame::BuildInterface()
 {
    auto* panel = new wxPanel(this);
+   panel_ = panel;
    auto* layout = new wxBoxSizer(wxVERTICAL);
    const int gap = FromDIP(8);
    const auto padded = wxSizerFlags().Expand().Border(wxLEFT | wxRIGHT | wxTOP, FromDIP(12));
@@ -160,6 +251,19 @@ void launcher::LauncherFrame::BuildInterface()
        new wxStaticText(panel, wxID_ANY, "Unofficial preview. Not made or supported by Paradox Game Converters.");
    subtitle->SetForegroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT));
    layout->Add(subtitle, wxSizerFlags().Border(wxLEFT | wxRIGHT, FromDIP(12)));
+
+   // Hidden until the update check finds a newer release.
+   update_row_ = new wxBoxSizer(wxHORIZONTAL);
+   update_text_ = new wxStaticText(panel, wxID_ANY, "");
+   auto update_font = update_text_->GetFont();
+   update_font.MakeBold();
+   update_text_->SetFont(update_font);
+   update_text_->SetForegroundColour(kGood);
+   update_row_->Add(update_text_, wxSizerFlags().CenterVertical());
+   update_link_ = new wxHyperlinkCtrl(panel, wxID_ANY, "Download it", std::string(kReleasePageUrl) + kReleaseTag);
+   update_row_->Add(update_link_, wxSizerFlags().CenterVertical().Border(wxLEFT, FromDIP(8)));
+   layout->Add(update_row_, wxSizerFlags().Border(wxLEFT | wxRIGHT | wxTOP, FromDIP(12)));
+   update_row_->ShowItems(false);
 
    auto* save_box = new wxStaticBoxSizer(wxVERTICAL, panel, "1. Your Crusader Kings III save");
    save_picker_ = new wxFilePickerCtrl(save_box->GetStaticBox(),

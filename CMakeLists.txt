@@ -349,6 +349,8 @@ if (PLATFORM STREQUAL "Windows")
 	# only the PDB's file name, and wxWidgets' asserts, which embed their header paths, are off.
 	target_compile_definitions(CK3toEU5Launcher PRIVATE wxDEBUG_LEVEL=0)
 	target_link_options(CK3toEU5Launcher PRIVATE /PDBALTPATH:%_PDB%)
+	# WinHTTP, part of Windows, for the update check - no extra DLL to ship.
+	target_link_libraries(CK3toEU5Launcher PRIVATE winhttp)
 	target_compile_options(CK3toEU5Launcher PRIVATE
 		$<$<COMPILE_LANGUAGE:CXX>:/W4 /external:anglebrackets /external:W0 /WX>)
 	set_target_properties(CK3toEU5Launcher
