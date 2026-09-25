@@ -29,6 +29,7 @@ TEST(EU5WorldMapAreasTests, LocationsAreInTheirArea)  // NOLINT : clang-tidy doe
    EXPECT_EQ("svealand_area", areas.AreaOf("stockholm"));
    EXPECT_EQ("svealand_area", areas.AreaOf("orebro"));
    EXPECT_EQ("gotaland_area", areas.AreaOf("hoborg"));
+   EXPECT_EQ("scandinavian_region", areas.RegionOf("hoborg"));
    EXPECT_FALSE(areas.AreaOf("uppland_province").has_value());
    EXPECT_FALSE(areas.AreaOf("the").has_value());
 }

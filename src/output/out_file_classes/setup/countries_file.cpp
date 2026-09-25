@@ -3,6 +3,8 @@
 #include <external/commonItems/Log.h>
 
 #include <algorithm>
+#include <map>
+#include <regex>
 #include <set>
 #include <sstream>
 #include <string>
@@ -134,11 +136,12 @@ void WriteLocations(std::ostringstream& output, const eu5::Country& country)
    output << "\t\t\t}\n";
 }
 
-void WriteCountry(std::ostringstream& output, const eu5::Country& country)
+void WriteCountry(std::ostringstream& output, const eu5::Country& country, const std::string& discoveries)
 {
    output << "\n\t\t" << country.GetTag() << " = { # " << country.GetSourceRealm()->GetRealmName() << "\n";
    output << "\t\t\tcountry_rank = " << country.GetRank() << "\n";
    output << "\t\t\tstarting_technology_level = " << country.GetTechnologyLevel() << "\n";
+   output << discoveries;
    // The ruler's treasury, which EU5 keeps in the same place its own start data does.
    if (country.HasRuler())
    {
@@ -169,6 +172,40 @@ int WriteUntouchedVanillaCountries(std::ostringstream& output,
    return preserved;
 }
 }  // namespace
+
+std::string out::WriteDiscoveries(const std::vector<std::string>& locations,
+    const std::string& capital_owner_block,
+    const eu5::MapAreas& map_areas)
+{
+   static const std::regex kExploration(R"re(include\s*=\s*"(expl_[a-z_]+)")re");
+   static const std::regex kComment("#[^\n]*");
+   std::ostringstream output;
+   const auto owner_block = std::regex_replace(capital_owner_block, kComment, "");
+   for (auto include = std::sregex_iterator(owner_block.begin(), owner_block.end(), kExploration);
+        include != std::sregex_iterator();
+        ++include)
+   {
+      output << "\t\t\tinclude = \"" << (*include)[1].str() << "\"\n";
+   }
+   std::set<std::string> regions;
+   for (const auto& location: locations)
+   {
+      if (const auto region = map_areas.RegionOf(location))
+      {
+         regions.insert(*region);
+      }
+   }
+   if (!regions.empty())
+   {
+      output << "\t\t\tdiscovered_regions = {";
+      for (const auto& region: regions)
+      {
+         output << " " << region;
+      }
+      output << " }\n";
+   }
+   return output.str();
+}
 
 std::optional<std::string> out::HeirSelectionFor(const std::string& government, const std::set<std::string>& ck3_laws)
 {
@@ -203,10 +240,12 @@ namespace out
 CountriesFile::CountriesFile(const std::string& name,
     FileWriter& file_writer,
     const eu5::EU5World& eu5_world,
-    const eu5::VanillaCountries& vanilla_countries):
+    const eu5::VanillaCountries& vanilla_countries,
+    const eu5::MapAreas& map_areas):
     OutputFile(name, file_writer),
     eu5_world_(eu5_world),
-    vanilla_countries_(vanilla_countries)
+    vanilla_countries_(vanilla_countries),
+    map_areas_(map_areas)
 {
 }
 
@@ -219,11 +258,29 @@ void CountriesFile::Create(const std::filesystem::path& folder_path)
    output << "countries = {\n";
    output << "\tcountries = {\n";
 
+   // Who held each location in EU5's 1337, whose exploration a converted country takes on.
+   std::map<std::string, const std::string*> vanilla_block_of_location;
+   for (const auto& vanilla: vanilla_countries_.GetCountries())
+   {
+      for (const auto& location: vanilla.locations)
+      {
+         vanilla_block_of_location.emplace(location, &vanilla.block);
+      }
+   }
+
    for (const auto& country: eu5_world_.GetCountries())
    {
       if (ShouldWrite(*country))
       {
-         WriteCountry(output, *country);
+         std::string capital_owner_block;
+         if (const auto& capital = country->GetCapitalLocation(); capital.has_value())
+         {
+            if (const auto owner = vanilla_block_of_location.find(*capital); owner != vanilla_block_of_location.end())
+            {
+               capital_owner_block = *owner->second;
+            }
+         }
+         WriteCountry(output, *country, WriteDiscoveries(country->GetLocations(), capital_owner_block, map_areas_));
       }
    }
 

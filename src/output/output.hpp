@@ -5,11 +5,13 @@
 #include <external/commonItems/Localization/LocalizationDatabase.h>
 #include <external/commonItems/ModLoader/ModFilesystem.h>
 
+#include <memory>
 #include <ostream>
 #include <utility>
 #include <vector>
 
 #include "out_file_classes/output_folder.hpp"
+#include "src/eu5_world/eu5_map_areas.hpp"
 #include "src/eu5_world/eu5_vanilla_characters.hpp"
 #include "src/eu5_world/eu5_vanilla_countries.hpp"
 #include "src/eu5_world/eu5_world.hpp"
@@ -51,6 +53,8 @@ class Output  // class with the structure of the output mod
 
    std::filesystem::path output_path_;
    std::string mod_name_;
+   // EU5's map hierarchy, read once for the files that place things in areas and regions.
+   std::shared_ptr<const eu5::MapAreas> map_areas_;
    commonItems::ConverterVersion converter_version_;
 };
 

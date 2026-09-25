@@ -1,4 +1,5 @@
 #include <set>
+#include <sstream>
 #include <string>
 
 #include "gtest/gtest.h"
@@ -29,6 +30,32 @@ TEST(OutputCountriesFileTests, OtherGovernmentsKeepEU5sDefault)  // NOLINT : cla
    EXPECT_FALSE(HeirSelectionFor("tribe", {"confederate_partition_succession_law"}).has_value());
    EXPECT_FALSE(HeirSelectionFor("theocracy", {"bishop_theocratic_succession_law"}).has_value());
    EXPECT_FALSE(HeirSelectionFor("republic", {"city_succession_law"}).has_value());
+}
+
+TEST(OutputCountriesFileTests, ConvertedCountriesKnowTheWorldTheirLandsOwnerKnew)  // NOLINT : clang-tidy doens't like gtest
+{
+   std::stringstream definitions;
+   definitions << "europe = { western_europe = { france_region = { ile_de_france_area = { paris_province = { paris } } }\n";
+   definitions << "   italy_region = { lazio_area = { roma_province = { rome } } } } }\n";
+   const eu5::MapAreas map_areas(definitions);
+   const std::string vanilla_france =
+       "\tFRA = {\n\t\tinclude = \"catholic_monarchy\"\n\t\tinclude = \"expl_northern_europe\" # the west\n"
+       "\t\t# include = \"expl_china\"\n\t\tinclude = \"expl_mediterranean\"\n\t}\n";
+
+   EXPECT_EQ(
+       "\t\t\tinclude = \"expl_northern_europe\"\n"
+       "\t\t\tinclude = \"expl_mediterranean\"\n"
+       "\t\t\tdiscovered_regions = { france_region italy_region }\n",
+       WriteDiscoveries({"paris", "rome", "nowhere"}, vanilla_france, map_areas));
+}
+
+TEST(OutputCountriesFileTests, LandUnownedIn1337StillKnowsItsOwnRegions)  // NOLINT : clang-tidy doens't like gtest
+{
+   std::stringstream definitions;
+   definitions << "africa = { sahel = { sahel_region = { ghana_area = { kumbi_province = { kumbi_saleh } } } } }\n";
+   const eu5::MapAreas map_areas(definitions);
+
+   EXPECT_EQ("\t\t\tdiscovered_regions = { sahel_region }\n", WriteDiscoveries({"kumbi_saleh"}, "", map_areas));
 }
 
 }  // namespace out

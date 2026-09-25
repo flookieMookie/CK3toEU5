@@ -31,8 +31,9 @@ void eu5::MapAreas::Parse(std::istream& input_stream)
       contents.erase(0, 3);
    }
 
-   // The blocks open around each location: the nearest one whose name ends in _area is its area. A
-   // word followed by { names a block; any other word is a location.
+   // The blocks open around each location: the nearest one whose name ends in _area is its area, and
+   // the nearest ending in _region its region. A word followed by { names a block; any other word is
+   // a location.
    std::vector<std::string> open_blocks;
    std::string previous_word;
    std::string token;
@@ -47,6 +48,10 @@ void eu5::MapAreas::Parse(std::istream& input_stream)
          if (block->ends_with("_area"))
          {
             area_of_location_.emplace(previous_word, *block);
+         }
+         else if (block->ends_with("_region"))
+         {
+            region_of_location_.emplace(previous_word, *block);
             break;
          }
       }
@@ -105,6 +110,15 @@ std::optional<std::string> eu5::MapAreas::AreaOf(const std::string& location) co
    if (const auto area = area_of_location_.find(location); area != area_of_location_.end())
    {
       return area->second;
+   }
+   return std::nullopt;
+}
+
+std::optional<std::string> eu5::MapAreas::RegionOf(const std::string& location) const
+{
+   if (const auto region = region_of_location_.find(location); region != region_of_location_.end())
+   {
+      return region->second;
    }
    return std::nullopt;
 }

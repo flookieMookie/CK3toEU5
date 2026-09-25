@@ -57,6 +57,7 @@ Output::Output(std::string name,
    // registered according to folder structure
    // ----------------------------------------------------------------------------------------
    root_folder_ = std::make_unique<OutputFolder>(output_path_.string(), folder_manager_);
+   map_areas_ = std::make_shared<const eu5::MapAreas>(eu5_directory);
 
    auto mod_folder = std::make_unique<OutputFolder>(mod_name_, folder_manager_);
 
@@ -78,7 +79,7 @@ Output::Output(std::string name,
    auto start_folder = std::make_unique<OutputFolder>("start", folder_manager_);
 
    auto countries_file =
-       std::make_unique<CountriesFile>("10_countries.txt", file_writer_, eu5_world, vanilla_countries);
+       std::make_unique<CountriesFile>("10_countries.txt", file_writer_, eu5_world, vanilla_countries, *map_areas_);
    start_folder->RegisterFileOrResource(std::move(countries_file));
 
    auto dynasties_file =
@@ -125,7 +126,7 @@ Output::Output(std::string name,
        vanilla_countries,
        eu5_directory,
        1,
-       [&eu5_world, eu5_directory]() {
+       [&eu5_world, map_areas = map_areas_]() {
           std::map<std::string, std::string> capitals;
           for (const auto& country: eu5_world.GetCountries())
           {
@@ -134,7 +135,7 @@ Output::Output(std::string name,
                 capitals.emplace(country->GetTag(), *country->GetCapitalLocation());
              }
           }
-          return WriteLevies(eu5_world.GetWars(), capitals, eu5::MapAreas(eu5_directory));
+          return WriteLevies(eu5_world.GetWars(), capitals, *map_areas);
        }));
 
    // EU5's own buildings, cardinals' seats, saints and works of art: buildings handed to whoever
