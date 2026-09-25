@@ -22,6 +22,9 @@ struct CultureDefinition
    // campaign's hybrid and divergent ones.
    std::string ck3_template;
    std::string ck3_name;
+   // The graphical culture tags - indian_gfx and the like - that give the culture's people their
+   // portraits and units. A generated culture takes those of its nearest EU5 relative.
+   std::vector<std::string> gfx_tags;
 };
 
 // What EU5 actually defines: country tags, cultures and religions, scraped from the install.

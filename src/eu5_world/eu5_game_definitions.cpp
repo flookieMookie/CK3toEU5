@@ -92,6 +92,19 @@ void eu5::GameDefinitions::LoadCultures(const std::filesystem::path& folder)
          current->groups = groups;
       }
    });
+   culture_parser.registerKeyword("tags", [&current](std::istream& input_stream) {
+      const auto tags = commonItems::getStrings(input_stream);
+      if (current != nullptr)
+      {
+         for (const auto& tag: tags)
+         {
+            if (tag.ends_with("_gfx"))
+            {
+               current->gfx_tags.push_back(tag);
+            }
+         }
+      }
+   });
    culture_parser.registerRegex(commonItems::catchallRegex, commonItems::ignoreItem);
 
    for (const auto& entry: std::filesystem::directory_iterator(folder))

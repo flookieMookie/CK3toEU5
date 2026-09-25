@@ -381,6 +381,7 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
    }
 
    AssignTributaries(ck3_world.GetVassalContracts());
+   FitSubjectTypes(game_definitions);
    AssignAlliances(ck3_world.GetRelations());
    AssignWars(context);
    AssignTruces(ck3_world.GetRelations());
@@ -696,6 +697,59 @@ void eu5::EU5World::AssignAlliances(const ck3::Relations& relations)
       alliances_.emplace(std::min(first->second->GetTag(), second->second->GetTag()),
           std::max(first->second->GetTag(), second->second->GetTag()));
    }
+}
+
+void eu5::EU5World::FitSubjectTypes(const GameDefinitions& game_definitions)
+{
+   std::map<std::string, std::shared_ptr<Country>> country_of_tag;
+   for (const auto& country: countries_)
+   {
+      country_of_tag.emplace(country->GetTag(), country);
+   }
+   const auto generated_cultures = culture_resolver_.GetUsedGeneratedCultures();
+   const auto is_indian = [&](const Country& country) {
+      if (!country.GetCulture().has_value())
+      {
+         return false;
+      }
+      const CultureDefinition* definition = game_definitions.GetCultureDefinition(*country.GetCulture());
+      if (definition == nullptr)
+      {
+         const auto generated = generated_cultures.find(*country.GetCulture());
+         definition = generated == generated_cultures.end() ? nullptr : &generated->second;
+      }
+      return definition != nullptr && std::ranges::find(definition->groups, "indian_group") != definition->groups.end();
+   };
+
+   std::vector<Dependency> fitted;
+   for (auto dependency: dependencies_)
+   {
+      const auto liege = country_of_tag.find(dependency.liege_tag);
+      const auto subject = country_of_tag.find(dependency.vassal_tag);
+      if (liege == country_of_tag.end() || subject == country_of_tag.end())
+      {
+         fitted.push_back(dependency);
+         continue;
+      }
+      // Indian cultures get the samanta advance, and a country with it may not hold vassals
+      // (in_game/common/subject_types/vassal.txt); its subjects are samantas instead.
+      if (dependency.subject_type == "vassal" && is_indian(*liege->second))
+      {
+         dependency.subject_type = "samanta";
+         ++samantas_;
+      }
+      // A tributary must be a tribe (tributary.txt), unless the overlord is a steppe horde, which no
+      // converted country is. CK3 pays tribute from settled kingdoms too; EU5 would drop those on
+      // the first day, so they stay independent from the start.
+      if (dependency.subject_type == "tributary" && !subject->second->GetSourceRealm()->GetGovernment().starts_with("tribal"))
+      {
+         subject->second->SetLiegeTag("");
+         ++tributaries_dropped_;
+         continue;
+      }
+      fitted.push_back(dependency);
+   }
+   dependencies_ = std::move(fitted);
 }
 
 void eu5::EU5World::AssignTruces(const ck3::Relations& relations)
@@ -1177,6 +1231,8 @@ void eu5::EU5World::LogLandReport() const
       Log(LogLevel::Info) << "   " << tributaries_ << " CK3 tributaries became EU5 tributaries; " << tributaries_skipped_
                           << " could not, their ruler having no country or already being a subject.";
    }
+   Log(LogLevel::Info) << "   " << samantas_ << " subjects of Indian overlords are samantas, as EU5 has them; "
+                       << tributaries_dropped_ << " CK3 tributaries are not tribes, which EU5 requires, and start free.";
    Log(LogLevel::Info) << "   " << alliances_.size() << " alliances between independent countries.";
    Log(LogLevel::Info) << "   " << truces_.size() << " truces between independent countries.";
    Log(LogLevel::Info) << "   " << overlords_raised_to_subject_nations_

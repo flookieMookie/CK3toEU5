@@ -129,6 +129,9 @@ class EU5World
   private:
    // CK3 tributaries rule their own land, so they are already countries; this makes them subjects.
    void AssignTributaries(const ck3::VassalContracts& contracts);
+   // Each subject in the form EU5 accepts at game start: Indian overlords hold samantas rather than
+   // vassals, and only tribes can be tributaries.
+   void FitSubjectTypes(const GameDefinitions& game_definitions);
    // Alliances between CK3 rulers who both became independent countries.
    void AssignAlliances(const ck3::Relations& relations);
    // Truces between CK3 rulers who both became independent countries, and aren't at war again.
@@ -209,6 +212,8 @@ class EU5World
    std::vector<ConvertedWar> wars_;
    std::vector<ConvertedTruce> truces_;
    int wars_skipped_ = 0;
+   int samantas_ = 0;
+   int tributaries_dropped_ = 0;
    int overlords_raised_to_subject_nations_ = 0;
    std::map<long long, ConvertedDynasty> dynasties_;
    std::map<std::string, ck3::CoatOfArms> flags_;

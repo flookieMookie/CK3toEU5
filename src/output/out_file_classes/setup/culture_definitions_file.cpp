@@ -51,6 +51,15 @@ void CultureDefinitionsFile::Create(const std::filesystem::path& folder_path)
       output << "\n" << name << " = {\n";
       output << "\tlanguage = " << definition.language << "\n";
       output << "\tcolor = " << ColourFor(name) << "\n";
+      if (!definition.gfx_tags.empty())
+      {
+         output << "\ttags = {";
+         for (const auto& tag: definition.gfx_tags)
+         {
+            output << " " << tag;
+         }
+         output << " }\n";
+      }
       output << "\tculture_groups = {\n";
       for (const auto& group: definition.groups)
       {

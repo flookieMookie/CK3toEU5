@@ -213,8 +213,29 @@ std::string eu5::CultureResolver::Resolve(const ck3::Culture& ck3_culture)
       generated_name = name + "_" + std::to_string(suffix++);
    }
 
-   generated_cultures_.insert_or_assign(generated_name,
-       CultureDefinition{*language, groups, ck3_culture.GetTemplate().value_or(""), ck3_culture.GetLocalizedName().value_or("")});
+   CultureDefinition definition{*language, groups, ck3_culture.GetTemplate().value_or(""), ck3_culture.GetLocalizedName().value_or(""), {}};
+   // Without graphical culture tags EU5 has no portraits or units for a culture's people. Borrow
+   // those of an EU5 culture speaking the same language, else one in the same group.
+   if (game_definitions_ != nullptr)
+   {
+      const auto& definitions = game_definitions_->GetCultureDefinitions();
+      const auto relative = std::ranges::find_if(definitions, [&definition](const auto& candidate) {
+         return !candidate.second.gfx_tags.empty() && candidate.second.language == definition.language;
+      });
+      const auto group_member = std::ranges::find_if(definitions, [&definition](const auto& candidate) {
+         return !candidate.second.gfx_tags.empty() && !definition.groups.empty() &&
+                std::ranges::find(candidate.second.groups, definition.groups.front()) != candidate.second.groups.end();
+      });
+      if (relative != definitions.end())
+      {
+         definition.gfx_tags = relative->second.gfx_tags;
+      }
+      else if (group_member != definitions.end())
+      {
+         definition.gfx_tags = group_member->second.gfx_tags;
+      }
+   }
+   generated_cultures_.insert_or_assign(generated_name, std::move(definition));
    resolved_.emplace(key, generated_name);
    return generated_name;
 }
