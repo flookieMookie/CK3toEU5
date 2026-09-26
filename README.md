@@ -46,7 +46,7 @@ To start, first clone the repository. Then open a terminal window to the locatio
 
 There are three CMake configurations: x64 release, x64 debug, and x64 clang-tidy. The last runs a series of static analysis checks on the code base.
 
-The Windows build also produces `CK3toEU5Launcher.exe`, the launcher the releases ship. Work happens on the `preview` branch.
+The Windows build also produces `CK3toEU5Launcher.exe`, the launcher the releases ship. Work happens on the `beta` branch.
 
 ## Checking a conversion
 `python tools/validate_output.py <converted mod folder> [<EU5 install folder>]` checks a converted mod against EU5's own definitions: valid UTF-8 and balanced braces in every file, every country, character and dynasty referred to is defined, every localisation key exists in every language, and every ruler trait passes EU5's allow rules. It exits non-zero if it finds a problem.
