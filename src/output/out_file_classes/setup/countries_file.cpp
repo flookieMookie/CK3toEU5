@@ -184,8 +184,8 @@ std::string out::WriteDiscoveries(const std::vector<std::string>& locations,
    std::ostringstream output;
    const auto owner_block = std::regex_replace(capital_owner_block, kComment, "");
    for (auto include = std::sregex_iterator(owner_block.begin(), owner_block.end(), kExploration);
-        include != std::sregex_iterator();
-        ++include)
+       include != std::sregex_iterator();
+       ++include)
    {
       output << "\t\t\tinclude = \"" << (*include)[1].str() << "\"\n";
    }

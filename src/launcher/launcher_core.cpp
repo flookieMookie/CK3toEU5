@@ -118,12 +118,14 @@ std::vector<std::filesystem::path> launcher::ParseSteamLibraryFolders(std::istre
    static const std::regex kPathEntry(R"re("path"\s*"([^"]*)")re");
 
    std::vector<std::filesystem::path> libraries;
-   for (auto match = std::sregex_iterator(contents.begin(), contents.end(), kPathEntry); match != std::sregex_iterator();
-        ++match)
+   for (auto match = std::sregex_iterator(contents.begin(), contents.end(), kPathEntry);
+       match != std::sregex_iterator();
+       ++match)
    {
       // Steam escapes the backslashes in Windows paths.
       std::string path = (*match)[1].str();
-      for (auto position = path.find(R"(\\)"); position != std::string::npos; position = path.find(R"(\\)", position + 1))
+      for (auto position = path.find(R"(\\)"); position != std::string::npos;
+          position = path.find(R"(\\)", position + 1))
       {
          path.erase(position, 1);
       }
@@ -165,18 +167,21 @@ std::vector<std::string> launcher::ValidateSettings(const Settings& settings)
    }
    if (!IsGameInstall(settings.ck3_install))
    {
-      problems.emplace_back("Crusader Kings III isn't installed in the folder chosen for it. Choose the folder that "
-                            "contains its \"game\" folder.");
+      problems.emplace_back(
+          "Crusader Kings III isn't installed in the folder chosen for it. Choose the folder that "
+          "contains its \"game\" folder.");
    }
    if (!FolderExists(settings.ck3_documents))
    {
-      problems.emplace_back("The Crusader Kings III documents folder can't be found. It's usually "
-                            "Documents/Paradox Interactive/Crusader Kings III.");
+      problems.emplace_back(
+          "The Crusader Kings III documents folder can't be found. It's usually "
+          "Documents/Paradox Interactive/Crusader Kings III.");
    }
    if (!IsGameInstall(settings.eu5_install))
    {
-      problems.emplace_back("Europa Universalis V isn't installed in the folder chosen for it. Choose the folder that "
-                            "contains its \"game\" folder.");
+      problems.emplace_back(
+          "Europa Universalis V isn't installed in the folder chosen for it. Choose the folder that "
+          "contains its \"game\" folder.");
    }
    if (settings.eu5_mods.empty())
    {
@@ -235,8 +240,8 @@ std::optional<std::string> launcher::NewestReleaseTag(const std::string& release
    static const std::regex kTagName(R"re("tag_name"\s*:\s*"([^"]+)")re");
    std::optional<std::string> newest;
    for (auto tag = std::sregex_iterator(releases_json.begin(), releases_json.end(), kTagName);
-        tag != std::sregex_iterator();
-        ++tag)
+       tag != std::sregex_iterator();
+       ++tag)
    {
       const auto name = (*tag)[1].str();
       if (!VersionNumbers(name).empty() && (!newest.has_value() || IsNewerRelease(name, *newest)))

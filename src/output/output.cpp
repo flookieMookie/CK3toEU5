@@ -12,8 +12,8 @@
 #include "out_file_classes/localization/country_names_file.hpp"
 #include "out_file_classes/metadata/metadata.hpp"
 #include "out_file_classes/output_folder.hpp"
-#include "out_file_classes/setup/coats_of_arms_file.hpp"
 #include "out_file_classes/setup/characters_file.hpp"
+#include "out_file_classes/setup/coats_of_arms_file.hpp"
 #include "out_file_classes/setup/countries_file.hpp"
 #include "out_file_classes/setup/country_definitions_file.hpp"
 #include "out_file_classes/setup/culture_definitions_file.hpp"
@@ -30,8 +30,17 @@
 namespace
 {
 // The languages EU5 1.3 ships localisation for.
-const std::vector<std::string> kEU5Languages =
-    {"braz_por", "english", "french", "german", "japanese", "korean", "polish", "russian", "simp_chinese", "spanish", "turkish"};
+const std::vector<std::string> kEU5Languages = {"braz_por",
+    "english",
+    "french",
+    "german",
+    "japanese",
+    "korean",
+    "polish",
+    "russian",
+    "simp_chinese",
+    "spanish",
+    "turkish"};
 }  // namespace
 
 namespace out
@@ -82,12 +91,14 @@ Output::Output(std::string name,
        std::make_unique<CountriesFile>("10_countries.txt", file_writer_, eu5_world, vanilla_countries, *map_areas_);
    start_folder->RegisterFileOrResource(std::move(countries_file));
 
-   auto dynasties_file =
-       std::make_unique<DynastiesFile>("04_dynasties.txt", file_writer_, eu5_world, eu5_directory);
+   auto dynasties_file = std::make_unique<DynastiesFile>("04_dynasties.txt", file_writer_, eu5_world, eu5_directory);
    start_folder->RegisterFileOrResource(std::move(dynasties_file));
 
-   auto characters_file = std::make_unique<CharactersFile>(
-       "05_characters.txt", file_writer_, eu5_world, vanilla_countries, vanilla_characters);
+   auto characters_file = std::make_unique<CharactersFile>("05_characters.txt",
+       file_writer_,
+       eu5_world,
+       vanilla_countries,
+       vanilla_characters);
    start_folder->RegisterFileOrResource(std::move(characters_file));
 
    auto pops_file = std::make_unique<PopsFile>("06_pops.txt", file_writer_, eu5_world, location_data);
@@ -100,8 +111,13 @@ Output::Output(std::string name,
        std::make_unique<DevelopmentFile>("14_development.txt", file_writer_, eu5_world, eu5_directory);
    start_folder->RegisterFileOrResource(std::move(development_file));
 
-   start_folder->RegisterFileOrResource(std::make_unique<InternationalOrganizationsFile>(
-       "15_international_organizations.txt", file_writer_, eu5_world, vanilla_countries, vanilla_characters, eu5_directory));
+   start_folder->RegisterFileOrResource(
+       std::make_unique<InternationalOrganizationsFile>("15_international_organizations.txt",
+           file_writer_,
+           eu5_world,
+           vanilla_countries,
+           vanilla_characters,
+           eu5_directory));
 
    // The wars the CK3 save was in the middle of, beside EU5's own among the countries it keeps.
    start_folder->RegisterFileOrResource(
@@ -115,8 +131,12 @@ Output::Output(std::string name,
             std::pair{"25_area_preferences.txt", 2},
             std::pair{"26_ai_personalities.txt", 2}})
    {
-      start_folder->RegisterFileOrResource(std::make_unique<VanillaStartFile>(
-          file_name, file_writer_, eu5_world, vanilla_countries, eu5_directory, entry_depth));
+      start_folder->RegisterFileOrResource(std::make_unique<VanillaStartFile>(file_name,
+          file_writer_,
+          eu5_world,
+          vanilla_countries,
+          eu5_directory,
+          entry_depth));
    }
 
    // EU5's own armies likewise, and the levies the countries fighting the converted wars have raised.
@@ -153,8 +173,12 @@ Output::Output(std::string name,
        }));
    for (const auto* file_name: {"11_art.txt", "13_religion.txt"})
    {
-      start_folder->RegisterFileOrResource(std::make_unique<VanillaLocationsFile>(
-          file_name, file_writer_, eu5_world, vanilla_countries, vanilla_characters, eu5_directory));
+      start_folder->RegisterFileOrResource(std::make_unique<VanillaLocationsFile>(file_name,
+          file_writer_,
+          eu5_world,
+          vanilla_countries,
+          vanilla_characters,
+          eu5_directory));
    }
 
    setup_folder->RegisterSubfolder(std::move(start_folder));
@@ -191,8 +215,8 @@ Output::Output(std::string name,
 
    auto gfx_folder = std::make_unique<OutputFolder>("gfx", folder_manager_);
    auto art_folder = std::make_unique<OutputFolder>("coat_of_arms", folder_manager_);
-   art_folder->RegisterFileOrResource(std::make_unique<CoatOfArmsTextures>(
-       "coat_of_arms_art", file_writer_, eu5_world, ck3_files, eu5_directory));
+   art_folder->RegisterFileOrResource(
+       std::make_unique<CoatOfArmsTextures>("coat_of_arms_art", file_writer_, eu5_world, ck3_files, eu5_directory));
    gfx_folder->RegisterSubfolder(std::move(art_folder));
    main_menu_folder->RegisterSubfolder(std::move(gfx_folder));
 

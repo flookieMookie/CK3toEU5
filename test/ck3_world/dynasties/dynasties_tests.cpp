@@ -135,7 +135,7 @@ TEST(CK3WorldDynastiesTests, LinkingMissingDynastyHeadIsIgnored)  // NOLINT : cl
 
    // CK3 prunes dead characters, so a save played towards 1337 names heads who are gone. A player's
    // conversion aborted on exactly this.
-   EXPECT_NO_THROW(dynasties.LinkCharacters(characters));  // NOLINT : clang-tidy doens't like gtest
+   EXPECT_NO_THROW(dynasties.LinkCharacters(characters));   // NOLINT : clang-tidy doens't like gtest
    const auto dynasty = dynasties.GetDynasties().find(15);  // NOLINT(readability-magic-numbers) : "magic number"
    ASSERT_NE(dynasties.GetDynasties().end(), dynasty);
    EXPECT_FALSE(dynasty->second->GetDynastyHead().has_value());

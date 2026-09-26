@@ -52,7 +52,8 @@ std::optional<std::string> out::FitOrganization(const std::string& organization,
          return true;
       }
       const auto converted = membership.converted_religions.find(tag);
-      return religion.has_value() && converted != membership.converted_religions.end() && converted->second == *religion;
+      return religion.has_value() && converted != membership.converted_religions.end() &&
+             converted->second == *religion;
    };
 
    std::smatch members_match;

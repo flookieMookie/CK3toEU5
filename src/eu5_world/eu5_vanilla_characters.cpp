@@ -139,7 +139,8 @@ std::vector<eu5::VanillaCharacter> eu5::VanillaCharacters::KeptFor(
    {
       static const std::regex kComment("#[^\n]*");
       const auto code = std::regex_replace(country->block, kComment, "");
-      for (auto value = std::sregex_iterator(code.begin(), code.end(), kValue); value != std::sregex_iterator(); ++value)
+      for (auto value = std::sregex_iterator(code.begin(), code.end(), kValue); value != std::sregex_iterator();
+          ++value)
       {
          const auto character = by_id.find((*value)[1].str());
          if (character != by_id.end() && !known.contains(character->first))

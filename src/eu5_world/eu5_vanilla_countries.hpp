@@ -33,7 +33,8 @@ class VanillaCountries
    [[nodiscard]] const auto& GetCountries() const { return countries_; }
    // The countries none of whose land the conversion took, which are carried over as they are. One
    // it took any land from has been replaced by a converted country.
-   [[nodiscard]] std::vector<const VanillaCountry*> GetUntouched(const std::set<std::string>& converted_locations) const;
+   [[nodiscard]] std::vector<const VanillaCountry*> GetUntouched(
+       const std::set<std::string>& converted_locations) const;
 
   private:
    void Parse(const std::filesystem::path& file_path);

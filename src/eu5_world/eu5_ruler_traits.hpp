@@ -19,7 +19,8 @@ struct Abilities
 // tactical_genius - at most three of them, personality first. EU5 only accepts a trait its allow rules
 // (in_game/common/traits/00_ruler.txt) let the character have: some need a good enough ability, and
 // some rule each other out, so a trait that would break them is left off.
-[[nodiscard]] std::vector<std::string> RulerTraitsFor(const std::set<std::string>& ck3_traits, const Abilities& abilities);
+[[nodiscard]] std::vector<std::string> RulerTraitsFor(const std::set<std::string>& ck3_traits,
+    const Abilities& abilities);
 
 }  // namespace eu5
 

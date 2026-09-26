@@ -28,7 +28,8 @@ TEST(CK3WorldWarsTests, ActiveWarsAreReadWithTheirSides)  // NOLINT : clang-tidy
    input << "\t\t\t}\n";
    input << "\t\t\tstart_date=866.5.2\n";
    input << "\t\t\tcasus_belli={\n";
-   input << "\t\t\t\ttype=ducal_conquest_cb\t\t\t\tscope={\n\t\t\t\t\troot={\n\t\t\t\t\t\ttype=cb\n\t\t\t\t\t}\n\t\t\t\t}\n";
+   input << "\t\t\t\ttype=ducal_conquest_cb\t\t\t\tscope={\n\t\t\t\t\troot={\n\t\t\t\t\t\ttype=cb\n\t\t\t\t\t}"
+            "\n\t\t\t\t}\n";
    input << "\t\t\t\ttargeted_titles={ 2101 }\n";
    input << "\t\t\t\tattacker=12631\n";
    input << "\t\t\t\tdefender=13582\n";
@@ -59,10 +60,12 @@ TEST(CK3WorldWarsTests, TextMarkupIsTakenOutOfNames)  // NOLINT : clang-tidy doe
 {
    std::stringstream input;
    input << "= { active_wars={ 0={ casus_belli={ attacker=1 defender=2 }\n";
-   input << "name=\"\x15ONCLICK:TITLE,3615 \x15TOOLTIP:LANDED_TITLE,3615 \x15L; Holmgar\xC3\xB0rer\x15!\x15!\x15! Conquest of "
+   input << "name=\"\x15ONCLICK:TITLE,3615 \x15TOOLTIP:LANDED_TITLE,3615 \x15L; Holmgar\xC3\xB0rer\x15!\x15!\x15! "
+            "Conquest of "
             "the \x15ONCLICK:TITLE,3637 \x15TOOLTIP:LANDED_TITLE,3637 \x15L; Chiefdom of Vodi\x15!\x15!\x15!\"\n";
    input << "} 1={ casus_belli={ attacker=3 defender=4 }\n";
-   input << "name=\"War for Vimara's \x15" "E; \x15TOOLTIP:GAME_CONCEPT,claim Claim\x15!\x15! on Portucale\"\n";
+   input << "name=\"War for Vimara's \x15"
+            "E; \x15TOOLTIP:GAME_CONCEPT,claim Claim\x15!\x15! on Portucale\"\n";
    input << "} } }\n";
 
    const Wars wars(input);

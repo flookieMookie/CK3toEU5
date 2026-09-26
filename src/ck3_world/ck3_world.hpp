@@ -6,6 +6,7 @@
 #include "GameVersion.h"
 #include "ModLoader/Mod.h"
 #include "Parser.h"
+#include "armies/armies.hpp"
 #include "characters/characters.hpp"
 #include "coats_of_arms/coats_of_arms.hpp"
 #include "confederations/confederations.hpp"
@@ -18,12 +19,11 @@
 #include "geography/province_holdings.hpp"
 #include "realms/realms.hpp"
 #include "relations/relations.hpp"
-#include "wars/wars.hpp"
-#include "armies/armies.hpp"
 #include "religions/religions.hpp"
 #include "src/configuration/configuration.hpp"
 #include "titles/landed_titles.hpp"
 #include "titles/titles.hpp"
+#include "wars/wars.hpp"
 
 namespace ck3
 {

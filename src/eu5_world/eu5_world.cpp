@@ -786,7 +786,8 @@ void eu5::EU5World::FitSubjectTypes(const GameDefinitions& game_definitions)
       // A tributary must be a tribe (tributary.txt), unless the overlord is a steppe horde, which no
       // converted country is. CK3 pays tribute from settled kingdoms too; EU5 would drop those on
       // the first day, so they stay independent from the start.
-      if (dependency.subject_type == "tributary" && !subject->second->GetSourceRealm()->GetGovernment().starts_with("tribal"))
+      if (dependency.subject_type == "tributary" &&
+          !subject->second->GetSourceRealm()->GetGovernment().starts_with("tribal"))
       {
          subject->second->SetLiegeTag("");
          ++tributaries_dropped_;
@@ -840,7 +841,8 @@ void eu5::EU5World::AssignBuildings(const Context& context)
       }
       for (const auto& [ck3_type, eu5_type]: kBuildings)
       {
-         if (!ck3_types.contains(ck3_type) || (eu5_type == "stockade" && placed.contains({locations.front(), "castle"})))
+         if (!ck3_types.contains(ck3_type) ||
+             (eu5_type == "stockade" && placed.contains({locations.front(), "castle"})))
          {
             continue;
          }
@@ -927,7 +929,8 @@ void eu5::EU5World::AssignWars(const Context& context)
          pending.pop_back();
          if (key.starts_with("b_"))
          {
-            const auto mapped = context.mappers.GetProvinceMapper().GetEU5Locations(ProvinceOfBarony(key, landed_titles));
+            const auto mapped =
+                context.mappers.GetProvinceMapper().GetEU5Locations(ProvinceOfBarony(key, landed_titles));
             locations.insert(locations.end(), mapped.begin(), mapped.end());
             continue;
          }
@@ -1021,7 +1024,8 @@ void eu5::EU5World::AssignWars(const Context& context)
                converted.target_location = location;
                break;
             }
-            if (fallback.empty() && std::ranges::any_of(converted.defenders, [&owner](const WarParticipant& participant) {
+            if (fallback.empty() &&
+                std::ranges::any_of(converted.defenders, [&owner](const WarParticipant& participant) {
                    return participant.tag == owner->second;
                 }))
             {
@@ -1035,8 +1039,7 @@ void eu5::EU5World::AssignWars(const Context& context)
       }
       if (converted.target_location.empty())
       {
-         converted.target_location =
-             fallback.empty() ? defender->second->GetCapitalLocation().value_or("") : fallback;
+         converted.target_location = fallback.empty() ? defender->second->GetCapitalLocation().value_or("") : fallback;
       }
       if (converted.target_location.empty())
       {
@@ -1346,21 +1349,27 @@ void eu5::EU5World::LogLandReport() const
    }
    if (tributaries_ > 0 || tributaries_skipped_ > 0)
    {
-      Log(LogLevel::Info) << "   " << tributaries_ << " CK3 tributaries became EU5 tributaries; " << tributaries_skipped_
+      Log(LogLevel::Info) << "   " << tributaries_ << " CK3 tributaries became EU5 tributaries; "
+                          << tributaries_skipped_
                           << " could not, their ruler having no country or already being a subject.";
    }
    Log(LogLevel::Info) << "   " << samantas_ << " subjects of Indian overlords are samantas, as EU5 has them; "
-                       << tributaries_dropped_ << " CK3 tributaries are not tribes, which EU5 requires, and start free.";
+                       << tributaries_dropped_
+                       << " CK3 tributaries are not tribes, which EU5 requires, and start free.";
    Log(LogLevel::Info) << "   " << alliances_.size() << " alliances between independent countries.";
    Log(LogLevel::Info) << "   " << truces_.size() << " truces between independent countries.";
-   Log(LogLevel::Info) << "   " << standing_armies_.size() << " countries keep their CK3 men-at-arms as a standing army.";
-   Log(LogLevel::Info) << "   " << buildings_.size() << " castles, stockades and market villages built in CK3 stand in EU5.";
-   Log(LogLevel::Info) << "   " << raised_to_era_ << " countries start at the technology level of their culture's CK3 era.";
+   Log(LogLevel::Info) << "   " << standing_armies_.size()
+                       << " countries keep their CK3 men-at-arms as a standing army.";
+   Log(LogLevel::Info) << "   " << buildings_.size()
+                       << " castles, stockades and market villages built in CK3 stand in EU5.";
+   Log(LogLevel::Info) << "   " << raised_to_era_
+                       << " countries start at the technology level of their culture's CK3 era.";
    Log(LogLevel::Info) << "   " << overlords_raised_to_subject_nations_
                        << " overlords start at technology level 2 so EU5 lets them keep their vassals.";
    Log(LogLevel::Info) << "   " << wars_.size() << " CK3 wars carry on in EU5; " << wars_skipped_
                        << " could not, a side having no independent country.";
-   Log(LogLevel::Info) << "   " << councillors_ << " CK3 councillors sit at their ruler's court, ready for the cabinet.";
+   Log(LogLevel::Info) << "   " << councillors_
+                       << " CK3 councillors sit at their ruler's court, ready for the cabinet.";
    Log(LogLevel::Info) << "   " << family_members_ << " family members converted alongside their rulers, " << heirs_
                        << " of the countries with a named heir.";
    Log(LogLevel::Info) << "   " << dynasties_.size() << " CK3 houses become EU5 dynasties.";
@@ -1403,7 +1412,8 @@ void eu5::EU5World::LogFaithAndCultureReport() const
    {
       Log(LogLevel::Warning) << "   " << religions_replaced_
                              << " countries' faith maps to no EU5 religion even through a relative; they take the "
-                                "capital's. " << JoinNames(unmapped_faiths_);
+                                "capital's. "
+                             << JoinNames(unmapped_faiths_);
    }
    Log(LogLevel::Info) << "   " << cultures_replaced_
                        << " locations had a culture CK3 disagrees with, rewritten from the county.";

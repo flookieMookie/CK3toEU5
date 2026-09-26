@@ -2,8 +2,8 @@
 #define OUT_VANILLA_START_FILE_H
 
 #include <filesystem>
-#include <map>
 #include <functional>
+#include <map>
 #include <optional>
 #include <set>
 #include <string>

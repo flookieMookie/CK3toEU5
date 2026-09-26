@@ -42,7 +42,8 @@ TEST(OutputWarsFileTests, AWarIsWrittenAsAConquestOfItsTarget)  // NOLINT : clan
        "\t\tstart_date = 1336.5.2\n"
        "\t\taction = 1337.3.1\n"
        "\t\tattacker = {\n\t\t\tcountry = TUN\n\t\t\trequest = {\n\t\t\t\treason = Instigator\n\t\t\t}\n\t\t}\n"
-       "\t\tattacker = {\n\t\t\tcountry = MLT\n\t\t\trequest = {\n\t\t\t\tcaller = TUN\n\t\t\t\treason = Subject\n\t\t\t}\n\t\t}\n"
+       "\t\tattacker = {\n\t\t\tcountry = MLT\n\t\t\trequest = {\n\t\t\t\tcaller = TUN\n\t\t\t\treason = "
+       "Subject\n\t\t\t}\n\t\t}\n"
        "\t\tattacker = {\n\t\t\tcountry = EGY\n\t\t\trequest = {\n\t\t\t\tcaller = TUN\n\t\t\t\treason = Scripted\n"
        "\t\t\t\twhich = alliance\n\t\t\t}\n\t\t}\n"
        "\t\tdefender = {\n\t\t\tcountry = BYZ\n\t\t\trequest = {\n\t\t\t\treason = Target\n\t\t\t}\n\t\t}\n"
@@ -75,8 +76,10 @@ TEST(OutputWarsFileTests, UnnamedWarsUseEU5sOwnName)  // NOLINT : clang-tidy doe
 TEST(OutputWarsFileTests, EveryoneAtWarRaisesTheirLevyAtHome)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream definitions;
-   definitions << "africa = { maghreb = { ifriqiya_region = { tunis_area = { tunis_province = { tunis carthage } } } } }\n";
-   definitions << "europe = { italy = { south_italy_region = { sicily_area = { palermo_province = { palermo } } } } }\n";
+   definitions
+       << "africa = { maghreb = { ifriqiya_region = { tunis_area = { tunis_province = { tunis carthage } } } } }\n";
+   definitions
+       << "europe = { italy = { south_italy_region = { sicily_area = { palermo_province = { palermo } } } } }\n";
    const eu5::MapAreas areas(definitions);
    auto second_war = MakeWar();
    second_war.attackers = {{"EGY", "Instigator", ""}};  // already raised for the first war
@@ -98,8 +101,9 @@ TEST(OutputWarsFileTests, TrucesRunOnFromEU5sStart)  // NOLINT : clang-tidy doen
 
 TEST(OutputWarsFileTests, MenAtArmsStandAtTheCapital)  // NOLINT : clang-tidy doens't like gtest
 {
-   EXPECT_EQ("\n\tarmy = {\n\t\tcountry = BYZ\n\t\tlocation = constantinople\n\t\tsub_units = {\n"
-             "\t\t\ta_footmen = { strength = 1 }\n\t\t\ta_footmen = { strength = 1 }\n\t\t}\n\t}\n",
+   EXPECT_EQ(
+       "\n\tarmy = {\n\t\tcountry = BYZ\n\t\tlocation = constantinople\n\t\tsub_units = {\n"
+       "\t\t\ta_footmen = { strength = 1 }\n\t\t\ta_footmen = { strength = 1 }\n\t\t}\n\t}\n",
        WriteStandingArmies({{"BYZ", 2}, {"NOC", 3}}, {{"BYZ", "constantinople"}}));
 }
 

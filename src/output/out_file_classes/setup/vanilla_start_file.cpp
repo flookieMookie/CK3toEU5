@@ -83,17 +83,21 @@ std::set<std::string> out::TagsNamedIn(const std::string& text)
    return tags;
 }
 
-std::string out::KeepEntriesAbout(const std::string& contents, const int entry_depth, const std::set<std::string>& allowed_tags)
+std::string out::KeepEntriesAbout(const std::string& contents,
+    const int entry_depth,
+    const std::set<std::string>& allowed_tags)
 {
-   return TransformEntries(contents, entry_depth, [&allowed_tags](const std::string& entry) -> std::optional<std::string> {
-      if (std::ranges::all_of(TagsNamedIn(entry), [&allowed_tags](const std::string& tag) {
-             return allowed_tags.contains(tag);
-          }))
-      {
-         return entry;
-      }
-      return std::nullopt;
-   });
+   return TransformEntries(contents,
+       entry_depth,
+       [&allowed_tags](const std::string& entry) -> std::optional<std::string> {
+          if (std::ranges::all_of(TagsNamedIn(entry), [&allowed_tags](const std::string& tag) {
+                 return allowed_tags.contains(tag);
+              }))
+          {
+             return entry;
+          }
+          return std::nullopt;
+       });
 }
 
 std::string out::WithoutMissingCharacters(const std::string& text, const std::set<std::string>& characters)
@@ -106,7 +110,8 @@ std::string out::WithoutMissingCharacters(const std::string& text, const std::se
    while (std::getline(lines, line))
    {
       const auto code = WithoutComment(line);
-      if (std::smatch character; std::regex_search(code, character, kCharacter) && !characters.contains(character[1].str()))
+      if (std::smatch character;
+          std::regex_search(code, character, kCharacter) && !characters.contains(character[1].str()))
       {
          continue;
       }
@@ -130,14 +135,15 @@ std::set<std::string> out::KeptVanillaCharacters(const eu5::VanillaCharacters& v
    return characters;
 }
 
-std::string out::WriteConvertedBuildings(const std::vector<eu5::ConvertedBuilding>& buildings, const std::string& existing)
+std::string out::WriteConvertedBuildings(const std::vector<eu5::ConvertedBuilding>& buildings,
+    const std::string& existing)
 {
    // What EU5's own start already has, where: a second of the same building - or a stockade beside a
    // castle - is one the location can't hold.
    static const std::regex kExisting(R"(\b([a-z_]+)\s*=\s*\{[^}\n]*\blocation\s*=\s*([A-Za-z0-9_']+))");
    std::set<std::pair<std::string, std::string>> present;
    for (auto match = std::sregex_iterator(existing.begin(), existing.end(), kExisting); match != std::sregex_iterator();
-        ++match)
+       ++match)
    {
       present.emplace((*match)[2].str(), (*match)[1].str());
    }

@@ -37,7 +37,8 @@ TEST(CK3WorldCoatsOfArmsTests, DefinitionsAreKeptWithTheArtTheyUse)  // NOLINT :
    EXPECT_TRUE(france.definition.contains("texture=\"ce_fleur.dds\""));
    EXPECT_TRUE(france.definition.contains("scale={ 0.23 0.26 }") || france.definition.contains("scale"));
    EXPECT_EQ((std::set<std::string>{"ce_fleur.dds", "pattern_solid.dds"}), france.textures);
-   EXPECT_EQ((std::set<std::string>{"_default.dds", "pattern_solid.dds"}), coats_of_arms.GetCoatsOfArms().at(1).textures);
+   EXPECT_EQ((std::set<std::string>{"_default.dds", "pattern_solid.dds"}),
+       coats_of_arms.GetCoatsOfArms().at(1).textures);
 }
 
 }  // namespace ck3

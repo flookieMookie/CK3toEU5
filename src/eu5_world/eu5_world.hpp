@@ -13,10 +13,10 @@
 #include <vector>
 
 #include "eu5_country.hpp"
-#include "src/ck3_world/coats_of_arms/coats_of_arms.hpp"
 #include "eu5_culture_resolver.hpp"
 #include "eu5_game_definitions.hpp"
 #include "eu5_location_data.hpp"
+#include "src/ck3_world/coats_of_arms/coats_of_arms.hpp"
 
 namespace ck3
 {
@@ -29,7 +29,7 @@ class Realm;
 class Title;
 class VassalContracts;
 class Relations;
-}
+}  // namespace ck3
 
 namespace mappers
 {

@@ -33,15 +33,22 @@ std::string FetchReleasesJson()
       return std::wstring(text, text + std::char_traits<char>::length(text));
    };
    std::string body;
-   HINTERNET session = WinHttpOpen(L"CK3toEU5-launcher", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_NO_PROXY_NAME,
-       WINHTTP_NO_PROXY_BYPASS, 0);
+   HINTERNET session = WinHttpOpen(L"CK3toEU5-launcher",
+       WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
+       WINHTTP_NO_PROXY_NAME,
+       WINHTTP_NO_PROXY_BYPASS,
+       0);
    if (session == nullptr)
    {
       return body;
    }
-   WinHttpSetTimeouts(session, kUpdateTimeoutMilliseconds, kUpdateTimeoutMilliseconds, kUpdateTimeoutMilliseconds,
+   WinHttpSetTimeouts(session,
+       kUpdateTimeoutMilliseconds,
+       kUpdateTimeoutMilliseconds,
+       kUpdateTimeoutMilliseconds,
        kUpdateTimeoutMilliseconds);
-   HINTERNET connection = WinHttpConnect(session, to_wide(launcher::kReleasesApiHost).c_str(), INTERNET_DEFAULT_HTTPS_PORT, 0);
+   HINTERNET connection =
+       WinHttpConnect(session, to_wide(launcher::kReleasesApiHost).c_str(), INTERNET_DEFAULT_HTTPS_PORT, 0);
    HINTERNET request = connection == nullptr ? nullptr
                                              : WinHttpOpenRequest(connection,
                                                    L"GET",
@@ -53,10 +60,20 @@ std::string FetchReleasesJson()
    DWORD status = 0;
    DWORD status_size = sizeof(status);
    if (request != nullptr &&
-       WinHttpSendRequest(request, L"Accept: application/vnd.github+json\r\n", static_cast<DWORD>(-1L), WINHTTP_NO_REQUEST_DATA, 0, 0, 0) &&
+       WinHttpSendRequest(request,
+           L"Accept: application/vnd.github+json\r\n",
+           static_cast<DWORD>(-1L),
+           WINHTTP_NO_REQUEST_DATA,
+           0,
+           0,
+           0) &&
        WinHttpReceiveResponse(request, nullptr) &&
-       WinHttpQueryHeaders(request, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_HEADER_NAME_BY_INDEX,
-           &status, &status_size, WINHTTP_NO_HEADER_INDEX) &&
+       WinHttpQueryHeaders(request,
+           WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+           WINHTTP_HEADER_NAME_BY_INDEX,
+           &status,
+           &status_size,
+           WINHTTP_NO_HEADER_INDEX) &&
        status == 200)
    {
       std::array<char, 8192> chunk{};
@@ -189,7 +206,9 @@ void ReadAvailable(wxInputStream* stream, std::string& buffer)
 }  // namespace
 
 launcher::LauncherFrame::LauncherFrame():
-    wxFrame(nullptr, wxID_ANY, "CK3 to EU5 Converter - " + launcher::ReleaseDisplayName(launcher::kReleaseTag) + " (unofficial)"),
+    wxFrame(nullptr,
+        wxID_ANY,
+        "CK3 to EU5 Converter - " + launcher::ReleaseDisplayName(launcher::kReleaseTag) + " (unofficial)"),
     output_timer_(this)
 {
    BuildInterface();

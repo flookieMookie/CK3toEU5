@@ -116,13 +116,13 @@ void eu5::GameDefinitions::LoadCultures(const std::filesystem::path& folder)
       commonItems::parser parser;
       // EU5 is inconsistent about the suffix - english and dakelh_culture are both top level
       // culture keys - so the key itself cannot be used to tell a culture from anything else.
-      parser.registerRegex(kKeyPattern, [this, &culture_parser, &current](const std::string& key,
-                                            std::istream& input_stream) {
-         cultures_.insert(key);
-         current = &culture_definitions_[key];
-         culture_parser.parseStream(input_stream);
-         current = nullptr;
-      });
+      parser.registerRegex(kKeyPattern,
+          [this, &culture_parser, &current](const std::string& key, std::istream& input_stream) {
+             cultures_.insert(key);
+             current = &culture_definitions_[key];
+             culture_parser.parseStream(input_stream);
+             current = nullptr;
+          });
       parser.registerRegex(commonItems::catchallRegex, commonItems::ignoreItem);
       parser.parseFile(entry.path());
       parser.clearRegisteredKeywords();

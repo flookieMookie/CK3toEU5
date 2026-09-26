@@ -74,8 +74,8 @@ void ck3::Confederation::LinkHouses(const std::map<long long, std::shared_ptr<Ho
       }
       else
       {
-         Log(LogLevel::Warning) << "Confederation " << confederation_id_ << " has house leader " << leader_house_->GetID()
-                                << " which has no definition, ignoring it.";
+         Log(LogLevel::Warning) << "Confederation " << confederation_id_ << " has house leader "
+                                << leader_house_->GetID() << " which has no definition, ignoring it.";
          leader_house_.reset();
       }
    }

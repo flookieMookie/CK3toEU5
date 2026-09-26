@@ -30,7 +30,9 @@ date AgeOntoStartDate(const date& birth_date, const date& conversion_date)
 
 // A character's EU5 abilities, from the CK3 skills they correspond to, and the ruler traits their
 // CK3 traits become.
-void WriteAbilities(std::ostringstream& output, const ck3::Character& character, const std::vector<std::string>& trait_names)
+void WriteAbilities(std::ostringstream& output,
+    const ck3::Character& character,
+    const std::vector<std::string>& trait_names)
 {
    const auto& skills = character.GetSkills();
    const eu5::Abilities abilities{.adm = eu5::AbilityFromSkill(skills.stewardship),

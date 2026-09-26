@@ -65,7 +65,8 @@ TEST(CK3WorldCouncillorTaskTests,  // NOLINT : clang-tidy doens't like gtest
    ck3::Characters characters;
    characters.ParseCharacters(input2);
 
-   EXPECT_NO_THROW(councillor_task.LinkCharacters(characters.GetAliveCharacters()));  // NOLINT : clang-tidy doens't like gtest
+   EXPECT_NO_THROW(
+       councillor_task.LinkCharacters(characters.GetAliveCharacters()));  // NOLINT : clang-tidy doens't like gtest
 }
 
 TEST(CK3WorldCouncillorTaskTests,  // NOLINT : clang-tidy doens't like gtest
@@ -80,7 +81,8 @@ TEST(CK3WorldCouncillorTaskTests,  // NOLINT : clang-tidy doens't like gtest
    ck3::Characters characters;
    characters.ParseCharacters(input2);
 
-   EXPECT_NO_THROW(councillor_task.LinkCharacters(characters.GetAliveCharacters()));  // NOLINT : clang-tidy doens't like gtest
+   EXPECT_NO_THROW(
+       councillor_task.LinkCharacters(characters.GetAliveCharacters()));  // NOLINT : clang-tidy doens't like gtest
 }
 
 TEST(CK3WorldCouncillorTaskTests, CouncillorTaskLinkingSkipsWhenNoHolder)  // NOLINT : clang-tidy doens't like gtest

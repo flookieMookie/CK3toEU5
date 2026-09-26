@@ -168,8 +168,8 @@ TEST(CK3WorldCharactersTests, IgnoresNonexistentTitleDuringLinking)  // NOLINT :
    }
 
    EXPECT_NO_THROW(character_realm.Link(id_title_map,  // NOLINT : clang-tidy doens't like gtest
-                    councillor_tasks.GetCouncillorTasks(),
-                    100));  // NOLINT : clang-tidy doens't like gtest
+       councillor_tasks.GetCouncillorTasks(),
+       100));  // NOLINT : clang-tidy doens't like gtest
 }
 
 TEST(CK3WorldCharactersTests, IgnoresNonexistentCapitalDuringLinking)  // NOLINT : clang-tidy doens't like gtest
@@ -202,8 +202,8 @@ TEST(CK3WorldCharactersTests, IgnoresNonexistentCapitalDuringLinking)  // NOLINT
    }
 
    EXPECT_NO_THROW(character_realm.Link(id_title_map,  // NOLINT : clang-tidy doens't like gtest
-                    councillor_tasks.GetCouncillorTasks(),
-                    100));  // NOLINT : clang-tidy doens't like gtest
+       councillor_tasks.GetCouncillorTasks(),
+       100));  // NOLINT : clang-tidy doens't like gtest
 }
 
 }  // namespace ck3

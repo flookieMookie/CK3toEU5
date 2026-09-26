@@ -12,13 +12,17 @@ OrganizationMembership MakeMembership()
 {
    OrganizationMembership membership;
    membership.kept_tags = {"AZT", "INC"};
-   membership.converted_religions = {{"PAP", "catholic"}, {"BYZ", "orthodox"}, {"SER", "catholic"}, {"HAB", "catholic"}};
+   membership.converted_religions = {{"PAP", "catholic"},
+       {"BYZ", "orthodox"},
+       {"SER", "catholic"},
+       {"HAB", "catholic"}};
    membership.characters = {"azt_tenoch"};
    return membership;
 }
 }  // namespace
 
-TEST(OutputInternationalOrganizationsTests, AChurchKeepsAConvertedLeaderOfItsFaith)  // NOLINT : clang-tidy doens't like gtest
+TEST(OutputInternationalOrganizationsTests,
+    AChurchKeepsAConvertedLeaderOfItsFaith)  // NOLINT : clang-tidy doens't like gtest
 {
    const std::string church =
        "\tadd_international_organization = {\n"

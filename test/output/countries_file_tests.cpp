@@ -19,7 +19,8 @@ TEST(OutputCountriesFileTests, PartitionOutranksTheGenderLaw)  // NOLINT : clang
 TEST(OutputCountriesFileTests, TheGenderLawPicksThePrimogeniture)  // NOLINT : clang-tidy doens't like gtest
 {
    EXPECT_EQ("salic_law", HeirSelectionFor("monarchy", {"single_heir_succession_law", "male_only_law"}));
-   EXPECT_EQ("cognatic_primogeniture", HeirSelectionFor("monarchy", {"saxon_elective_succession_law", "male_preference_law"}));
+   EXPECT_EQ("cognatic_primogeniture",
+       HeirSelectionFor("monarchy", {"saxon_elective_succession_law", "male_preference_law"}));
    EXPECT_EQ("absolute_cognatic_primogeniture", HeirSelectionFor("monarchy", {"equal_law"}));
    EXPECT_EQ("absolute_cognatic_primogeniture", HeirSelectionFor("monarchy", {"female_only_law"}));
    EXPECT_EQ("cognatic_primogeniture", HeirSelectionFor("monarchy", {}));
@@ -32,10 +33,12 @@ TEST(OutputCountriesFileTests, OtherGovernmentsKeepEU5sDefault)  // NOLINT : cla
    EXPECT_FALSE(HeirSelectionFor("republic", {"city_succession_law"}).has_value());
 }
 
-TEST(OutputCountriesFileTests, ConvertedCountriesKnowTheWorldTheirLandsOwnerKnew)  // NOLINT : clang-tidy doens't like gtest
+TEST(OutputCountriesFileTests,
+    ConvertedCountriesKnowTheWorldTheirLandsOwnerKnew)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream definitions;
-   definitions << "europe = { western_europe = { france_region = { ile_de_france_area = { paris_province = { paris } } }\n";
+   definitions
+       << "europe = { western_europe = { france_region = { ile_de_france_area = { paris_province = { paris } } }\n";
    definitions << "   italy_region = { lazio_area = { roma_province = { rome } } } } }\n";
    const eu5::MapAreas map_areas(definitions);
    const std::string vanilla_france =

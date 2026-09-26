@@ -14,7 +14,7 @@ namespace ck3
 // verbatim; what may not is the art it names, which is listed so it can be supplied.
 struct CoatOfArms
 {
-   std::string definition;         // the whole { ... } block
+   std::string definition;          // the whole { ... } block
    std::set<std::string> textures;  // every pattern and emblem file it uses
 };
 

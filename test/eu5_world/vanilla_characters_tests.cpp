@@ -48,7 +48,8 @@ TEST(EU5WorldVanillaCharactersTests, BlocksAreKeptVerbatim)  // NOLINT : clang-t
 }
 
 
-TEST(EU5WorldVanillaCharactersTests, KeptCountriesAdoptTheForeignRulersTheyName)  // NOLINT : clang-tidy doens't like gtest
+TEST(EU5WorldVanillaCharactersTests,
+    KeptCountriesAdoptTheForeignRulersTheyName)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream input;
    input << "character_db = {\n";
@@ -62,7 +63,9 @@ TEST(EU5WorldVanillaCharactersTests, KeptCountriesAdoptTheForeignRulersTheyName)
    input << "}\n";
    const VanillaCharacters characters(input);
    const VanillaCountry greenland{.tag = "GRL",
-       .block = "GRL = { # Greenland\n\tgovernment = {\n\t\truler = swe_magnus # Magnus of Sweden\n\t}\n\t# heir = swe_erik\n}\n",
+       .block =
+           "GRL = { # Greenland\n\tgovernment = {\n\t\truler = swe_magnus # Magnus of Sweden\n\t}\n\t# heir = "
+           "swe_erik\n}\n",
        .locations = {}};
 
    const auto kept = characters.KeptFor({&greenland});

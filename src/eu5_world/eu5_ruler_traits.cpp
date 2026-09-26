@@ -19,32 +19,84 @@ struct TraitRule
 // In order of preference: CK3's personality traits describe the ruler best, then their lifestyle.
 const std::vector<TraitRule> kRules = {
     {"brave", "bold_fighter"},
-    {"craven", "craven", [](const eu5::Abilities& a) { return a.mil < 70; }},
-    {"just", "just", [](const eu5::Abilities& a) { return a.adm > 33; }},
+    {"craven",
+        "craven",
+        [](const eu5::Abilities& a) {
+           return a.mil < 70;
+        }},
+    {"just",
+        "just",
+        [](const eu5::Abilities& a) {
+           return a.adm > 33;
+        }},
     {"callous", "cruel"},
     {"sadistic", "malevolent"},
     {"compassionate", "kind_hearted"},
     {"calm", "calm"},
     {"patient", "careful"},
     {"deceitful", "secretive"},
-    {"honest", "incorruptible", [](const eu5::Abilities& a) { return a.adm >= 50; }},
+    {"honest",
+        "incorruptible",
+        [](const eu5::Abilities& a) {
+           return a.adm >= 50;
+        }},
     {"greedy", "greedy"},
     {"zealous", "zealot"},
     {"cynical", "free_thinker"},
-    {"gregarious", "charismatic_negotiator", [](const eu5::Abilities& a) { return a.dip >= 50; }},
-    {"trusting", "naive", [](const eu5::Abilities& a) { return a.dip < 80; }},
-    {"stubborn", "strict", [](const eu5::Abilities& a) { return a.mil >= 50; }},
+    {"gregarious",
+        "charismatic_negotiator",
+        [](const eu5::Abilities& a) {
+           return a.dip >= 50;
+        }},
+    {"trusting",
+        "naive",
+        [](const eu5::Abilities& a) {
+           return a.dip < 80;
+        }},
+    {"stubborn",
+        "strict",
+        [](const eu5::Abilities& a) {
+           return a.mil >= 50;
+        }},
     {"diligent", "industrious"},
-    {"strategist", "tactical_genius", [](const eu5::Abilities& a) { return a.mil >= 50; }},
+    {"strategist",
+        "tactical_genius",
+        [](const eu5::Abilities& a) {
+           return a.mil >= 50;
+        }},
     {"architect", "architectural_visionary"},
     {"scholar", "scholar"},
-    {"administrator", "lawgiver", [](const eu5::Abilities& a) { return a.adm >= 66; }},
-    {"diplomat", "silver_tongue", [](const eu5::Abilities& a) { return a.dip >= 50; }},
-    {"schemer", "intricate_web_weaver", [](const eu5::Abilities& a) { return a.adm >= 50; }},
-    {"avaricious", "midas_touched", [](const eu5::Abilities& a) { return a.adm >= 50; }},
-    {"aggressive_attacker", "conqueror", [](const eu5::Abilities& a) { return a.mil >= 50; }},
+    {"administrator",
+        "lawgiver",
+        [](const eu5::Abilities& a) {
+           return a.adm >= 66;
+        }},
+    {"diplomat",
+        "silver_tongue",
+        [](const eu5::Abilities& a) {
+           return a.dip >= 50;
+        }},
+    {"schemer",
+        "intricate_web_weaver",
+        [](const eu5::Abilities& a) {
+           return a.adm >= 50;
+        }},
+    {"avaricious",
+        "midas_touched",
+        [](const eu5::Abilities& a) {
+           return a.adm >= 50;
+        }},
+    {"aggressive_attacker",
+        "conqueror",
+        [](const eu5::Abilities& a) {
+           return a.mil >= 50;
+        }},
     {"drunkard", "drunkard"},
-    {"stuttering", "babbling_buffoon", [](const eu5::Abilities& a) { return a.dip < 80; }},
+    {"stuttering",
+        "babbling_buffoon",
+        [](const eu5::Abilities& a) {
+           return a.dip < 80;
+        }},
 };
 
 // The traits each EU5 trait's allow block rules out.

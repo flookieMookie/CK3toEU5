@@ -49,8 +49,7 @@ TEST(LauncherCoreTests, ConfigurationHasEveryKeyTheConverterReads)  // NOLINT : 
    EXPECT_NE(std::string::npos, configuration.find("CK3DocDirectory = \"C:/Docs/Crusader Kings III\""));
    EXPECT_NE(std::string::npos, configuration.find("EU5directory = \"C:/Games/Europa Universalis V\""));
    EXPECT_NE(std::string::npos, configuration.find("targetGameModPath = \"C:/Docs/Europa Universalis V/mod\""));
-   EXPECT_NE(std::string::npos,
-       configuration.find("SaveGame = \"C:/Docs/Crusader Kings III/save games/my game.ck3\""));
+   EXPECT_NE(std::string::npos, configuration.find("SaveGame = \"C:/Docs/Crusader Kings III/save games/my game.ck3\""));
    EXPECT_NE(std::string::npos, configuration.find("output_name = \"My Mod\""));
    EXPECT_NE(std::string::npos, configuration.find("debug = \"no\""));
 }

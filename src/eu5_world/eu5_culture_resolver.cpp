@@ -213,7 +213,11 @@ std::string eu5::CultureResolver::Resolve(const ck3::Culture& ck3_culture)
       generated_name = name + "_" + std::to_string(suffix++);
    }
 
-   CultureDefinition definition{*language, groups, ck3_culture.GetTemplate().value_or(""), ck3_culture.GetLocalizedName().value_or(""), {}};
+   CultureDefinition definition{*language,
+       groups,
+       ck3_culture.GetTemplate().value_or(""),
+       ck3_culture.GetLocalizedName().value_or(""),
+       {}};
    // Without graphical culture tags EU5 has no portraits or units for a culture's people. Borrow
    // those of an EU5 culture speaking the same language, else one in the same group.
    if (game_definitions_ != nullptr)
@@ -268,7 +272,8 @@ std::string eu5::CultureDisplayName(const std::string& key,
       if (const auto block = ck3_names.GetLocalizationBlock(definition.ck3_template); block.has_value())
       {
          // A few CK3 names are built from other keys, which EU5 would show raw.
-         if (auto name = block->GetLocalization(language); !name.empty() && name.find_first_of("$[") == std::string::npos)
+         if (auto name = block->GetLocalization(language);
+             !name.empty() && name.find_first_of("$[") == std::string::npos)
          {
             return name;
          }

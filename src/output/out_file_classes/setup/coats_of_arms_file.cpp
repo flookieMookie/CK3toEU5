@@ -82,7 +82,8 @@ void CoatOfArmsTextures::Create(const std::filesystem::path& folder_path)
             break;
          }
          // CK3's own art, or a mod's where the save used one that adds or redraws it.
-         if (const auto source = ck3_files_.GetActualFileLocation(std::filesystem::path("gfx") / "coat_of_arms" / subfolder / texture))
+         if (const auto source =
+                 ck3_files_.GetActualFileLocation(std::filesystem::path("gfx") / "coat_of_arms" / subfolder / texture))
          {
             std::filesystem::create_directories(folder_path / subfolder, error);
             std::filesystem::copy_file(*source,

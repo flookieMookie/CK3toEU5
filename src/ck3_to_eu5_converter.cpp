@@ -53,8 +53,7 @@ void Converter::Convert()
    const auto ck3_culture_names = ck3::LoadCultureLocalization(configuration_.GetCK3Directory(), ck3_world.GetMods());
    const auto ck3_dynasty_names = ck3::LoadDynastyLocalization(configuration_.GetCK3Directory(), ck3_world.GetMods());
    const auto ck3_nicknames = ck3::LoadNicknameLocalization(configuration_.GetCK3Directory(), ck3_world.GetMods());
-   out::Output output =
-       out::Output(configuration_.GetOutputName(),
+   out::Output output = out::Output(configuration_.GetOutputName(),
        converter_version_,
        eu5_world,
        location_data,

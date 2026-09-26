@@ -17,7 +17,9 @@ namespace
 const date kGameStartDate = date("1337.4.1");
 const date kLastAction = date("1337.3.1");
 
-void WriteSide(std::ostringstream& output, const std::string& side, const std::vector<eu5::WarParticipant>& participants)
+void WriteSide(std::ostringstream& output,
+    const std::string& side,
+    const std::vector<eu5::WarParticipant>& participants)
 {
    for (const auto& participant: participants)
    {

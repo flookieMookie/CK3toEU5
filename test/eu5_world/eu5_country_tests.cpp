@@ -64,18 +64,23 @@ TEST(EU5WorldCountryTests, NicknamesUseCK3sTextWhereItIsPlain)  // NOLINT : clan
 {
    commonItems::LocalizationDatabase nicknames("english", {"french", "german"});
    std::stringstream english;
-   english << "l_english:\n nick_the_great: \"the Great\"\n nick_the_bald: \"the Bald\"\n"
-           << " nick_the_bald_ironic: \"$nick_the_bald$\"\n nick_the_own_culture: \"the [CHARACTER.GetCulture.GetName]\"\n";
+   english
+       << "l_english:\n nick_the_great: \"the Great\"\n nick_the_bald: \"the Bald\"\n"
+       << " nick_the_bald_ironic: \"$nick_the_bald$\"\n nick_the_own_culture: \"the [CHARACTER.GetCulture.GetName]\"\n";
    std::stringstream french;
    french << "l_french:\n nick_the_great: \"[CHARACTER.Custom('FR_LeLa')] Grand\"\n";
    std::stringstream german;
-   german << "l_german:\n nick_the_great: \"der Gro\xC3\x9F" "e\"\n";
+   german << "l_german:\n nick_the_great: \"der Gro\xC3\x9F"
+             "e\"\n";
    ASSERT_GT(nicknames.ScrapeStream(english), 0);
    ASSERT_GT(nicknames.ScrapeStream(french), 0);
    ASSERT_GT(nicknames.ScrapeStream(german), 0);
 
    EXPECT_EQ("the Great", NicknameText("nick_the_great", "the Great", nicknames, "english"));
-   EXPECT_EQ("der Gro\xC3\x9F" "e", NicknameText("nick_the_great", "the Great", nicknames, "german"));
+   EXPECT_EQ(
+       "der Gro\xC3\x9F"
+       "e",
+       NicknameText("nick_the_great", "the Great", nicknames, "german"));
    // Scripted by gender in French, so the save's own text stands in.
    EXPECT_EQ("the Great", NicknameText("nick_the_great", "the Great", nicknames, "french"));
    EXPECT_EQ("the Bald", NicknameText("nick_the_bald_ironic", "the Bald", nicknames, "english"));

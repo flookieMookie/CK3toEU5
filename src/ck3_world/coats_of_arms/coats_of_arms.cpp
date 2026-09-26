@@ -36,8 +36,8 @@ void ck3::CoatsOfArms::ParseDatabase(std::istream& input_stream)
       }
       coat_of_arms.definition = item.substr(opening_brace);
       for (auto match = std::sregex_iterator(coat_of_arms.definition.begin(), coat_of_arms.definition.end(), kTexture);
-           match != std::sregex_iterator();
-           ++match)
+          match != std::sregex_iterator();
+          ++match)
       {
          coat_of_arms.textures.insert((*match)[1].str());
       }

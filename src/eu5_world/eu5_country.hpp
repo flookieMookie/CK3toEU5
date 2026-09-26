@@ -13,7 +13,7 @@ namespace ck3
 {
 class Character;
 class Realm;
-}
+}  // namespace ck3
 
 namespace eu5
 {

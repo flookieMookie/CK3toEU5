@@ -22,7 +22,8 @@ namespace ck3
 [[nodiscard]] bool ChangesMap(const Mod& mod);
 
 // CK3's game files - rooted at <install>/game - with the mods laid over them.
-[[nodiscard]] commonItems::ModFilesystem CK3Files(const std::filesystem::path& ck3_directory, const std::vector<Mod>& mods);
+[[nodiscard]] commonItems::ModFilesystem CK3Files(const std::filesystem::path& ck3_directory,
+    const std::vector<Mod>& mods);
 
 }  // namespace ck3
 
