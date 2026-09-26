@@ -96,4 +96,11 @@ TEST(OutputWarsFileTests, TrucesRunOnFromEU5sStart)  // NOLINT : clang-tidy doen
        WriteTruce({"LAD", "RUT", 40}));
 }
 
+TEST(OutputWarsFileTests, MenAtArmsStandAtTheCapital)  // NOLINT : clang-tidy doens't like gtest
+{
+   EXPECT_EQ("\n\tarmy = {\n\t\tcountry = BYZ\n\t\tlocation = constantinople\n\t\tsub_units = {\n"
+             "\t\t\ta_footmen = { strength = 1 }\n\t\t\ta_footmen = { strength = 1 }\n\t\t}\n\t}\n",
+       WriteStandingArmies({{"BYZ", 2}, {"NOC", 3}}, {{"BYZ", "constantinople"}}));
+}
+
 }  // namespace out

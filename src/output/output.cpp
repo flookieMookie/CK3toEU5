@@ -135,7 +135,8 @@ Output::Output(std::string name,
                 capitals.emplace(country->GetTag(), *country->GetCapitalLocation());
              }
           }
-          return WriteLevies(eu5_world.GetWars(), capitals, *map_areas);
+          return WriteStandingArmies(eu5_world.GetStandingArmies(), capitals) +
+                 WriteLevies(eu5_world.GetWars(), capitals, *map_areas);
        }));
 
    // EU5's own buildings, cardinals' seats, saints and works of art: buildings handed to whoever

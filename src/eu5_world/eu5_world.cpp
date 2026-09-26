@@ -414,6 +414,20 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
    AssignAlliances(ck3_world.GetRelations());
    AssignWars(context);
    AssignTruces(ck3_world.GetRelations());
+
+   // A ruler's men-at-arms become a standing army. An EU5 regiment of this age is 500 men (a
+   // REGIMENT_SIZE of 1000 at max_strength 0.5), and a few is all EU5's own economies carry.
+   constexpr int kMenPerRegiment = 500;
+   constexpr int kMostRegiments = 20;
+   for (const auto& [ruler, country]: MapCountriesByRuler())
+   {
+      const auto men = ck3_world.GetArmies().GetMenAtArms().find(ruler);
+      if (men != ck3_world.GetArmies().GetMenAtArms().end() && men->second >= kMenPerRegiment &&
+          country->GetCapitalLocation().has_value())
+      {
+         standing_armies_.emplace(country->GetTag(), std::min(men->second / kMenPerRegiment, kMostRegiments));
+      }
+   }
    AssignFamilies(ck3_world);
    AssignDynasties();
    AssignFlags(ck3_world);
@@ -1264,6 +1278,7 @@ void eu5::EU5World::LogLandReport() const
                        << tributaries_dropped_ << " CK3 tributaries are not tribes, which EU5 requires, and start free.";
    Log(LogLevel::Info) << "   " << alliances_.size() << " alliances between independent countries.";
    Log(LogLevel::Info) << "   " << truces_.size() << " truces between independent countries.";
+   Log(LogLevel::Info) << "   " << standing_armies_.size() << " countries keep their CK3 men-at-arms as a standing army.";
    Log(LogLevel::Info) << "   " << raised_to_era_ << " countries start at the technology level of their culture's CK3 era.";
    Log(LogLevel::Info) << "   " << overlords_raised_to_subject_nations_
                        << " overlords start at technology level 2 so EU5 lets them keep their vassals.";

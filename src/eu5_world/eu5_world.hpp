@@ -118,6 +118,8 @@ class EU5World
    [[nodiscard]] const auto& GetDynasties() const { return dynasties_; }
    [[nodiscard]] const auto& GetWars() const { return wars_; }
    [[nodiscard]] const auto& GetTruces() const { return truces_; }
+   // Country tag to the regiments of its standing army, from its CK3 ruler's men-at-arms.
+   [[nodiscard]] const auto& GetStandingArmies() const { return standing_armies_; }
    // Country tag to the CK3 coat of arms it flies, for the tags the conversion invents.
    [[nodiscard]] const auto& GetFlags() const { return flags_; }
    // The EU5 dynasty a converted character belongs to, or empty.
@@ -211,6 +213,7 @@ class EU5World
    std::set<std::pair<std::string, std::string>> alliances_;
    std::vector<ConvertedWar> wars_;
    std::vector<ConvertedTruce> truces_;
+   std::map<std::string, int> standing_armies_;
    int wars_skipped_ = 0;
    int samantas_ = 0;
    int tributaries_dropped_ = 0;

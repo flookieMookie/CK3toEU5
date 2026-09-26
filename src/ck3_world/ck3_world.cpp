@@ -200,6 +200,10 @@ void ck3::CK3World::ParseGamestate(std::istream& input_stream, const commonItems
    parser.registerKeyword("traits_lookup", [this](const std::string&, std::istream& input_stream) {
       trait_names_ = commonItems::getStrings(input_stream);
    });
+   parser.registerKeyword("armies", [this](const std::string&, std::istream& input_stream) {
+      armies_ = Armies(input_stream);
+      Log(LogLevel::Info) << "<> Loaded the men-at-arms of " << armies_.GetMenAtArms().size() << " rulers.";
+   });
    parser.registerKeyword("wars", [this](const std::string&, std::istream& input_stream) {
       Log(LogLevel::Info) << "-> Loading wars.";
       wars_ = Wars(input_stream);

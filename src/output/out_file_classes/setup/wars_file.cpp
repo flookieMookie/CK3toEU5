@@ -86,6 +86,31 @@ std::string out::WriteTruce(const eu5::ConvertedTruce& truce)
    return output.str();
 }
 
+std::string out::WriteStandingArmies(const std::map<std::string, int>& regiments,
+    const std::map<std::string, std::string>& capitals)
+{
+   std::ostringstream output;
+   for (const auto& [tag, count]: regiments)
+   {
+      const auto capital = capitals.find(tag);
+      if (capital == capitals.end() || count <= 0)
+      {
+         continue;
+      }
+      output << "\n\tarmy = {\n";
+      output << "\t\tcountry = " << tag << "\n";
+      output << "\t\tlocation = " << capital->second << "\n";
+      output << "\t\tsub_units = {\n";
+      for (int regiment = 0; regiment < count; ++regiment)
+      {
+         output << "\t\t\ta_footmen = { strength = 1 }\n";
+      }
+      output << "\t\t}\n";
+      output << "\t}\n";
+   }
+   return output.str();
+}
+
 std::string out::WriteLevies(const std::vector<eu5::ConvertedWar>& wars,
     const std::map<std::string, std::string>& capitals,
     const eu5::MapAreas& map_areas)

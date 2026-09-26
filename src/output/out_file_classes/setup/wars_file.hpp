@@ -31,6 +31,11 @@ namespace out
     const std::map<std::string, std::string>& capitals,
     const eu5::MapAreas& map_areas);
 
+// Standing armies as EU5 writes its own in 27_armies: footmen regiments at full strength, at the
+// country's capital.
+[[nodiscard]] std::string WriteStandingArmies(const std::map<std::string, int>& regiments,
+    const std::map<std::string, std::string>& capitals);
+
 // Writes 16_wars.txt: EU5's own wars among the vanilla countries the conversion keeps, and the
 // wars the CK3 save was in the middle of and the truces it held.
 class WarsFile: public OutputFile
