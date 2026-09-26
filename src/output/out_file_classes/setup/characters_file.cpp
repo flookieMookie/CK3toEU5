@@ -124,7 +124,7 @@ void CharactersFile::Create(const std::filesystem::path& folder_path)
       for (const auto& member: country->GetFamily())
       {
          const auto name = eu5::CleanCK3Name(member.character->GetName());
-         output << "\n\t" << member.id << " = { # " << name << ", family of " << country->GetRulerName() << "\n";
+         output << "\n\t" << member.id << " = { # " << name << ", at the court of " << country->GetRulerName() << "\n";
          output << "\t\tfirst_name = { name = " << eu5::CharacterNameKey(name) << " }\n";
          output << "\t\tculture = " << *country->GetCulture() << "\n";
          output << "\t\treligion = " << *country->GetReligion() << "\n";

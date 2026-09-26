@@ -12,6 +12,7 @@
 #include "Log.h"
 #include "src/ck3_world/characters/characters.hpp"
 #include "src/ck3_world/ck3_world.hpp"
+#include "src/ck3_world/council_manager/councillor_task.hpp"
 #include "src/ck3_world/cultures/culture.hpp"
 #include "src/ck3_world/dynasties/house.hpp"
 #include "src/ck3_world/geography/county_detail.hpp"
@@ -1127,6 +1128,24 @@ void eu5::EU5World::AssignFamilies(const ck3::CK3World& ck3_world)
          }
          break;
       }
+
+      // The council sits at court, where EU5 picks a country's cabinet from.
+      if (const auto& realm = ruler->GetCharacterRealm(); realm.has_value())
+      {
+         for (const auto& task_link: realm->GetCouncil())
+         {
+            const auto task = task_link.GetPointer().lock();
+            if (!task || !task->GetHolder().has_value())
+            {
+               continue;
+            }
+            if (const auto councillor = task->GetHolder()->GetPointer().lock(); convertible(councillor))
+            {
+               add(councillor, FamilyMember{});
+               ++councillors_;
+            }
+         }
+      }
    }
 }
 
@@ -1341,6 +1360,7 @@ void eu5::EU5World::LogLandReport() const
                        << " overlords start at technology level 2 so EU5 lets them keep their vassals.";
    Log(LogLevel::Info) << "   " << wars_.size() << " CK3 wars carry on in EU5; " << wars_skipped_
                        << " could not, a side having no independent country.";
+   Log(LogLevel::Info) << "   " << councillors_ << " CK3 councillors sit at their ruler's court, ready for the cabinet.";
    Log(LogLevel::Info) << "   " << family_members_ << " family members converted alongside their rulers, " << heirs_
                        << " of the countries with a named heir.";
    Log(LogLevel::Info) << "   " << dynasties_.size() << " CK3 houses become EU5 dynasties.";
