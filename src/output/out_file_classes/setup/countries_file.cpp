@@ -103,7 +103,9 @@ void WriteGovernment(std::ostringstream& output, const eu5::Country& country)
    // EU5 wants every country placed on its society axes and complains for each one that is not.
    // CK3 has no equivalent for most of them, so only the two its government type genuinely speaks
    // to are leaned; the rest sit neutral rather than inventing a position.
-   output << "\t\t\t\tcentralization_vs_decentralization = " << (government == "tribe" ? 40 : -20) << "\n";
+   const std::set<std::string> no_laws;
+   const auto& laws = holder && holder->GetCharacterRealm() ? holder->GetCharacterRealm()->GetLaws() : no_laws;
+   output << "\t\t\t\tcentralization_vs_decentralization = " << out::CentralizationFor(government, laws) << "\n";
    output << "\t\t\t\ttraditionalist_vs_innovative = " << (government == "tribe" ? -40 : -20) << "\n";
    for (const auto& axis: kNeutralSocietyAxes)
    {
@@ -205,6 +207,22 @@ std::string out::WriteDiscoveries(const std::vector<std::string>& locations,
       output << " }\n";
    }
    return output.str();
+}
+
+int out::CentralizationFor(const std::string& government, const std::set<std::string>& ck3_laws)
+{
+   for (int level = 0; level <= 3; ++level)
+   {
+      if (ck3_laws.contains("crown_authority_" + std::to_string(level)))
+      {
+         return 60 - 20 * level;
+      }
+      if (ck3_laws.contains("tribal_authority_" + std::to_string(level)))
+      {
+         return 80 - 20 * level;
+      }
+   }
+   return government == "tribe" ? 40 : -20;
 }
 
 std::optional<std::string> out::HeirSelectionFor(const std::string& government, const std::set<std::string>& ck3_laws)

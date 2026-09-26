@@ -58,4 +58,14 @@ TEST(OutputCountriesFileTests, LandUnownedIn1337StillKnowsItsOwnRegions)  // NOL
    EXPECT_EQ("\t\t\tdiscovered_regions = { sahel_region }\n", WriteDiscoveries({"kumbi_saleh"}, "", map_areas));
 }
 
+TEST(OutputCountriesFileTests, TheCrownsAuthorityDecidesCentralization)  // NOLINT : clang-tidy doens't like gtest
+{
+   EXPECT_EQ(60, CentralizationFor("monarchy", {"crown_authority_0", "male_preference_law"}));
+   EXPECT_EQ(0, CentralizationFor("monarchy", {"crown_authority_3"}));
+   EXPECT_EQ(80, CentralizationFor("tribe", {"tribal_authority_0"}));
+   EXPECT_EQ(20, CentralizationFor("tribe", {"tribal_authority_3"}));
+   EXPECT_EQ(-20, CentralizationFor("republic", {"city_succession_law"}));
+   EXPECT_EQ(40, CentralizationFor("tribe", {}));
+}
+
 }  // namespace out

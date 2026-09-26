@@ -29,6 +29,11 @@ namespace out
     const std::string& capital_owner_block,
     const eu5::MapAreas& map_areas);
 
+// Where a converted country sits between centralised and decentralised - EU5's own feudal monarchies
+// start around +40, decentralised - from its CK3 ruler's crown or tribal authority law: the weaker
+// the ruler's hold on the vassals, the more decentralised. Without either law, a default by government.
+[[nodiscard]] int CentralizationFor(const std::string& government, const std::set<std::string>& ck3_laws);
+
 // Writes setup/start/10_countries.txt: which EU5 locations each country owns at the start date.
 class CountriesFile: public OutputFile
 {
