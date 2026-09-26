@@ -78,6 +78,14 @@ struct ConvertedTruce
    int months = 0;
 };
 
+// A building a CK3 holding had, as the EU5 building standing in its place.
+struct ConvertedBuilding
+{
+   std::string type;  // castle, stockade, market_village
+   std::string location;
+   std::string tag;
+};
+
 // A CK3 house written as an EU5 dynasty. EU5's dynasty is the family name a character carries,
 // which in CK3 is the house - Karling - rather than the wider dynasty.
 struct ConvertedDynasty
@@ -120,6 +128,7 @@ class EU5World
    [[nodiscard]] const auto& GetTruces() const { return truces_; }
    // Country tag to the regiments of its standing army, from its CK3 ruler's men-at-arms.
    [[nodiscard]] const auto& GetStandingArmies() const { return standing_armies_; }
+   [[nodiscard]] const auto& GetBuildings() const { return buildings_; }
    // Country tag to the CK3 coat of arms it flies, for the tags the conversion invents.
    [[nodiscard]] const auto& GetFlags() const { return flags_; }
    // The EU5 dynasty a converted character belongs to, or empty.
@@ -172,6 +181,8 @@ class EU5World
       std::map<std::string, double> religion;
    };
 
+   // The fortifications and market villages of CK3 holdings, as the EU5 buildings nearest them.
+   void AssignBuildings(const Context& context);
    // Active CK3 wars between independent countries, once every country and subject is known.
    void AssignWars(const Context& context);
    [[nodiscard]] static std::optional<std::string> ResolveCapitalLocation(const ck3::Realm& realm,
@@ -214,6 +225,7 @@ class EU5World
    std::vector<ConvertedWar> wars_;
    std::vector<ConvertedTruce> truces_;
    std::map<std::string, int> standing_armies_;
+   std::vector<ConvertedBuilding> buildings_;
    int wars_skipped_ = 0;
    int samantas_ = 0;
    int tributaries_dropped_ = 0;

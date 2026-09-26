@@ -141,7 +141,17 @@ Output::Output(std::string name,
 
    // EU5's own buildings, cardinals' seats, saints and works of art: buildings handed to whoever
    // holds their land now, people who never lived in the converted world taken out.
-   for (const auto* file_name: {"07_cities_and_buildings.txt", "11_art.txt", "13_religion.txt"})
+   // The castles, forts and market villages built in CK3 join them in 07_cities_and_buildings.
+   start_folder->RegisterFileOrResource(std::make_unique<VanillaLocationsFile>("07_cities_and_buildings.txt",
+       file_writer_,
+       eu5_world,
+       vanilla_countries,
+       vanilla_characters,
+       eu5_directory,
+       [&eu5_world](const std::string& fitted) {
+          return WriteConvertedBuildings(eu5_world.GetBuildings(), fitted);
+       }));
+   for (const auto* file_name: {"11_art.txt", "13_religion.txt"})
    {
       start_folder->RegisterFileOrResource(std::make_unique<VanillaLocationsFile>(
           file_name, file_writer_, eu5_world, vanilla_countries, vanilla_characters, eu5_directory));

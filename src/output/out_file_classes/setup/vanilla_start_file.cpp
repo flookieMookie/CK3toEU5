@@ -130,6 +130,31 @@ std::set<std::string> out::KeptVanillaCharacters(const eu5::VanillaCharacters& v
    return characters;
 }
 
+std::string out::WriteConvertedBuildings(const std::vector<eu5::ConvertedBuilding>& buildings, const std::string& existing)
+{
+   // What EU5's own start already has, where: a second of the same building - or a stockade beside a
+   // castle - is one the location can't hold.
+   static const std::regex kExisting(R"(\b([a-z_]+)\s*=\s*\{[^}\n]*\blocation\s*=\s*([A-Za-z0-9_']+))");
+   std::set<std::pair<std::string, std::string>> present;
+   for (auto match = std::sregex_iterator(existing.begin(), existing.end(), kExisting); match != std::sregex_iterator();
+        ++match)
+   {
+      present.emplace((*match)[2].str(), (*match)[1].str());
+   }
+   std::ostringstream output;
+   for (const auto& building: buildings)
+   {
+      if (present.contains({building.location, building.type}) ||
+          (building.type == "stockade" && present.contains({building.location, "castle"})))
+      {
+         continue;
+      }
+      output << "\t" << building.type << " = { tag = " << building.tag << " level = 1 location = " << building.location
+             << " }\n";
+   }
+   return output.str();
+}
+
 std::optional<std::string> out::FitBuilding(const std::string& entry, const BuildingOwnership& ownership)
 {
    static const std::regex kOwner(R"(\btag\s*=\s*([A-Z0-9]{3})\b)");
@@ -234,12 +259,14 @@ VanillaLocationsFile::VanillaLocationsFile(const std::string& name,
     const eu5::EU5World& eu5_world,
     const eu5::VanillaCountries& vanilla_countries,
     const eu5::VanillaCharacters& vanilla_characters,
-    std::filesystem::path eu5_directory):
+    std::filesystem::path eu5_directory,
+    std::function<std::string(const std::string& fitted)> converted_entries):
     OutputFile(name, file_writer),
     eu5_world_(eu5_world),
     vanilla_countries_(vanilla_countries),
     vanilla_characters_(vanilla_characters),
-    eu5_directory_(std::move(eu5_directory))
+    eu5_directory_(std::move(eu5_directory)),
+    converted_entries_(std::move(converted_entries))
 {
 }
 
@@ -299,8 +326,12 @@ void VanillaLocationsFile::Create(const std::filesystem::path& folder_path)
       ++(result.has_value() ? kept : dropped);
       return result;
    });
-   const auto fitted =
-       WithoutMissingCharacters(buildings_fitted, KeptVanillaCharacters(vanilla_characters_, kept_countries));
+   auto fitted = WithoutMissingCharacters(buildings_fitted, KeptVanillaCharacters(vanilla_characters_, kept_countries));
+   if (converted_entries_)
+   {
+      const auto closing = fitted.rfind('}');
+      fitted.insert(closing == std::string::npos ? fitted.size() : closing, converted_entries_(fitted));
+   }
    Log(LogLevel::Info) << "\t<> " << GetName() << ": kept " << kept << " entries fitted to the converted world, "
                        << "dropped " << dropped << ".";
    UseFileWriter().CreateEmptyAndWrite(folder_path / GetName(), "\xEF\xBB\xBF" + fitted);

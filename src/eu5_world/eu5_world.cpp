@@ -414,6 +414,7 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
    AssignAlliances(ck3_world.GetRelations());
    AssignWars(context);
    AssignTruces(ck3_world.GetRelations());
+   AssignBuildings(context);
 
    // A ruler's men-at-arms become a standing army. An EU5 regiment of this age is 500 men (a
    // REGIMENT_SIZE of 1000 at max_strength 0.5), and a few is all EU5's own economies carry.
@@ -793,6 +794,61 @@ void eu5::EU5World::FitSubjectTypes(const GameDefinitions& game_definitions)
       fitted.push_back(dependency);
    }
    dependencies_ = std::move(fitted);
+}
+
+void eu5::EU5World::AssignBuildings(const Context& context)
+{
+   // CK3 building to the EU5 one closest to it. A castle makes a stockade obsolete in EU5, so the
+   // walls outrank the hill fort where a holding had both.
+   static const std::vector<std::pair<std::string, std::string>> kBuildings = {{"curtain_walls", "castle"},
+       {"hill_forts", "stockade"},
+       {"market_villages", "market_village"}};
+   std::map<std::string, std::string> owner_of_location;
+   for (const auto& country: countries_)
+   {
+      if (country->IsWritten())
+      {
+         for (const auto& location: country->GetLocations())
+         {
+            owner_of_location.emplace(location, country->GetTag());
+         }
+      }
+   }
+   std::set<std::pair<std::string, std::string>> placed;
+   for (const auto& [province, holding]: context.ck3_world.GetProvinceHoldings().GetProvinceHoldings())
+   {
+      if (!holding)
+      {
+         continue;
+      }
+      // A barony can stand for several EU5 locations; its buildings go in the first, not in each.
+      const auto& locations = context.mappers.GetProvinceMapper().GetEU5Locations(province);
+      if (locations.empty())
+      {
+         continue;
+      }
+      const auto owner = owner_of_location.find(locations.front());
+      if (owner == owner_of_location.end())
+      {
+         continue;
+      }
+      std::set<std::string> ck3_types;
+      for (const auto& building: holding->GetBuildings())
+      {
+         ck3_types.insert(building.GetType());
+      }
+      for (const auto& [ck3_type, eu5_type]: kBuildings)
+      {
+         if (!ck3_types.contains(ck3_type) || (eu5_type == "stockade" && placed.contains({locations.front(), "castle"})))
+         {
+            continue;
+         }
+         if (placed.emplace(locations.front(), eu5_type).second)
+         {
+            buildings_.push_back({eu5_type, locations.front(), owner->second});
+         }
+      }
+   }
 }
 
 void eu5::EU5World::AssignTruces(const ck3::Relations& relations)
@@ -1279,6 +1335,7 @@ void eu5::EU5World::LogLandReport() const
    Log(LogLevel::Info) << "   " << alliances_.size() << " alliances between independent countries.";
    Log(LogLevel::Info) << "   " << truces_.size() << " truces between independent countries.";
    Log(LogLevel::Info) << "   " << standing_armies_.size() << " countries keep their CK3 men-at-arms as a standing army.";
+   Log(LogLevel::Info) << "   " << buildings_.size() << " castles, stockades and market villages built in CK3 stand in EU5.";
    Log(LogLevel::Info) << "   " << raised_to_era_ << " countries start at the technology level of their culture's CK3 era.";
    Log(LogLevel::Info) << "   " << overlords_raised_to_subject_nations_
                        << " overlords start at technology level 2 so EU5 lets them keep their vassals.";

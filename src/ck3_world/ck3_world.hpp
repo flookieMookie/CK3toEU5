@@ -45,6 +45,7 @@ class CK3World
    [[nodiscard]] const auto& GetRelations() const { return relations_; }
    [[nodiscard]] const auto& GetWars() const { return wars_; }
    [[nodiscard]] const auto& GetArmies() const { return armies_; }
+   [[nodiscard]] const auto& GetProvinceHoldings() const { return province_holdings_; }
    // Trait names, indexed by the IDs characters' traits carry.
    [[nodiscard]] const auto& GetTraitNames() const { return trait_names_; }
    [[nodiscard]] const auto& GetCoatsOfArms() const { return coats_of_arms_; }

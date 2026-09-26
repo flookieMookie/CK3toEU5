@@ -93,6 +93,11 @@ class VanillaStartFile: public OutputFile
    std::function<std::string()> converted_entries_;
 };
 
+// The buildings CK3 holdings had, as entries of EU5's building_manager, leaving out any the location
+// already has in EU5's own start (existing) - and stockades where there is a castle.
+[[nodiscard]] std::string WriteConvertedBuildings(const std::vector<eu5::ConvertedBuilding>& buildings,
+    const std::string& existing);
+
 // Writes one of EU5's start files about places - buildings in 07_cities_and_buildings, cardinals'
 // seats and saints in 13_religion, works of art in 11_art - fitted to the converted world: each
 // building passes to whoever holds its location now (see FitBuilding), and characters who no longer
@@ -105,7 +110,8 @@ class VanillaLocationsFile: public OutputFile
        const eu5::EU5World& eu5_world,
        const eu5::VanillaCountries& vanilla_countries,
        const eu5::VanillaCharacters& vanilla_characters,
-       std::filesystem::path eu5_directory);
+       std::filesystem::path eu5_directory,
+       std::function<std::string(const std::string& fitted)> converted_entries = {});
 
    void Create(const std::filesystem::path& folder_path) override;
 
@@ -113,6 +119,8 @@ class VanillaLocationsFile: public OutputFile
    const eu5::EU5World& eu5_world_;
    const eu5::VanillaCountries& vanilla_countries_;
    const eu5::VanillaCharacters& vanilla_characters_;
+   // Entries of the converted world's own, added inside the file's last block, given EU5's.
+   std::function<std::string(const std::string& fitted)> converted_entries_;
    std::filesystem::path eu5_directory_;
 };
 
