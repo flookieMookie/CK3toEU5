@@ -13,7 +13,7 @@ namespace launcher
 
 // This release's tag on GitHub. The launcher compares it with the newest release there to tell the
 // player when there is an update, so it changes with every release.
-inline constexpr const char* kReleaseTag = "v2.1";
+inline constexpr const char* kReleaseTag = "v2.3";
 // Where the fork's releases are published.
 inline constexpr const char* kReleasesApiHost = "api.github.com";
 inline constexpr const char* kReleasesApiPath = "/repos/flookieMookie/CK3toEU5/releases?per_page=30";
