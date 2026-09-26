@@ -215,6 +215,7 @@ class EU5World
    int samantas_ = 0;
    int tributaries_dropped_ = 0;
    int overlords_raised_to_subject_nations_ = 0;
+   int raised_to_era_ = 0;
    std::map<long long, ConvertedDynasty> dynasties_;
    std::map<std::string, ck3::CoatOfArms> flags_;
    // EU5 location to the CK3 development of the county it came from, and the bonus that becomes.

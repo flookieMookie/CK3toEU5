@@ -1264,6 +1264,7 @@ void eu5::EU5World::LogLandReport() const
                        << tributaries_dropped_ << " CK3 tributaries are not tribes, which EU5 requires, and start free.";
    Log(LogLevel::Info) << "   " << alliances_.size() << " alliances between independent countries.";
    Log(LogLevel::Info) << "   " << truces_.size() << " truces between independent countries.";
+   Log(LogLevel::Info) << "   " << raised_to_era_ << " countries start at the technology level of their culture's CK3 era.";
    Log(LogLevel::Info) << "   " << overlords_raised_to_subject_nations_
                        << " overlords start at technology level 2 so EU5 lets them keep their vassals.";
    Log(LogLevel::Info) << "   " << wars_.size() << " CK3 wars carry on in EU5; " << wars_skipped_
@@ -1480,6 +1481,32 @@ void eu5::EU5World::AssignDevelopment()
       else
       {
          country->SetTechnologyLevel(0);
+      }
+   }
+
+   // A culture's CK3 era is the least it knows: a late medieval realm with poor land is still late
+   // medieval. Development can place a country above its era's floor, never below it.
+   const std::map<std::string, int> kEraFloor = {{"culture_era_tribal", 0},
+       {"culture_era_early_medieval", 1},
+       {"culture_era_high_medieval", 2},
+       {"culture_era_late_medieval", 3}};
+   for (const auto& country: countries_)
+   {
+      const auto& holder = country->GetSourceRealm()->GetHolder();
+      if (!holder || !holder->GetCulture().has_value())
+      {
+         continue;
+      }
+      const auto culture = holder->GetCulture()->GetPointer().lock();
+      if (!culture)
+      {
+         continue;
+      }
+      if (const auto floor = kEraFloor.find(culture->GetEra());
+          floor != kEraFloor.end() && country->GetTechnologyLevel() < floor->second)
+      {
+         country->SetTechnologyLevel(floor->second);
+         ++raised_to_era_;
       }
    }
 
