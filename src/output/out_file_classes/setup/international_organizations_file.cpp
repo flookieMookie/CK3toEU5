@@ -150,7 +150,9 @@ void InternationalOrganizationsFile::Create(const std::filesystem::path& folder_
 
    Log(LogLevel::Info) << "\t<> Kept " << kept << " of EU5's international organisations, fitted to the converted "
                        << "world; dropped " << dropped << ".";
-   UseFileWriter().CreateEmptyAndWrite(folder_path / GetName(), "\xEF\xBB\xBF" + fitted);
+   // No byte order mark: EU5 reads its start files with a strict reader that takes one for part of
+   // the first key and drops that whole section. Its own start files have none.
+   UseFileWriter().CreateEmptyAndWrite(folder_path / GetName(), fitted);
 }
 
 }  // namespace out

@@ -252,7 +252,9 @@ void VanillaStartFile::Create(const std::filesystem::path& folder_path)
    }
    Log(LogLevel::Info) << "\t<> Kept " << GetName() << " only where it concerns the " << kept_tags.size()
                        << " vanilla countries the conversion keeps.";
-   UseFileWriter().CreateEmptyAndWrite(folder_path / GetName(), "\xEF\xBB\xBF" + kept);
+   // No byte order mark: EU5 reads its start files with a strict reader that takes one for part of
+   // the first key and drops that whole section. Its own start files have none.
+   UseFileWriter().CreateEmptyAndWrite(folder_path / GetName(), kept);
 }
 
 }  // namespace out
@@ -340,7 +342,9 @@ void VanillaLocationsFile::Create(const std::filesystem::path& folder_path)
    }
    Log(LogLevel::Info) << "\t<> " << GetName() << ": kept " << kept << " entries fitted to the converted world, "
                        << "dropped " << dropped << ".";
-   UseFileWriter().CreateEmptyAndWrite(folder_path / GetName(), "\xEF\xBB\xBF" + fitted);
+   // No byte order mark: EU5 reads its start files with a strict reader that takes one for part of
+   // the first key and drops that whole section. Its own start files have none.
+   UseFileWriter().CreateEmptyAndWrite(folder_path / GetName(), fitted);
 }
 
 }  // namespace out

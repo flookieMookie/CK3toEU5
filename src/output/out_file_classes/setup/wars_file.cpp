@@ -199,7 +199,9 @@ void WarsFile::Create(const std::filesystem::path& folder_path)
 
    Log(LogLevel::Info) << "\t<> Wrote " << eu5_world_.GetWars().size() << " wars and " << eu5_world_.GetTruces().size()
                        << " truces from the CK3 save.";
-   UseFileWriter().CreateEmptyAndWrite(folder_path / GetName(), "\xEF\xBB\xBF" + wars);
+   // No byte order mark: EU5 reads its start files with a strict reader that takes one for part of
+   // the first key and drops that whole section. Its own start files have none.
+   UseFileWriter().CreateEmptyAndWrite(folder_path / GetName(), wars);
 }
 
 }  // namespace out

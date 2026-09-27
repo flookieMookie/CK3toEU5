@@ -22,6 +22,11 @@ def bad(*a):
     global problems; problems+=1
     if problems<=40: print(' ',*a)
 files={p.replace(chr(92),'/'):read(p) for p in glob.glob(mod+'/**/*.*',recursive=True) if p.endswith(('.txt','.yml'))}
+for p in files:
+    # EU5 reads its start files with a strict reader: a byte order mark is taken for part of the first
+    # key, and that whole section is dropped - silently, apart from a line in debug.log.
+    if '/setup/start/' in p and open(p,'rb').read(3)==bytes([0xEF, 0xBB, 0xBF]):
+        bad('byte order mark on start file',os.path.basename(p))
 for p,t in files.items():
     if p.endswith('.txt'):
         c=nocomment(t)
