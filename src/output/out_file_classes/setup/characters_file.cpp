@@ -11,6 +11,7 @@
 
 #include "src/ck3_world/characters/character.hpp"
 #include "src/ck3_world/realms/realm.hpp"
+#include "src/ck3_world/titles/title.hpp"
 #include "src/eu5_world/eu5_country.hpp"
 #include "src/eu5_world/eu5_ruler_traits.hpp"
 
@@ -32,7 +33,8 @@ date AgeOntoStartDate(const date& birth_date, const date& conversion_date)
 // CK3 traits become.
 void WriteAbilities(std::ostringstream& output,
     const ck3::Character& character,
-    const std::vector<std::string>& trait_names)
+    const std::vector<std::string>& trait_names,
+    const std::size_t most_traits)
 {
    const auto& skills = character.GetSkills();
    const eu5::Abilities abilities{.adm = eu5::AbilityFromSkill(skills.stewardship),
@@ -48,7 +50,7 @@ void WriteAbilities(std::ostringstream& output,
          ck3_traits.insert(trait_names[static_cast<std::size_t>(trait_id)]);
       }
    }
-   for (const auto& trait: eu5::RulerTraitsFor(ck3_traits, abilities))
+   for (const auto& trait: eu5::RulerTraitsFor(ck3_traits, abilities, most_traits))
    {
       output << "\t\truler_trait = " << trait << "\n";
    }
@@ -102,7 +104,11 @@ void CharactersFile::Create(const std::filesystem::path& folder_path)
       output << "\t\tfirst_name = { name = " << country->GetRulerNameKey() << " }\n";
       output << "\t\tculture = " << *country->GetCulture() << "\n";
       output << "\t\treligion = " << *country->GetReligion() << "\n";
-      WriteAbilities(output, *holder, eu5_world_.GetCK3TraitNames());
+      // EU5 allows a ruler only the traits their years on the throne have earned.
+      const auto& title = country->GetSourceRealm()->GetPrimaryTitle();
+      const auto reign_start =
+          title ? eu5::ReignStart(title->GetLastHolderChangeDate(), eu5_world_.GetConversionDate()) : std::nullopt;
+      WriteAbilities(output, *holder, eu5_world_.GetCK3TraitNames(), eu5::RulerTraitSlots(reign_start));
       WriteNickname(output, *holder);
       if (holder->IsFemale())
       {
@@ -130,7 +136,7 @@ void CharactersFile::Create(const std::filesystem::path& folder_path)
          output << "\t\tfirst_name = { name = " << eu5::CharacterNameKey(name) << " }\n";
          output << "\t\tculture = " << *country->GetCulture() << "\n";
          output << "\t\treligion = " << *country->GetReligion() << "\n";
-         WriteAbilities(output, *member.character, eu5_world_.GetCK3TraitNames());
+         WriteAbilities(output, *member.character, eu5_world_.GetCK3TraitNames(), 3);
          WriteNickname(output, *member.character);
          if (member.character->IsFemale())
          {

@@ -12,7 +12,9 @@
 
 #include "src/ck3_world/characters/character.hpp"
 #include "src/ck3_world/realms/realm.hpp"
+#include "src/ck3_world/titles/title.hpp"
 #include "src/eu5_world/eu5_country.hpp"
+#include "src/eu5_world/eu5_ruler_traits.hpp"
 
 namespace
 {
@@ -77,7 +79,7 @@ bool ShouldWrite(const eu5::Country& country)
    return country.IsWritten();
 }
 
-void WriteGovernment(std::ostringstream& output, const eu5::Country& country)
+void WriteGovernment(std::ostringstream& output, const eu5::Country& country, const date& conversion_date)
 {
    const auto government = GovernmentFor(country.GetSourceRealm()->GetGovernment());
    output << "\t\t\tgovernment = {\n";
@@ -93,6 +95,15 @@ void WriteGovernment(std::ostringstream& output, const eu5::Country& country)
    if (country.HasRuler())
    {
       output << "\t\t\t\truler = " << country.GetRulerId() << "\n";
+      // When the reign began, as EU5's own countries say: it decides how many ruler traits EU5 allows.
+      if (const auto& title = country.GetSourceRealm()->GetPrimaryTitle(); title)
+      {
+         if (const auto reign_start = eu5::ReignStart(title->GetLastHolderChangeDate(), conversion_date))
+         {
+            output << "\t\t\t\truler_term = { character = " << country.GetRulerId() << " start_date = " << *reign_start
+                   << " }\n";
+         }
+      }
    }
    // Only an heir who was converted can be named; otherwise EU5 picks one as it would anyway.
    if (!country.GetHeirId().empty())
@@ -138,7 +149,10 @@ void WriteLocations(std::ostringstream& output, const eu5::Country& country)
    output << "\t\t\t}\n";
 }
 
-void WriteCountry(std::ostringstream& output, const eu5::Country& country, const std::string& discoveries)
+void WriteCountry(std::ostringstream& output,
+    const eu5::Country& country,
+    const std::string& discoveries,
+    const date& conversion_date)
 {
    output << "\n\t\t" << country.GetTag() << " = { # " << country.GetSourceRealm()->GetRealmName() << "\n";
    output << "\t\t\tcountry_rank = " << country.GetRank() << "\n";
@@ -153,7 +167,7 @@ void WriteCountry(std::ostringstream& output, const eu5::Country& country, const
       }
    }
    output << "\n";
-   WriteGovernment(output, country);
+   WriteGovernment(output, country, conversion_date);
    WriteLocations(output, country);
    output << "\t\t}\n";
 }
@@ -298,7 +312,10 @@ void CountriesFile::Create(const std::filesystem::path& folder_path)
                capital_owner_block = *owner->second;
             }
          }
-         WriteCountry(output, *country, WriteDiscoveries(country->GetLocations(), capital_owner_block, map_areas_));
+         WriteCountry(output,
+             *country,
+             WriteDiscoveries(country->GetLocations(), capital_owner_block, map_areas_),
+             eu5_world_.GetConversionDate());
       }
    }
 

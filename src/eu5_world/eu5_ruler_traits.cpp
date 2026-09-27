@@ -128,15 +128,38 @@ bool Excludes(const std::string& trait, const std::string& other)
    return excluded != kExcludes.end() && excluded->second.contains(other);
 }
 
-constexpr std::size_t kMostTraits = 3;
+const date kGameStartDate("1337.4.1");
 }  // namespace
 
-std::vector<std::string> eu5::RulerTraitsFor(const std::set<std::string>& ck3_traits, const Abilities& abilities)
+std::optional<date> eu5::ReignStart(const date& took_title, const date& conversion_date)
+{
+   if (took_title.getYear() >= 9999 || took_title.getYear() <= 1)
+   {
+      return std::nullopt;
+   }
+   auto start = took_title;
+   start.ChangeByYears(kGameStartDate.getYear() - conversion_date.getYear());
+   return kGameStartDate < start ? kGameStartDate : start;
+}
+
+std::size_t eu5::RulerTraitSlots(const std::optional<date>& reign_start)
+{
+   if (!reign_start.has_value())
+   {
+      return 0;
+   }
+   const auto years = kGameStartDate.diffInYears(*reign_start);
+   return years >= 25.0F ? 3 : years >= 10.0F ? 2 : years >= 1.0F ? 1 : 0;
+}
+
+std::vector<std::string> eu5::RulerTraitsFor(const std::set<std::string>& ck3_traits,
+    const Abilities& abilities,
+    const std::size_t most_traits)
 {
    std::vector<std::string> traits;
    for (const auto& rule: kRules)
    {
-      if (traits.size() == kMostTraits)
+      if (traits.size() >= most_traits)
       {
          break;
       }

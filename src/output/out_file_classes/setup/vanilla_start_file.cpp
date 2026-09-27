@@ -147,11 +147,20 @@ std::string out::WriteConvertedBuildings(const std::vector<eu5::ConvertedBuildin
    {
       present.emplace((*match)[2].str(), (*match)[1].str());
    }
+   // A market village is a village building: EU5 won't have one in a town or city.
+   static const std::regex kUrban(R"(\b([A-Za-z0-9_']+)\s*=\s*\{\s*rank\s*=\s*(town|city)\b)");
+   std::set<std::string> urban;
+   for (auto match = std::sregex_iterator(existing.begin(), existing.end(), kUrban); match != std::sregex_iterator();
+       ++match)
+   {
+      urban.insert((*match)[1].str());
+   }
    std::ostringstream output;
    for (const auto& building: buildings)
    {
       if (present.contains({building.location, building.type}) ||
-          (building.type == "stockade" && present.contains({building.location, "castle"})))
+          (building.type == "stockade" && present.contains({building.location, "castle"})) ||
+          (building.type == "market_village" && urban.contains(building.location)))
       {
          continue;
       }

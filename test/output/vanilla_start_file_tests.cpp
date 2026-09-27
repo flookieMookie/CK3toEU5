@@ -174,11 +174,15 @@ TEST(OutputVanillaStartFileTests, WorksOfArtOutliveTheirMissingArtists)  // NOLI
 
 TEST(OutputVanillaStartFileTests, CK3BuildingsJoinEU5sOwnWithoutDoubling)  // NOLINT : clang-tidy doens't like gtest
 {
-   const std::string existing = "building_manager = {\n\tcastle = { tag = SWE level = 1 location = stockholm }\n}\n";
+   // Dublin is a town, where EU5 has no market villages.
+   const std::string existing =
+       "locations={\n\tdublin = { rank = town }\n}\n"
+       "building_manager = {\n\tcastle = { tag = SWE level = 1 location = stockholm }\n}\n";
    const std::vector<eu5::ConvertedBuilding> buildings = {{"castle", "stockholm", "SWE"},
        {"stockade", "stockholm", "SWE"},
        {"market_village", "stockholm", "SWE"},
-       {"stockade", "uppsala", "SWE"}};
+       {"stockade", "uppsala", "SWE"},
+       {"market_village", "dublin", "DUB"}};
 
    EXPECT_EQ(
        "\tmarket_village = { tag = SWE level = 1 location = stockholm }\n"
