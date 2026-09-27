@@ -71,4 +71,13 @@ TEST(OutputCountriesFileTests, TheCrownsAuthorityDecidesCentralization)  // NOLI
    EXPECT_EQ(40, CentralizationFor("tribe", {}));
 }
 
+TEST(OutputCountriesFileTests, MuslimCountriesNameASchoolTheyMayHold)  // NOLINT : clang-tidy doens't like gtest
+{
+   EXPECT_EQ("maturidi_school", ReligiousSchoolFor("sunni"));
+   EXPECT_EQ("ismaili_school", ReligiousSchoolFor("shia"));
+   EXPECT_EQ("ibadi_school", ReligiousSchoolFor("ibadi"));
+   EXPECT_FALSE(ReligiousSchoolFor("catholic").has_value());
+   EXPECT_FALSE(ReligiousSchoolFor(std::nullopt).has_value());
+}
+
 }  // namespace out

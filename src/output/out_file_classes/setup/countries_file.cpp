@@ -157,6 +157,10 @@ void WriteCountry(std::ostringstream& output,
    output << "\n\t\t" << country.GetTag() << " = { # " << country.GetSourceRealm()->GetRealmName() << "\n";
    output << "\t\t\tcountry_rank = " << country.GetRank() << "\n";
    output << "\t\t\tstarting_technology_level = " << country.GetTechnologyLevel() << "\n";
+   if (const auto school = out::ReligiousSchoolFor(country.GetReligion()))
+   {
+      output << "\t\t\treligious_school = " << *school << "\n";
+   }
    output << discoveries;
    // The ruler's treasury, which EU5 keeps in the same place its own start data does.
    if (country.HasRuler())
@@ -237,6 +241,19 @@ int out::CentralizationFor(const std::string& government, const std::set<std::st
       }
    }
    return government == "tribe" ? 40 : -20;
+}
+
+std::optional<std::string> out::ReligiousSchoolFor(const std::optional<std::string>& religion)
+{
+   static const std::map<std::string, std::string> kSchools = {{"sunni", "maturidi_school"},
+       {"shia", "ismaili_school"},
+       {"ibadi", "ibadi_school"}};
+   if (!religion.has_value())
+   {
+      return std::nullopt;
+   }
+   const auto school = kSchools.find(*religion);
+   return school == kSchools.end() ? std::nullopt : std::optional(school->second);
 }
 
 std::optional<std::string> out::HeirSelectionFor(const std::string& government, const std::set<std::string>& ck3_laws)

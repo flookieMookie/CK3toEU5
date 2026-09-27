@@ -34,6 +34,12 @@ namespace out
 // the ruler's hold on the vassals, the more decentralised. Without either law, a default by government.
 [[nodiscard]] int CentralizationFor(const std::string& government, const std::set<std::string>& ck3_laws);
 
+// The religious school a converted country of a religion that has them - Sunni, Shia, Ibadi - must
+// name. EU5 lists them in in_game/common/religious_schools; these need no society values, which
+// converted countries leave neutral (Hanafi, Maliki and the other jurisprudence schools need
+// mysticism_vs_jurisprudence of 50). Empty for religions without schools.
+[[nodiscard]] std::optional<std::string> ReligiousSchoolFor(const std::optional<std::string>& religion);
+
 // Writes setup/start/10_countries.txt: which EU5 locations each country owns at the start date.
 class CountriesFile: public OutputFile
 {
