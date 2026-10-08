@@ -78,4 +78,27 @@ TEST(EU5WorldVanillaCharactersTests,
    EXPECT_EQ("\tswe_magnus = {\n\t\tspouse = grl_bishop # not really\n\t\ttag = GRL\n\t}\n", kept[1].block);
 }
 
+TEST(EU5WorldVanillaCharactersTests, KeptCharactersLoseFamilyWhoArentKept)  // NOLINT : clang-tidy doens't like gtest
+{
+   std::stringstream input;
+   input << "character_db = {\n";
+   input << "\tgenghis_khan = {\n\t\ttag = MGL\n\t}\n";
+   input << "\tmdi_abu_Bakr_i = {\n";
+   input << "\t\tfather = genghis_khan\n";
+   input << "\t\ttag = MDI\n";
+   input << "\t}\n";
+   input << "}\n";
+   const VanillaCharacters characters(input);
+   const VanillaCountry mali{.tag = "MDI",
+       .block = "MDI = {\n\tgovernment = {\n\t\truler = mdi_abu_Bakr_i\n\t}\n}\n",
+       .locations = {"niani"}};
+
+   const auto kept = characters.KeptFor({&mali});
+
+   // Ids aren't always lowercase.
+   ASSERT_EQ(1, kept.size());
+   EXPECT_EQ("mdi_abu_Bakr_i", kept[0].id);
+   EXPECT_EQ("\tmdi_abu_Bakr_i = {\n\t\ttag = MDI\n\t}\n", kept[0].block);
+}
+
 }  // namespace eu5

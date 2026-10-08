@@ -102,8 +102,8 @@ std::string out::KeepEntriesAbout(const std::string& contents,
 
 std::string out::WithoutMissingCharacters(const std::string& text, const std::set<std::string>& characters)
 {
-   static const std::regex kCharacter(R"(\bcharacter\s*=\s*([a-z0-9_]+))");
-   static const std::regex kArtist(R"(\bartist\s*=\s*([a-z0-9_]+)\s*)");
+   static const std::regex kCharacter(R"(\bcharacter\s*=\s*([A-Za-z0-9_]+))");
+   static const std::regex kArtist(R"(\bartist\s*=\s*([A-Za-z0-9_]+)\s*)");
    std::istringstream lines(text);
    std::ostringstream kept;
    std::string line;

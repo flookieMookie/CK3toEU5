@@ -17,7 +17,7 @@ const std::regex kMembers(R"(members\s*=\s*\{[^}]*\})");
 const std::regex kLeader(R"(\bleader\s*=\s*([A-Z0-9]{3})\b)");
 const std::regex kReligion(R"(\breligion\s*=\s*religion:([a-z0-9_]+))");
 const std::regex kType(R"(\btype\s*=\s*([a-z0-9_]+))");
-const std::regex kCharacter(R"(\bcharacter\s*=\s*([a-z0-9_]+))");
+const std::regex kCharacter(R"(\bcharacter\s*=\s*([A-Za-z0-9_]+))");
 
 // The religion a religious organisation serves, where its entry says or its type implies it.
 // Political ones - the HRE, the Ilkhanate - have none.

@@ -8,7 +8,7 @@ and that each ruler trait passes the allow rules in EU5's in_game/common/traits/
 Prints the problems found and exits non-zero if there are any.
 """
 import re, os, sys, glob
-mod=sys.argv[1].rstrip("/\\")
+mod=sys.argv[1].replace(chr(92),'/').rstrip('/')
 V=os.path.join(sys.argv[2] if len(sys.argv)>2 else r"C:/Program Files (x86)/Steam/steamapps/common/Europa Universalis V", "game")
 S=mod+'/main_menu/setup/start/'
 def read(p):
@@ -45,20 +45,32 @@ for f,pat in [('12_diplomacy.txt',r'\b(?:first|second)\s*=\s*([A-Z][A-Z0-9]{2})\
         if t not in tags: bad('undefined tag',t,'in',f)
 # characters
 chars_txt=nocomment(files[S+'05_characters.txt'])
-chars=set(re.findall(r'^\t([a-z][a-z0-9_]*)\s*=\s*\{',chars_txt,re.M))
+def character_ids(text):
+    # Every block one brace into character_db is a character, however EU5 indents it.
+    ids=set(); depth=0
+    for line in nocomment(text).split('\n'):
+        if depth==1:
+            start=re.match(r'\s*([A-Za-z][A-Za-z0-9_]*)\s*=\s*\{',line)
+            if start: ids.add(start.group(1))
+        depth+=line.count('{')-line.count('}')
+    return ids
+chars=character_ids(chars_txt)
+# EU5's own 1337 names a few people it never defines; the countries the conversion keeps carry those along.
+vanilla_chars=character_ids(read(V+'/main_menu/setup/start/05_characters.txt'))
 print(len(chars),'characters defined')
-for ref in set(re.findall(r'\b(?:ruler|heir|character|regent|active_regent|consort)\s*=\s*([a-z][a-z0-9_]*)',countries)):
-    if ref not in chars and ref!='random': bad('undefined character in 10_countries',ref)
-for ref in set(re.findall(r'\b(?:father|mother|spouse)\s*=\s*([a-z][a-z0-9_]*)',chars_txt)):
+for ref in set(re.findall(r'\b(?:ruler|heir|character|regent|active_regent|consort)\s*=\s*([A-Za-z][A-Za-z0-9_]*)',countries)):
+    if ref not in chars and ref!='random' and ref in vanilla_chars: bad('undefined character in 10_countries',ref)
+for ref in set(re.findall(r'\b(?:father|mother|spouse)\s*=\s*([A-Za-z][A-Za-z0-9_]*)',chars_txt)):
     if ref not in chars: bad('undefined family member',ref)
 for f in ['11_art.txt','13_religion.txt','15_international_organizations.txt','27_armies.txt']:
     if S+f in files:
-        for ref in set(re.findall(r'\b(?:character|artist|leader)\s*=\s*([a-z][a-z0-9_]*)',nocomment(files[S+f]))):
-            if ref not in chars: bad('undefined character',ref,'in',f)
+        for ref in set(re.findall(r'\b(?:character|artist|leader)\s*=\s*([A-Za-z][A-Za-z0-9_]*)',nocomment(files[S+f]))):
+            # An organisation's leader is a country, which the tag check above covers.
+            if ref not in chars and not re.fullmatch(r'[A-Z][A-Z0-9]{2}',ref): bad('undefined character',ref,'in',f)
 # dynasties
 dyn=nocomment(files[S+'04_dynasties.txt'])
-dyns=set(re.findall(r'^\s*([a-z][a-z0-9_]*)\s*=\s*\{\s*name',dyn,re.M))
-for ref in set(re.findall(r'\bdynasty\s*=\s*([a-z][a-z0-9_]*)',chars_txt)):
+dyns=set(re.findall(r'^\s*([A-Za-z][A-Za-z0-9_]*)\s*=\s*\{\s*name',dyn,re.M))
+for ref in set(re.findall(r'\bdynasty\s*=\s*([A-Za-z][A-Za-z0-9_]*)',chars_txt)):
     if ref not in dyns: bad('undefined dynasty',ref)
 # localisation keys used by the mod
 loc={}

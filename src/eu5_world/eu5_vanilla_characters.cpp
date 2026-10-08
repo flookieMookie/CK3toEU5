@@ -17,10 +17,11 @@ const std::filesystem::path kCharactersFile =
 
 // Characters sit one level down, inside character_db = { ... }. Their own contents nest further -
 // first_name = { ... } - so a block only starts a character at that first depth.
-const std::regex kBlockStart(R"(^\s*([a-z0-9_]+)\s*=\s*\{)");
+// Ids are mostly lowercase, but not all: mdi_abu_Bakr_i, bxn_matthaus_an_der_Gassen.
+const std::regex kBlockStart(R"(^\s*([A-Za-z0-9_]+)\s*=\s*\{)");
 const std::regex kTag(R"(\btag\s*=\s*([A-Z0-9]{3})\b)");
-const std::regex kValue(R"(=\s*([a-z][a-z0-9_]*))");
-const std::regex kFamily(R"(^\s*(father|mother|spouse)\s*=\s*([a-z0-9_]+))");
+const std::regex kValue(R"(=\s*([A-Za-z][A-Za-z0-9_]*))");
+const std::regex kFamily(R"(^\s*(father|mother|spouse)\s*=\s*([A-Za-z0-9_]+))");
 
 std::string WithoutComment(const std::string& line)
 {
@@ -149,6 +150,12 @@ std::vector<eu5::VanillaCharacter> eu5::VanillaCharacters::KeptFor(
             borrowed.emplace_back(character->second, country->tag);
          }
       }
+   }
+   // A kept character's parents or spouse may belong to a country that isn't kept - Genghis Khan,
+   // fathering half of Asia - and are let go like an adopted character's.
+   for (auto& character: kept)
+   {
+      character.block = Adopt(character.block, character.tag, known);
    }
    for (const auto& [character, tag]: borrowed)
    {
