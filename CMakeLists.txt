@@ -336,22 +336,21 @@ endif (NOT RUN_CLANG_TIDY)
 #### Launcher ####
 # The fork's own launcher, which its releases ship in place of the Fronter. Windows only for now.
 if (PLATFORM STREQUAL "Windows")
+	# Built on Windows itself rather than a GUI toolkit, so the download carries no extra DLLs.
 	add_executable(CK3toEU5Launcher WIN32
 		"src/launcher/launcher_app.cpp"
-		"src/launcher/launcher_frame.cpp"
+		"src/launcher/launcher_window.cpp"
 		"src/launcher/launcher_core.cpp"
 		"src/launcher/launcher.rc"
-		"external/Fronter/external/wxWidgets/3.2.1/include/wx/msw/wx_dpi_aware_pmv2.manifest"
+		"src/launcher/launcher.manifest"
 	)
-	# wx.rc includes the rcdefs.h generated for this particular wxWidgets build.
-	target_include_directories(CK3toEU5Launcher PRIVATE
-		"${PROJECT_SOURCE_DIR}/external/Fronter/external/wxWidgets/3.2.1/lib/vc14x_x64_dll/$<IF:$<CONFIG:Debug>,mswud,mswu>")
 	# Keep the build machine's folders out of the released program: the debug directory records
-	# only the PDB's file name, and wxWidgets' asserts, which embed their header paths, are off.
-	target_compile_definitions(CK3toEU5Launcher PRIVATE wxDEBUG_LEVEL=0)
+	# only the PDB's file name.
 	target_link_options(CK3toEU5Launcher PRIVATE /PDBALTPATH:%_PDB%)
-	# WinHTTP, part of Windows, for the update check - no extra DLL to ship.
-	target_link_libraries(CK3toEU5Launcher PRIVATE winhttp)
+	# All part of Windows: WinHTTP for the update check, the common controls for the progress bar
+	# and the update link.
+	target_link_libraries(CK3toEU5Launcher PRIVATE winhttp comctl32)
+	target_compile_definitions(CK3toEU5Launcher PRIVATE NOMINMAX)
 	target_compile_options(CK3toEU5Launcher PRIVATE
 		$<$<COMPILE_LANGUAGE:CXX>:/W4 /external:anglebrackets /external:W0 /WX>)
 	set_target_properties(CK3toEU5Launcher

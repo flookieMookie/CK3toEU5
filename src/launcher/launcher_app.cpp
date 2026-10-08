@@ -1,25 +1,11 @@
-#include <wx/wx.h>
+#include <windows.h>
 
-#include "launcher_frame.hpp"
+#include "launcher_window.hpp"
 
-namespace launcher
+int WINAPI wWinMain(_In_ HINSTANCE instance,
+    _In_opt_ HINSTANCE /*previous*/,
+    _In_ PWSTR /*command_line*/,
+    _In_ int show)
 {
-
-class LauncherApp: public wxApp
-{
-  public:
-   bool OnInit() override
-   {
-      if (!wxApp::OnInit())
-      {
-         return false;
-      }
-      auto* frame = new LauncherFrame();
-      frame->Show();
-      return true;
-   }
-};
-
-}  // namespace launcher
-
-wxIMPLEMENT_APP(launcher::LauncherApp);
+   return launcher::RunLauncher(instance, show);
+}
