@@ -57,6 +57,7 @@ TEST(OutputCountriesFileTests, CountriesNotPresentKeepNoLandOrRulers)  // NOLINT
        "\t\tour_cores_conquered_by_others = { lund malmo }\n"
        "\t\tcapital = roskilde\n"
        "\t\tinclude = \"expl_scandinavia\"\n"
+       "\t\tinclude = \"catholic_monarchy_no_coast\"\n"
        "\t\tgovernment = {\n"
        "\t\t\ttype = monarchy\n"
        "\t\t\truler_term = { character = dan_eric start_date = 1286.1.1 end_date = 1319.1.1 }\n"
@@ -70,16 +71,22 @@ TEST(OutputCountriesFileTests, CountriesNotPresentKeepNoLandOrRulers)  // NOLINT
        "\t\t}\n"
        "\t}\n";
 
+   eu5::CountrySetup setup;
+   setup.AddTemplate("catholic_monarchy", "");
+   setup.AddTemplate("catholic_monarchy_no_coast", "");
+   setup.AddTemplate("catholic_monarchy_not_present", "");
+
    EXPECT_EQ(
        "\tDAN = {\n"
        "\t\tcapital = roskilde\n"
        "\t\tinclude = \"expl_scandinavia\"\n"
+       "\t\tinclude = \"catholic_monarchy_not_present\"\n"
        "\t\tgovernment = {\n"
        "\t\t\ttype = monarchy\n"
        "\t\t\their = random\n"
        "\t\t}\n"
        "\t}\n",
-       NotPresentBlock(denmark, eu5::MapAreas()));
+       NotPresentBlock(denmark, eu5::MapAreas(), setup));
 }
 
 TEST(OutputCountriesFileTests, PopCountriesGatherNoPopsFromConvertedLand)  // NOLINT : clang-tidy doens't like gtest
@@ -92,7 +99,8 @@ TEST(OutputCountriesFileTests, PopCountriesGatherNoPopsFromConvertedLand)  // NO
    // With no capital named, the first place it gathered pops from stands in.
    EXPECT_EQ("\tSMI = {\n\t\tcapital = kola\n\t\tdiscovered_regions = { russia_region }\n\t\ttype = pop\n\t}\n",
        NotPresentBlock("\tSMI = {\n\t\ttype = pop\n\t\tadd_pops_from_locations = {\n\t\t\tkola alta\n\t\t}\n\t}\n",
-           map_areas));
+           map_areas,
+           eu5::CountrySetup()));
 }
 
 TEST(OutputCountriesFileTests,

@@ -27,6 +27,11 @@ class CountrySetup
    explicit CountrySetup(const std::filesystem::path& eu5_directory);
 
    void AddTemplate(const std::string& name, const std::string& text) { templates_[name] = text; }
+   [[nodiscard]] bool HasTemplate(const std::string& name) const { return templates_.contains(name); }
+   // The version of a template EU5 gives a country that doesn't exist yet, without the laws and
+   // privileges only one that does can hold - catholic_monarchy_not_present for catholic_monarchy.
+   // The template itself where there is none.
+   [[nodiscard]] std::string NotPresentVariantOf(const std::string& template_name) const;
    void AddDefinitionFile(const std::string& name, const std::string& text);
    void AddReligions(const std::string& text);
 

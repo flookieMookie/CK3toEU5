@@ -6,6 +6,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "Log.h"
@@ -180,6 +181,29 @@ std::string eu5::CountrySetup::LandlockedVariantOf(const std::string& template_n
    }
    const auto landlocked = template_name + "_no_coast";
    return templates_.contains(landlocked) ? landlocked : template_name;
+}
+
+std::string eu5::CountrySetup::NotPresentVariantOf(const std::string& template_name) const
+{
+   if (template_name.ends_with("_not_present"))
+   {
+      return template_name;
+   }
+   if (const auto variant = template_name + "_not_present"; templates_.contains(variant))
+   {
+      return variant;
+   }
+   // The landlocked templates share their not-present version with the coastal ones.
+   constexpr std::string_view kLandlocked = "_no_coast";
+   if (template_name.ends_with(kLandlocked))
+   {
+      const auto variant = template_name.substr(0, template_name.size() - kLandlocked.size()) + "_not_present";
+      if (templates_.contains(variant))
+      {
+         return variant;
+      }
+   }
+   return template_name;
 }
 
 std::optional<std::string> eu5::CountrySetup::CultureOf(const std::string& tag) const

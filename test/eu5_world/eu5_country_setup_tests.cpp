@@ -52,6 +52,16 @@ TEST(EU5WorldCountrySetupTests, GovernmentTemplatesLeaveExplorationOut)  // NOLI
    EXPECT_EQ("hansa", setup.LandlockedVariantOf("hansa"));
 }
 
+TEST(EU5WorldCountrySetupTests, CountriesNotPresentTakeTheNotPresentTemplate)  // NOLINT : clang-tidy doens't like gtest
+{
+   const auto setup = MakeSetup();
+
+   EXPECT_EQ("catholic_monarchy_not_present", setup.NotPresentVariantOf("catholic_monarchy"));
+   EXPECT_EQ("catholic_monarchy_not_present", setup.NotPresentVariantOf("catholic_monarchy_no_coast"));
+   EXPECT_EQ("catholic_monarchy_not_present", setup.NotPresentVariantOf("catholic_monarchy_not_present"));
+   EXPECT_EQ("hansa", setup.NotPresentVariantOf("hansa"));
+}
+
 TEST(EU5WorldCountrySetupTests, DefinitionsAndReligionGroupsAreRead)  // NOLINT : clang-tidy doens't like gtest
 {
    const auto setup = MakeSetup();

@@ -32,8 +32,11 @@ namespace out
 // A vanilla country block as EU5 writes a country that doesn't exist at the start: everything it
 // held and gathered pops from is gone, and so are its rulers, past and present, who aren't in the
 // converted world. Its government, capital and exploration stay; one with no capital named takes the
-// first place it held, and knows that place's region.
-[[nodiscard]] std::string NotPresentBlock(const std::string& block, const eu5::MapAreas& map_areas);
+// first place it held, and knows that place's region. Its templates become their not-present
+// versions where EU5 has them, as vanilla's own such countries use.
+[[nodiscard]] std::string NotPresentBlock(const std::string& block,
+    const eu5::MapAreas& map_areas,
+    const eu5::CountrySetup& setup);
 
 // What a converted country has discovered of the world, as lines of its country block. Without any,
 // EU5 shows the player nothing but their own land. It takes the exploration of the country that held

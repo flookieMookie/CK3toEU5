@@ -38,7 +38,8 @@ print(len(tags),'countries defined')
 for f,pat in [('12_diplomacy.txt',r'\b(?:first|second)\s*=\s*([A-Z][A-Z0-9]{2})\b'),('16_wars.txt',r'\b(?:country|caller|attacker|defender)\s*=\s*([A-Z][A-Z0-9]{2})\b'),
               ('16_wars.txt',r'name\s*=\s*"([A-Z][A-Z0-9]{2})"'),('27_armies.txt',r'\bcountry\s*=\s*([A-Z][A-Z0-9]{2})\b'),
               ('07_cities_and_buildings.txt',r'\btag\s*=\s*([A-Z][A-Z0-9]{2})\b'),('13_religion.txt',r'\b(?:tag|country)\s*=\s*([A-Z][A-Z0-9]{2})\b'),
-              ('15_international_organizations.txt',r'\bleader\s*=\s*([A-Z][A-Z0-9]{2})\b'),('05_characters.txt',r'\btag\s*=\s*([A-Z][A-Z0-9]{2})\b')]:
+              ('15_international_organizations.txt',r'\bleader\s*=\s*([A-Z][A-Z0-9]{2})\b'),('05_characters.txt',r'\btag\s*=\s*([A-Z][A-Z0-9]{2})\b'),
+              ('18_opinions.txt',r'\b(?:first|second)\s*=\s*([A-Z][A-Z0-9]{2})\b'),('20_rivals.txt',r'\b(?:first|second)\s*=\s*([A-Z][A-Z0-9]{2})\b')]:
     if S+f not in files: continue
     for t in set(re.findall(pat,nocomment(files[S+f]))):
         if t not in tags: bad('undefined tag',t,'in',f)
@@ -46,7 +47,7 @@ for f,pat in [('12_diplomacy.txt',r'\b(?:first|second)\s*=\s*([A-Z][A-Z0-9]{2})\
 chars_txt=nocomment(files[S+'05_characters.txt'])
 chars=set(re.findall(r'^\t([a-z][a-z0-9_]*)\s*=\s*\{',chars_txt,re.M))
 print(len(chars),'characters defined')
-for ref in set(re.findall(r'\b(?:ruler|heir|character|regent|consort)\s*=\s*([a-z][a-z0-9_]*)',countries)):
+for ref in set(re.findall(r'\b(?:ruler|heir|character|regent|active_regent|consort)\s*=\s*([a-z][a-z0-9_]*)',countries)):
     if ref not in chars and ref!='random': bad('undefined character in 10_countries',ref)
 for ref in set(re.findall(r'\b(?:father|mother|spouse)\s*=\s*([a-z][a-z0-9_]*)',chars_txt)):
     if ref not in chars: bad('undefined family member',ref)
@@ -66,6 +67,9 @@ for p,t in files.items():
         lang=os.path.basename(os.path.dirname(p)); loc.setdefault(lang,set()).update(re.findall(r'^ ([A-Za-z0-9_]+):',t,re.M))
 # Loc keys only: character ids like ck3_war_ruler (the ruler of tag WAR) are not localised.
 used=set(k for k in re.findall(r'\b(ck3_(?:name|nick|house|war)_[a-z0-9_]+)',chars_txt+nocomment(files[S+'16_wars.txt'])+dyn) if k not in chars)
+# Works of art need a name and a description.
+for key in re.findall(r'\bkey\s*=\s*(ck3_artifact_[0-9]+)',nocomment(files.get(S+'11_art.txt',''))):
+    used.update({key,key+'_desc'})
 conv_tags={t for t in re.findall(r'^\t\t([A-Z][A-Z0-9]{2}) = \{ #',files[S+'10_countries.txt'],re.M)}
 for lang,keys in sorted(loc.items()):
     miss=[k for k in used if k not in keys]; misst=[t for t in conv_tags if t not in keys]

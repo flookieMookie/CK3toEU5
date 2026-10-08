@@ -261,7 +261,7 @@ int WriteCountriesNotPresent(std::ostringstream& output,
    const auto not_present = vanilla_countries.GetNotPresent(eu5_world.GetConvertedLocations(), converted_tags);
    for (const auto* vanilla: not_present)
    {
-      output << "\n" << out::NotPresentBlock(vanilla->block, map_areas);
+      output << "\n" << out::NotPresentBlock(vanilla->block, map_areas, vanilla_countries.GetSetup());
    }
    return static_cast<int>(not_present.size());
 }
@@ -411,7 +411,9 @@ std::string out::HeirReligionLawFor(const std::string& heir_selection)
    return heir_selection == "theocratic_elective" ? "heir_special_succession" : "heir_same_religion";
 }
 
-std::string out::NotPresentBlock(const std::string& block, const eu5::MapAreas& map_areas)
+std::string out::NotPresentBlock(const std::string& block,
+    const eu5::MapAreas& map_areas,
+    const eu5::CountrySetup& setup)
 {
    // EU5 wants even a country that doesn't exist to have a capital it knows the way to. Vanilla
    // leaves most to be found from the land they hold, so the first place of what it held stands in.
@@ -469,6 +471,21 @@ std::string out::NotPresentBlock(const std::string& block, const eu5::MapAreas& 
       from = start;
    }
    result = std::regex_replace(result, kPerson, "");
+
+   // Vanilla gives a country that doesn't exist yet the not-present version of its template.
+   static const std::regex kInclude(R"re((\binclude\s*=\s*"?)([A-Za-z0-9_]+))re");
+   std::string included;
+   auto copied = result.cbegin();
+   for (auto include = std::sregex_iterator(result.cbegin(), result.cend(), kInclude);
+       include != std::sregex_iterator();
+       ++include)
+   {
+      included.append(copied, (*include)[0].first);
+      included += (*include)[1].str() + setup.NotPresentVariantOf((*include)[2].str());
+      copied = (*include)[0].second;
+   }
+   included.append(copied, result.cend());
+   result = included;
 
    // Drop the lines the removals emptied, keeping the block's own layout otherwise.
    std::istringstream lines(result);
