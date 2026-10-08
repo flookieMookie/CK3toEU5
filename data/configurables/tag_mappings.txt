@@ -1343,7 +1343,7 @@ link = { ck3 = c_guwari eu5 = ZZZ }
 link = { ck3 = e_pagan eu5 = PIN } #Pinya, "Founded as the de jure successor state of the Pagan empire"
 link = { ck3 = k_pagan eu5 = PIN }
 link = { ck3 = d_pagan eu5 = PIN }
-link = { ck3 = c_ava eu5 = AVA }
+# c_ava has no EU5 tag of its own: EU5's AVA is the Ava people of Brazil, so it gets a generated one.
 
 #Burma
 

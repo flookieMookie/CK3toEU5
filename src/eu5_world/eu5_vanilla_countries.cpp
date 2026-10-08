@@ -19,27 +19,34 @@ const std::filesystem::path kCountriesFile =
 // ruler terms and centuries of ruler history that the converter has no way to regenerate.
 const std::regex kCountryStart(R"(^\s*([A-Z0-9]{3})\s*=\s*\{)");
 
-// Every bare token inside an ownership list is a location name.
-void CollectLocations(const std::string& block, std::set<std::string>& locations)
+// Every bare token inside an ownership list is a location name; the own_ lists are what it owns.
+void CollectLocations(const std::string& block, eu5::VanillaCountry& country)
 {
    static const std::regex kOwnershipBlock(R"((own|control|our)[a-z_]*\s*=\s*\{([^{}]*)\})");
-   for (auto match = std::sregex_iterator(block.begin(), block.end(), kOwnershipBlock); match != std::sregex_iterator();
+   static const std::regex kComment("#[^\n]*");
+   const auto code = std::regex_replace(block, kComment, "");
+   for (auto match = std::sregex_iterator(code.begin(), code.end(), kOwnershipBlock); match != std::sregex_iterator();
        ++match)
    {
+      const auto owns = (*match)[1].str() == "own";
       std::istringstream tokens((*match)[2].str());
       std::string token;
       while (tokens >> token)
       {
          if (!token.empty() && (std::islower(static_cast<unsigned char>(token.front())) != 0))
          {
-            locations.insert(token);
+            country.locations.insert(token);
+            if (owns)
+            {
+               country.owned.insert(token);
+            }
          }
       }
    }
 }
 }  // namespace
 
-eu5::VanillaCountries::VanillaCountries(const std::filesystem::path& eu5_directory)
+eu5::VanillaCountries::VanillaCountries(const std::filesystem::path& eu5_directory): setup_(eu5_directory)
 {
    const auto countries_file = eu5_directory / kCountriesFile;
    if (!std::filesystem::exists(countries_file))
@@ -83,7 +90,7 @@ void eu5::VanillaCountries::Parse(const std::filesystem::path& file_path)
          }
       }
 
-      CollectLocations(country.block, country.locations);
+      CollectLocations(country.block, country);
       countries_.emplace_back(std::move(country));
    }
 }
@@ -103,4 +110,24 @@ std::vector<const eu5::VanillaCountry*> eu5::VanillaCountries::GetUntouched(
       }
    }
    return untouched;
+}
+
+std::vector<const eu5::VanillaCountry*> eu5::VanillaCountries::GetNotPresent(
+    const std::set<std::string>& converted_locations,
+    const std::set<std::string>& converted_tags) const
+{
+   auto taken = converted_tags;
+   for (const auto* country: GetUntouched(converted_locations))
+   {
+      taken.insert(country->tag);
+   }
+   std::vector<const VanillaCountry*> not_present;
+   for (const auto& country: countries_)
+   {
+      if (taken.insert(country.tag).second)
+      {
+         not_present.push_back(&country);
+      }
+   }
+   return not_present;
 }

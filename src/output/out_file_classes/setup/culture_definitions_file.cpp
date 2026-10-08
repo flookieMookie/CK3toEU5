@@ -43,7 +43,8 @@ void CultureDefinitionsFile::Create(const std::filesystem::path& folder_path)
    const auto generated = eu5_world_.GetCultureResolver().GetUsedGeneratedCultures();
 
    std::ostringstream output;
-   output << "# Cultures converted from CK3 that EU5 does not define itself, including every\n";
+   // EU5 reads its database files as UTF-8 with a byte order mark, and warns about any without.
+   output << "\xEF\xBB\xBF# Cultures converted from CK3 that EU5 does not define itself, including every\n";
    output << "# hybrid and divergent culture the campaign created.\n";
 
    for (const auto& [name, definition]: generated)

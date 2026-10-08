@@ -10,6 +10,8 @@
 #include <vector>
 
 #include "Log.h"
+#include "eu5_ruler_traits.hpp"
+#include "eu5_vanilla_countries.hpp"
 #include "src/ck3_world/characters/characters.hpp"
 #include "src/ck3_world/ck3_world.hpp"
 #include "src/ck3_world/council_manager/councillor_task.hpp"
@@ -415,6 +417,7 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
    AssignAlliances(ck3_world.GetRelations());
    AssignWars(context);
    AssignTruces(ck3_world.GetRelations());
+   AssignRivalsAndFriends(ck3_world.GetOpinions());
    AssignBuildings(context);
 
    // A ruler's men-at-arms become a standing army. An EU5 regiment of this age is 500 men (a
@@ -432,6 +435,7 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
    }
    AssignFamilies(ck3_world);
    AssignDynasties();
+   AssignWorksOfArt(ck3_world.GetArtifacts());
    AssignFlags(ck3_world);
    AssignRanks();
    AssignDevelopment();
@@ -904,6 +908,53 @@ void eu5::EU5World::AssignTruces(const ck3::Relations& relations)
    }
 }
 
+void eu5::EU5World::AssignRivalsAndFriends(const ck3::Opinions& opinions)
+{
+   // EU5's own countries never start with more than three rivals.
+   constexpr int kMostRivals = 3;
+   static const std::set<std::string> kRivalries = {"rival", "nemesis"};
+   static const std::set<std::string> kFriendships = {"friend", "best_friend", "lover", "soulmate"};
+
+   const auto country_of_ruler = MapCountriesByRuler();
+   std::map<std::string, int> rivals_of;
+   std::set<std::pair<std::string, std::string>> rivals;
+   for (const auto& [characters, relations]: opinions.GetScriptedRelations())
+   {
+      const auto owner = country_of_ruler.find(characters.first);
+      const auto target = country_of_ruler.find(characters.second);
+      // Most of CK3's rivals and friends are courtiers; only rulers have countries.
+      if (owner == country_of_ruler.end() || target == country_of_ruler.end() || owner->second == target->second)
+      {
+         continue;
+      }
+      const auto& first = owner->second->GetTag();
+      const auto& second = target->second->GetTag();
+      const auto allied = alliances_.contains({std::min(first, second), std::max(first, second)});
+      if (std::ranges::any_of(relations, [](const std::string& relation) {
+             return kRivalries.contains(relation);
+          }))
+      {
+         // A subject's rivalries are its overlord's business in EU5, and allies don't rival each other.
+         if (!owner->second->GetLiegeTag().empty() || !target->second->GetLiegeTag().empty() || allied ||
+             rivals_of[first] >= kMostRivals)
+         {
+            continue;
+         }
+         if (rivals.emplace(first, second).second)
+         {
+            rivals_.emplace_back(first, second);
+            ++rivals_of[first];
+         }
+      }
+      else if (std::ranges::any_of(relations, [](const std::string& relation) {
+                  return kFriendships.contains(relation);
+               }))
+      {
+         good_relations_.emplace_back(first, second);
+      }
+   }
+}
+
 void eu5::EU5World::AssignWars(const Context& context)
 {
    const auto country_of_ruler = MapCountriesByRuler();
@@ -1179,6 +1230,161 @@ void eu5::EU5World::AssignDynasties()
          add_house_of(*member.character, *country);
       }
    }
+}
+
+void eu5::EU5World::AssignWorksOfArt(const ck3::Artifacts& artifacts)
+{
+   // CK3's kinds of artifact onto EU5's kinds of art. Arms and armour are weapons; crowns, thrones,
+   // sceptres, seals and jewels are regalia; tapestries hang as paintings. Tableware, boxes and
+   // curiosities have no counterpart and stay behind.
+   static const std::map<std::string, std::string> kKinds = {{"sword", "weapon"},
+       {"axe", "weapon"},
+       {"mace", "weapon"},
+       {"hammer", "weapon"},
+       {"spear", "weapon"},
+       {"dagger", "weapon"},
+       {"bow", "weapon"},
+       {"longbow", "weapon"},
+       {"crossbow", "weapon"},
+       {"composite", "weapon"},
+       {"armor_brigandine", "weapon"},
+       {"armor_lamellar", "weapon"},
+       {"armor_laminar", "weapon"},
+       {"armor_mail", "weapon"},
+       {"armor_plate", "weapon"},
+       {"armor_scale", "weapon"},
+       {"helmet_simple", "weapon"},
+       {"wall_shield", "weapon"},
+       {"wall_shield_special", "weapon"},
+       {"regalia", "regalia"},
+       {"regalia_simple", "regalia"},
+       {"helmet", "regalia"},
+       {"scepter_pedestal", "regalia"},
+       {"throne", "regalia"},
+       {"throne_special", "regalia"},
+       {"seal_of_investiture", "regalia"},
+       {"seal_of_investiture_court", "regalia"},
+       {"ring", "regalia"},
+       {"necklace", "regalia"},
+       {"necklace_pedestal", "regalia"},
+       {"brooch", "regalia"},
+       {"brooch_pedestal", "regalia"},
+       {"book", "treatise"},
+       {"journal", "treatise"},
+       {"chronicle", "chronicle"},
+       {"tapestry", "painting"},
+       {"wall_big", "painting"},
+       {"wall_small", "painting"},
+       {"wall_icon_court_large", "icon"},
+       {"wall_icon_court_small", "icon"},
+       {"sculpture", "statue"},
+       {"pedestal", "statue"},
+       {"urn", "statue"},
+       {"animal_skull", "statue"}};
+   // EU5's own works of art run from about 25 to 77. CK3's common artifacts are trinkets.
+   static const std::map<std::string, int> kQualities = {{"masterwork", 35}, {"famed", 50}, {"illustrious", 65}};
+   // EU5's richest courts start with a handful; a CK3 treasury can hold dozens.
+   constexpr std::size_t kMostPerCountry = 8;
+
+   auto country_of = MapCountriesByRuler();
+   for (const auto& country: countries_)
+   {
+      if (country->IsWritten())
+      {
+         for (const auto& member: country->GetFamily())
+         {
+            country_of.try_emplace(member.character->GetID(), country);
+         }
+      }
+   }
+   std::map<std::string, std::vector<std::pair<const ck3::Artifact*, std::string>>> art_of;
+   std::map<std::string, std::string> capital_of;
+   for (const auto& artifact: artifacts.GetArtifacts())
+   {
+      const auto country = country_of.find(artifact.owner);
+      const auto kind = kKinds.find(artifact.type);
+      if (country == country_of.end() || kind == kKinds.end() || !kQualities.contains(artifact.rarity) ||
+          !country->second->GetCapitalLocation().has_value() || artifact.name.empty())
+      {
+         continue;
+      }
+      art_of[country->second->GetTag()].emplace_back(&artifact, kind->second);
+      capital_of.emplace(country->second->GetTag(), *country->second->GetCapitalLocation());
+   }
+   for (auto& [tag, art]: art_of)
+   {
+      std::ranges::stable_sort(art, [](const auto& lhs, const auto& rhs) {
+         return kQualities.at(lhs.first->rarity) > kQualities.at(rhs.first->rarity);
+      });
+      art.resize(std::min(art.size(), kMostPerCountry));
+      for (const auto& [artifact, kind]: art)
+      {
+         ConvertedWorkOfArt work{.type = kind,
+             .location = capital_of.at(tag),
+             .quality = kQualities.at(artifact->rarity),
+             .key = "ck3_artifact_" + std::to_string(artifact->id),
+             .name = artifact->name,
+             .description = artifact->description};
+         // Made as long before EU5's start as it was before the save.
+         if (const auto created = artifact->created ? ReignStart(*artifact->created, conversion_date_) : std::nullopt)
+         {
+            work.creation_date = *created;
+         }
+         works_of_art_.push_back(std::move(work));
+      }
+   }
+}
+
+void eu5::EU5World::InheritLandLeftBehind(const VanillaCountries& vanilla_countries)
+{
+   std::map<std::string, std::shared_ptr<Country>> owner_of;
+   for (const auto& country: countries_)
+   {
+      if (country->IsWritten())
+      {
+         for (const auto& location: country->GetLocations())
+         {
+            owner_of.emplace(location, country);
+         }
+      }
+   }
+   for (const auto& vanilla: vanilla_countries.GetCountries())
+   {
+      std::map<std::string, int> share;
+      std::map<std::string, std::shared_ptr<Country>> country_of_tag;
+      std::vector<std::string> left;
+      for (const auto& location: vanilla.owned)
+      {
+         if (const auto owner = owner_of.find(location); owner != owner_of.end())
+         {
+            ++share[owner->second->GetTag()];
+            country_of_tag.emplace(owner->second->GetTag(), owner->second);
+         }
+         else
+         {
+            left.push_back(location);
+         }
+      }
+      // A country CK3 covers whole, or doesn't reach at all, leaves nothing behind.
+      if (share.empty() || left.empty())
+      {
+         continue;
+      }
+      const auto heir = std::ranges::max_element(share, [](const auto& lhs, const auto& rhs) {
+         return lhs.second < rhs.second;
+      });
+      const auto& country = country_of_tag.at(heir->first);
+      for (const auto& location: left)
+      {
+         if (owner_of.emplace(location, country).second)
+         {
+            country->AddLocation(location);
+            ++inherited_locations_;
+         }
+      }
+   }
+   Log(LogLevel::Info) << "<> " << inherited_locations_ << " locations EU5's countries held beyond CK3's map went to "
+                       << "the converted countries that inherited the rest of theirs.";
 }
 
 std::string eu5::EU5World::DynastyIdOf(const ck3::Character& character) const

@@ -204,6 +204,10 @@ void ck3::CK3World::ParseGamestate(std::istream& input_stream, const commonItems
       armies_ = Armies(input_stream);
       Log(LogLevel::Info) << "<> Loaded the men-at-arms of " << armies_.GetMenAtArms().size() << " rulers.";
    });
+   parser.registerKeyword("artifacts", [this](const std::string&, std::istream& input_stream) {
+      artifacts_ = Artifacts(input_stream);
+      Log(LogLevel::Info) << "<> Loaded " << artifacts_.GetArtifacts().size() << " artifacts.";
+   });
    parser.registerKeyword("wars", [this](const std::string&, std::istream& input_stream) {
       Log(LogLevel::Info) << "-> Loading wars.";
       wars_ = Wars(input_stream);
@@ -215,11 +219,12 @@ void ck3::CK3World::ParseGamestate(std::istream& input_stream, const commonItems
       Log(LogLevel::Info) << "<> Loaded " << relations_.GetAlliances().size() << " alliances and "
                           << relations_.GetTruces().size() << " truces.";
    });
-   // registerKeyword("opinions", [this](const std::string&, std::istream& input_stream) {
-   //	Log(LogLevel::Info) << "-> Loading opinions.";
-   //	opinions = Opinions(input_stream);
-   //	Log(LogLevel::Info) << "<> Loaded " << opinions.getRivalPairs().size() << " rivalries.";
-   // });
+   parser.registerKeyword("opinions", [this](const std::string&, std::istream& input_stream) {
+      Log(LogLevel::Info) << "-> Loading opinions.";
+      opinions_ = Opinions(input_stream);
+      Log(LogLevel::Info) << "<> Loaded " << opinions_.GetScriptedRelations().size()
+                          << " rivalries, friendships and other relations between characters.";
+   });
    parser.registerKeyword("vassal_contracts", [this](const std::string&, std::istream& input_stream) {
       Log(LogLevel::Info) << "-> Loading vassal contracts.";
       vassal_contracts_ = VassalContracts(input_stream);

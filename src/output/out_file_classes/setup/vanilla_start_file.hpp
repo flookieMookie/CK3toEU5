@@ -95,8 +95,21 @@ class VanillaStartFile: public OutputFile
 
 // The buildings CK3 holdings had, as entries of EU5's building_manager, leaving out any the location
 // already has in EU5's own start (existing) - and stockades where there is a castle.
+//
+// A country only keeps as many forts as its fort limit (fort_limits, by tag; with none given, nothing
+// is capped) leaves room for beside the ones EU5 already gives it - a castle counting one, a stockade
+// half - castles first. CK3 realms are walled far more densely than EU5 allows, and a country over its
+// limit pays for it in defensiveness from the first day.
 [[nodiscard]] std::string WriteConvertedBuildings(const std::vector<eu5::ConvertedBuilding>& buildings,
-    const std::string& existing);
+    const std::string& existing,
+    const std::map<std::string, double>& fort_limits = {});
+
+// Entries for EU5's work_of_art_manager: the CK3 artifacts kept as works of art.
+[[nodiscard]] std::string WriteWorksOfArt(const std::vector<eu5::ConvertedWorkOfArt>& works);
+
+// About what EU5 will make a country's fort limit: one, another for every ten locations, and one more
+// for a kingdom or two for an empire. Cities and advances add a little more on top.
+[[nodiscard]] double FortLimitFor(std::size_t locations, const std::string& rank);
 
 // Writes one of EU5's start files about places - buildings in 07_cities_and_buildings, cardinals'
 // seats and saints in 13_religion, works of art in 11_art - fitted to the converted world: each

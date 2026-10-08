@@ -79,19 +79,56 @@ bool ShouldWrite(const eu5::Country& country)
    return country.IsWritten();
 }
 
-void WriteGovernment(std::ostringstream& output, const eu5::Country& country, const date& conversion_date)
+// The templates - laws, estate privileges, parliament - of the country that held a converted
+// country's capital in EU5's 1337, where it was governed the same way and its religion is of the same
+// group. A Catholic kingdom in France takes up France's; a Muslim one there takes up nobody's.
+std::vector<std::string> TemplatesFor(const eu5::Country& country,
+    const std::string& government,
+    const eu5::VanillaCountry* capital_owner,
+    const eu5::CountrySetup& setup)
+{
+   // The templates' laws come with the advances of EU5's own start, technology level 3; a country
+   // behind that would start with laws it hasn't the advances for.
+   constexpr int kTemplateTechnologyLevel = 3;
+   if (capital_owner == nullptr || !country.GetReligion().has_value() ||
+       country.GetTechnologyLevel() < kTemplateTechnologyLevel ||
+       setup.GovernmentTypeOf(capital_owner->block) != government)
+   {
+      return {};
+   }
+   const auto owner_religion = setup.ReligionOf(capital_owner->tag);
+   const auto group = setup.GroupOf(*country.GetReligion());
+   if (!owner_religion.has_value() || !group.has_value() || setup.GroupOf(*owner_religion) != group)
+   {
+      return {};
+   }
+   std::vector<std::string> templates;
+   for (const auto& name: setup.GovernmentTemplatesOf(capital_owner->block))
+   {
+      if (!name.ends_with("_not_present"))
+      {
+         templates.push_back(setup.LandlockedVariantOf(name));
+      }
+   }
+   return templates;
+}
+
+void WriteGovernment(std::ostringstream& output,
+    const eu5::Country& country,
+    const std::optional<std::string>& religion_group,
+    const date& conversion_date,
+    const bool from_template)
 {
    const auto government = GovernmentFor(country.GetSourceRealm()->GetGovernment());
    output << "\t\t\tgovernment = {\n";
    output << "\t\t\t\ttype = " << government << "\n";
    const auto& holder = country.GetSourceRealm()->GetHolder();
-   if (holder && holder->GetCharacterRealm())
-   {
-      if (const auto heir_selection = out::HeirSelectionFor(government, holder->GetCharacterRealm()->GetLaws()))
-      {
-         output << "\t\t\t\their_selection = " << *heir_selection << "\n";
-      }
-   }
+   const std::set<std::string> no_laws;
+   const auto& laws = holder && holder->GetCharacterRealm() ? holder->GetCharacterRealm()->GetLaws() : no_laws;
+   const auto heir_selection = out::HeirSelectionFor(government, laws);
+   output << "\t\t\t\their_selection = " << heir_selection << "\n";
+   output << "\t\t\t\tlaws = { marriage_law = " << out::MarriageLawFor(government, religion_group)
+          << " heir_religion_law = " << out::HeirReligionLawFor(heir_selection) << " }\n";
    if (country.HasRuler())
    {
       output << "\t\t\t\truler = " << country.GetRulerId() << "\n";
@@ -110,17 +147,19 @@ void WriteGovernment(std::ostringstream& output, const eu5::Country& country, co
    {
       output << "\t\t\t\their = " << country.GetHeirId() << "\n";
    }
-   output << "\t\t\t\tparliament = { parliament_type = " << ParliamentFor(government) << " }\n";
-   // EU5 wants every country placed on its society axes and complains for each one that is not.
-   // CK3 has no equivalent for most of them, so only the two its government type genuinely speaks
-   // to are leaned; the rest sit neutral rather than inventing a position.
-   const std::set<std::string> no_laws;
-   const auto& laws = holder && holder->GetCharacterRealm() ? holder->GetCharacterRealm()->GetLaws() : no_laws;
+   // How decentralised the realm was is CK3's to say; a template has the rest of what EU5 asks for.
    output << "\t\t\t\tcentralization_vs_decentralization = " << out::CentralizationFor(government, laws) << "\n";
-   output << "\t\t\t\ttraditionalist_vs_innovative = " << (government == "tribe" ? -40 : -20) << "\n";
-   for (const auto& axis: kNeutralSocietyAxes)
+   if (!from_template)
    {
-      output << "\t\t\t\t" << axis << " = 0\n";
+      // EU5 wants every country placed on its society axes and complains for each one that is not.
+      // CK3 has no equivalent for most of them, so only the two its government type genuinely
+      // speaks to are leaned; the rest sit neutral rather than inventing a position.
+      output << "\t\t\t\tparliament = { parliament_type = " << ParliamentFor(government) << " }\n";
+      output << "\t\t\t\ttraditionalist_vs_innovative = " << (government == "tribe" ? -40 : -20) << "\n";
+      for (const auto& axis: kNeutralSocietyAxes)
+      {
+         output << "\t\t\t\t" << axis << " = 0\n";
+      }
    }
    output << "\t\t\t}\n\n";
 }
@@ -151,10 +190,17 @@ void WriteLocations(std::ostringstream& output, const eu5::Country& country)
 
 void WriteCountry(std::ostringstream& output,
     const eu5::Country& country,
+    const std::vector<std::string>& templates,
+    const std::optional<std::string>& religion_group,
     const std::string& discoveries,
     const date& conversion_date)
 {
    output << "\n\t\t" << country.GetTag() << " = { # " << country.GetSourceRealm()->GetRealmName() << "\n";
+   // Templates first, so what the conversion says about the country overrides them.
+   for (const auto& name: templates)
+   {
+      output << "\t\t\tinclude = \"" << name << "\"\n";
+   }
    output << "\t\t\tcountry_rank = " << country.GetRank() << "\n";
    output << "\t\t\tstarting_technology_level = " << country.GetTechnologyLevel() << "\n";
    if (const auto school = out::ReligiousSchoolFor(country.GetReligion()))
@@ -171,7 +217,7 @@ void WriteCountry(std::ostringstream& output,
       }
    }
    output << "\n";
-   WriteGovernment(output, country, conversion_date);
+   WriteGovernment(output, country, religion_group, conversion_date, !templates.empty());
    WriteLocations(output, country);
    output << "\t\t}\n";
 }
@@ -190,6 +236,56 @@ int WriteUntouchedVanillaCountries(std::ostringstream& output,
       ++preserved;
    }
    return preserved;
+}
+
+// The rest of EU5's countries - those whose land the conversion took, and those vanilla already
+// starts without land - written as EU5 writes a country that doesn't exist yet, so everything that
+// names them still finds them. A tag a converted country took over is that country now.
+int WriteCountriesNotPresent(std::ostringstream& output,
+    const eu5::EU5World& eu5_world,
+    const eu5::VanillaCountries& vanilla_countries,
+    const eu5::MapAreas& map_areas)
+{
+   std::set<std::string> converted_tags;
+   for (const auto& country: eu5_world.GetCountries())
+   {
+      if (ShouldWrite(*country))
+      {
+         converted_tags.insert(country->GetTag());
+      }
+   }
+   const auto not_present = vanilla_countries.GetNotPresent(eu5_world.GetConvertedLocations(), converted_tags);
+   for (const auto* vanilla: not_present)
+   {
+      output << "\n" << out::NotPresentBlock(vanilla->block, map_areas);
+   }
+   return static_cast<int>(not_present.size());
+}
+
+// Where a key = { ... } block opening at position open ends, comments skipped.
+std::size_t ClosingBrace(const std::string& text, std::size_t open)
+{
+   int depth = 0;
+   for (auto position = open; position < text.size(); ++position)
+   {
+      if (text[position] == '#')
+      {
+         position = text.find('\n', position);
+         if (position == std::string::npos)
+         {
+            return std::string::npos;
+         }
+      }
+      else if (text[position] == '{')
+      {
+         ++depth;
+      }
+      else if (text[position] == '}' && --depth == 0)
+      {
+         return position;
+      }
+   }
+   return std::string::npos;
 }
 }  // namespace
 
@@ -256,11 +352,20 @@ std::optional<std::string> out::ReligiousSchoolFor(const std::optional<std::stri
    return school == kSchools.end() ? std::nullopt : std::optional(school->second);
 }
 
-std::optional<std::string> out::HeirSelectionFor(const std::string& government, const std::set<std::string>& ck3_laws)
+std::string out::HeirSelectionFor(const std::string& government, const std::set<std::string>& ck3_laws)
 {
-   if (government != "monarchy")
+   // What EU5's own countries of each kind use.
+   if (government == "tribe")
    {
-      return std::nullopt;
+      return "tribal_oldest_male";
+   }
+   if (government == "republic")
+   {
+      return "oligarchic_elective";
+   }
+   if (government == "theocracy")
+   {
+      return "theocratic_elective";
    }
    // Every CK3 partition law - confederate, high, the clans' - divides the realm among the sons.
    if (std::ranges::any_of(ck3_laws, [](const std::string& law) {
@@ -281,6 +386,104 @@ std::optional<std::string> out::HeirSelectionFor(const std::string& government, 
    }
    // Male preference, and anything a campaign or mod adds, is EU5's own default.
    return "cognatic_primogeniture";
+}
+
+std::string out::MarriageLawFor(const std::string& government, const std::optional<std::string>& religion_group)
+{
+   if (government == "theocracy")
+   {
+      return "celibacy";
+   }
+   if (religion_group == "muslim")
+   {
+      return "muslim_marriage";
+   }
+   return "monogamous_marriage";
+}
+
+std::string out::HeirReligionLawFor(const std::string& heir_selection)
+{
+   // A theocracy's heir is chosen from its clergy, which EU5 marks as the special succession.
+   return heir_selection == "theocratic_elective" ? "heir_special_succession" : "heir_same_religion";
+}
+
+std::string out::NotPresentBlock(const std::string& block, const eu5::MapAreas& map_areas)
+{
+   // EU5 wants even a country that doesn't exist to have a capital it knows the way to. Vanilla
+   // leaves most to be found from the land they hold, so the first place of what it held stands in.
+   static const std::regex kCapital(R"(\bcapital\s*=)");
+   static const std::regex kFirstPlace(R"(\b(own_[a-z_]*|add_pops_from_locations)\s*=\s*\{\s*([a-z][A-Za-z0-9_']*))");
+   static const std::regex kComment("#[^\n]*");
+   const auto code = std::regex_replace(block, kComment, "");
+   std::string seat;
+   if (std::smatch first_place; !std::regex_search(code, kCapital) && std::regex_search(code, first_place, kFirstPlace))
+   {
+      seat = "\t\tcapital = " + first_place[2].str() + "\n";
+      if (const auto region = map_areas.RegionOf(first_place[2].str()))
+      {
+         seat += "\t\tdiscovered_regions = { " + *region + " }\n";
+      }
+   }
+
+   // The land it held, the pops it gathered from others' land, and the rulers of its history, none of
+   // whom are in the converted world.
+   static const std::set<std::string> kRemoved = {"own_control_core",
+       "own_control_integrated",
+       "own_control_conquered",
+       "own_control_colony",
+       "own_core",
+       "own_conquered",
+       "own_integrated",
+       "own_colony",
+       "control_core",
+       "control",
+       "our_cores_conquered_by_others",
+       "add_pops_from_locations",
+       "ruler_term"};
+   static const std::regex kKey(R"(\b([a-z_]+)\s*=\s*\{)");
+   static const std::regex kPerson(R"(\b(ruler|heir|consort|regent|active_regent)\s*=\s*(?!random\b)[A-Za-z0-9_]+)");
+
+   std::string result = block;
+   std::size_t from = 0;
+   std::smatch match;
+   while (std::regex_search(result.cbegin() + static_cast<std::ptrdiff_t>(from), result.cend(), match, kKey))
+   {
+      const auto start = from + static_cast<std::size_t>(match.position(0));
+      const auto line_start = result.rfind('\n', start);
+      const auto commented = result.find('#', line_start == std::string::npos ? 0 : line_start) < start;
+      if (commented || !kRemoved.contains(match[1].str()))
+      {
+         from = start + static_cast<std::size_t>(match.length(0));
+         continue;
+      }
+      const auto close = ClosingBrace(result, start + static_cast<std::size_t>(match.length(0)) - 1);
+      if (close == std::string::npos)
+      {
+         break;
+      }
+      result.erase(start, close + 1 - start);
+      from = start;
+   }
+   result = std::regex_replace(result, kPerson, "");
+
+   // Drop the lines the removals emptied, keeping the block's own layout otherwise.
+   std::istringstream lines(result);
+   std::ostringstream output;
+   std::string line;
+   bool opened = false;
+   while (std::getline(lines, line))
+   {
+      if (line.find_first_not_of(" \t\r") != std::string::npos)
+      {
+         output << line << "\n";
+         if (!opened)
+         {
+            output << seat;
+            opened = true;
+         }
+      }
+   }
+   return output.str();
 }
 
 namespace out
@@ -307,37 +510,53 @@ void CountriesFile::Create(const std::filesystem::path& folder_path)
    output << "countries = {\n";
    output << "\tcountries = {\n";
 
-   // Who held each location in EU5's 1337, whose exploration a converted country takes on.
-   std::map<std::string, const std::string*> vanilla_block_of_location;
+   // Who held each location in EU5's 1337, whose exploration and government a converted country
+   // takes on.
+   std::map<std::string, const eu5::VanillaCountry*> vanilla_owner_of_location;
    for (const auto& vanilla: vanilla_countries_.GetCountries())
    {
       for (const auto& location: vanilla.locations)
       {
-         vanilla_block_of_location.emplace(location, &vanilla.block);
+         vanilla_owner_of_location.emplace(location, &vanilla);
       }
    }
 
+   int templated = 0;
    for (const auto& country: eu5_world_.GetCountries())
    {
       if (ShouldWrite(*country))
       {
-         std::string capital_owner_block;
+         const eu5::VanillaCountry* capital_owner = nullptr;
          if (const auto& capital = country->GetCapitalLocation(); capital.has_value())
          {
-            if (const auto owner = vanilla_block_of_location.find(*capital); owner != vanilla_block_of_location.end())
+            if (const auto owner = vanilla_owner_of_location.find(*capital); owner != vanilla_owner_of_location.end())
             {
-               capital_owner_block = *owner->second;
+               capital_owner = owner->second;
             }
          }
+         const auto templates = TemplatesFor(*country,
+             GovernmentFor(country->GetSourceRealm()->GetGovernment()),
+             capital_owner,
+             vanilla_countries_.GetSetup());
+         templated += templates.empty() ? 0 : 1;
+         const auto& setup = vanilla_countries_.GetSetup();
          WriteCountry(output,
              *country,
-             WriteDiscoveries(country->GetLocations(), capital_owner_block, map_areas_),
+             templates,
+             country->GetReligion().has_value() ? setup.GroupOf(*country->GetReligion()) : std::nullopt,
+             WriteDiscoveries(country->GetLocations(),
+                 capital_owner == nullptr ? std::string() : capital_owner->block,
+                 map_areas_),
              eu5_world_.GetConversionDate());
       }
    }
 
    const auto preserved = WriteUntouchedVanillaCountries(output, eu5_world_, vanilla_countries_);
-   Log(LogLevel::Info) << "\t<> Kept " << preserved << " vanilla countries on land the conversion did not reach.";
+   const auto not_present = WriteCountriesNotPresent(output, eu5_world_, vanilla_countries_, map_areas_);
+   Log(LogLevel::Info) << "\t<> " << templated
+                       << " converted countries took up the government of who held their capital, " << preserved
+                       << " vanilla countries were kept on land the conversion did not reach, and " << not_present
+                       << " others start without land.";
 
    output << "\t}\n";
    output << "}\n";

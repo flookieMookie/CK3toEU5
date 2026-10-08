@@ -190,4 +190,43 @@ TEST(OutputVanillaStartFileTests, CK3BuildingsJoinEU5sOwnWithoutDoubling)  // NO
        WriteConvertedBuildings(buildings, existing));
 }
 
+TEST(OutputVanillaStartFileTests, ConvertedFortsStayWithinTheFortLimit)  // NOLINT : clang-tidy doens't like gtest
+{
+   // Sweden already has a castle from EU5, and room for two and a half; castles go before stockades.
+   const std::string existing = "building_manager = {\n\tcastle = { tag = SWE level = 1 location = stockholm }\n}\n";
+   const std::vector<eu5::ConvertedBuilding> buildings = {{"stockade", "uppsala", "SWE"},
+       {"stockade", "visby", "SWE"},
+       {"castle", "kalmar", "SWE"},
+       {"stockade", "orebro", "SWE"},
+       {"market_village", "orebro", "SWE"},
+       {"castle", "bergen", "NOR"}};
+
+   EXPECT_EQ(
+       "\tstockade = { tag = SWE level = 1 location = uppsala }\n"
+       "\tcastle = { tag = SWE level = 1 location = kalmar }\n"
+       "\tmarket_village = { tag = SWE level = 1 location = orebro }\n",
+       WriteConvertedBuildings(buildings, existing, {{"SWE", 2.5}, {"NOR", 0.5}}));
+}
+
+TEST(OutputVanillaStartFileTests, ArtifactsAreKeptWhereTheirOwnersRule)  // NOLINT : clang-tidy doens't like gtest
+{
+   const std::vector<eu5::ConvertedWorkOfArt> works = {{.type = "regalia",
+       .location = "rome",
+       .quality = 50,
+       .creation_date = date("1336.1.1"),
+       .key = "ck3_artifact_1",
+       .name = "Papal Tiara"}};
+
+   EXPECT_EQ(
+       "\tregalia = { location = rome origin = rome quality = 50 creation_date = 1336.1.1 key = ck3_artifact_1 }\n",
+       WriteWorksOfArt(works));
+}
+
+TEST(OutputVanillaStartFileTests, TheFortLimitGrowsWithLandAndRank)  // NOLINT : clang-tidy doens't like gtest
+{
+   EXPECT_DOUBLE_EQ(1.5, FortLimitFor(5, "rank_county"));
+   EXPECT_DOUBLE_EQ(46.9, FortLimitFor(449, "rank_kingdom"));
+   EXPECT_DOUBLE_EQ(5.0, FortLimitFor(20, "rank_empire"));
+}
+
 }  // namespace out

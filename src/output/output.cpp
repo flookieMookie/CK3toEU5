@@ -104,8 +104,16 @@ Output::Output(std::string name,
    auto pops_file = std::make_unique<PopsFile>("06_pops.txt", file_writer_, eu5_world, location_data);
    start_folder->RegisterFileOrResource(std::move(pops_file));
 
-   auto diplomacy_file = std::make_unique<DiplomacyFile>("12_diplomacy.txt", file_writer_, eu5_world);
-   start_folder->RegisterFileOrResource(std::move(diplomacy_file));
+   // EU5's own subjects and alliances among the vanilla countries it keeps, and CK3's.
+   start_folder->RegisterFileOrResource(std::make_unique<VanillaStartFile>("12_diplomacy.txt",
+       file_writer_,
+       eu5_world,
+       vanilla_countries,
+       eu5_directory,
+       1,
+       [&eu5_world]() {
+          return WriteSubjectsAndAlliances(eu5_world);
+       }));
 
    auto development_file =
        std::make_unique<DevelopmentFile>("14_development.txt", file_writer_, eu5_world, eu5_directory);
@@ -123,11 +131,29 @@ Output::Output(std::string name,
    start_folder->RegisterFileOrResource(
        std::make_unique<WarsFile>("16_wars.txt", file_writer_, eu5_world, vanilla_countries, eu5_directory));
 
-   // EU5's own rivalries, opinions, colonial claims and AI personalities, kept only for the
-   // vanilla countries on land CK3 doesn't cover. Each entry sits one brace in, some two.
-   for (const auto& [file_name, entry_depth]: {std::pair{"18_opinions.txt", 1},
-            std::pair{"20_rivals.txt", 1},
-            std::pair{"23_colonies.txt", 1},
+   // EU5's own rivalries and opinions among the vanilla countries it keeps, and the CK3 rulers'.
+   start_folder->RegisterFileOrResource(std::make_unique<VanillaStartFile>("18_opinions.txt",
+       file_writer_,
+       eu5_world,
+       vanilla_countries,
+       eu5_directory,
+       1,
+       [&eu5_world]() {
+          return WriteGoodRelations(eu5_world.GetGoodRelations());
+       }));
+   start_folder->RegisterFileOrResource(std::make_unique<VanillaStartFile>("20_rivals.txt",
+       file_writer_,
+       eu5_world,
+       vanilla_countries,
+       eu5_directory,
+       1,
+       [&eu5_world]() {
+          return WriteRivals(eu5_world.GetRivals());
+       }));
+
+   // EU5's own colonial claims and AI personalities, kept only for the vanilla countries on land
+   // CK3 doesn't cover. Each entry sits one brace in, some two.
+   for (const auto& [file_name, entry_depth]: {std::pair{"23_colonies.txt", 1},
             std::pair{"25_area_preferences.txt", 2},
             std::pair{"26_ai_personalities.txt", 2}})
    {
@@ -169,17 +195,33 @@ Output::Output(std::string name,
        vanilla_characters,
        eu5_directory,
        [&eu5_world](const std::string& fitted) {
-          return WriteConvertedBuildings(eu5_world.GetBuildings(), fitted);
+          std::map<std::string, double> fort_limits;
+          for (const auto& country: eu5_world.GetCountries())
+          {
+             if (country->IsWritten())
+             {
+                fort_limits.emplace(country->GetTag(),
+                    FortLimitFor(country->GetLocations().size(), country->GetRank()));
+             }
+          }
+          return WriteConvertedBuildings(eu5_world.GetBuildings(), fitted, fort_limits);
        }));
-   for (const auto* file_name: {"11_art.txt", "13_religion.txt"})
-   {
-      start_folder->RegisterFileOrResource(std::make_unique<VanillaLocationsFile>(file_name,
-          file_writer_,
-          eu5_world,
-          vanilla_countries,
-          vanilla_characters,
-          eu5_directory));
-   }
+   // The artifacts CK3 rulers kept join EU5's own works of art.
+   start_folder->RegisterFileOrResource(std::make_unique<VanillaLocationsFile>("11_art.txt",
+       file_writer_,
+       eu5_world,
+       vanilla_countries,
+       vanilla_characters,
+       eu5_directory,
+       [&eu5_world](const std::string&) {
+          return WriteWorksOfArt(eu5_world.GetWorksOfArt());
+       }));
+   start_folder->RegisterFileOrResource(std::make_unique<VanillaLocationsFile>("13_religion.txt",
+       file_writer_,
+       eu5_world,
+       vanilla_countries,
+       vanilla_characters,
+       eu5_directory));
 
    setup_folder->RegisterSubfolder(std::move(start_folder));
    main_menu_folder->RegisterSubfolder(std::move(setup_folder));
@@ -227,8 +269,10 @@ Output::Output(std::string name,
    auto in_game_setup_folder = std::make_unique<OutputFolder>("setup", folder_manager_);
    auto countries_folder = std::make_unique<OutputFolder>("countries", folder_manager_);
 
-   auto country_definitions_file =
-       std::make_unique<CountryDefinitionsFile>("00_converted_countries.txt", file_writer_, eu5_world);
+   auto country_definitions_file = std::make_unique<CountryDefinitionsFile>("00_converted_countries.txt",
+       file_writer_,
+       eu5_world,
+       vanilla_countries);
    countries_folder->RegisterFileOrResource(std::move(country_definitions_file));
 
    in_game_setup_folder->RegisterSubfolder(std::move(countries_folder));

@@ -29,6 +29,8 @@ class Realm;
 class Title;
 class VassalContracts;
 class Relations;
+class Opinions;
+class Artifacts;
 }  // namespace ck3
 
 namespace mappers
@@ -38,6 +40,7 @@ class Mappers;
 
 namespace eu5
 {
+class VanillaCountries;
 
 // A CK3 vassal relationship, written out as an EU5 subject.
 struct Dependency
@@ -86,6 +89,18 @@ struct ConvertedBuilding
    std::string tag;
 };
 
+// A CK3 artifact as the EU5 work of art nearest it, kept in its owner's capital.
+struct ConvertedWorkOfArt
+{
+   std::string type;  // weapon, regalia, treatise, chronicle, painting, icon, statue
+   std::string location;
+   int quality = 0;
+   date creation_date = date("1337.1.1");
+   std::string key;  // localisation key for the name CK3 gave it, and with _desc its description
+   std::string name;
+   std::string description;
+};
+
 // A CK3 house written as an EU5 dynasty. EU5's dynasty is the family name a character carries,
 // which in CK3 is the house - Karling - rather than the wider dynasty.
 struct ConvertedDynasty
@@ -126,9 +141,14 @@ class EU5World
    [[nodiscard]] const auto& GetDynasties() const { return dynasties_; }
    [[nodiscard]] const auto& GetWars() const { return wars_; }
    [[nodiscard]] const auto& GetTruces() const { return truces_; }
+   // Each country that rivals another, as EU5 sets one up: first rivals second.
+   [[nodiscard]] const auto& GetRivals() const { return rivals_; }
+   // Each country whose ruler was a friend, lover or soulmate of another's, first liking second.
+   [[nodiscard]] const auto& GetGoodRelations() const { return good_relations_; }
    // Country tag to the regiments of its standing army, from its CK3 ruler's men-at-arms.
    [[nodiscard]] const auto& GetStandingArmies() const { return standing_armies_; }
    [[nodiscard]] const auto& GetBuildings() const { return buildings_; }
+   [[nodiscard]] const auto& GetWorksOfArt() const { return works_of_art_; }
    // Country tag to the CK3 coat of arms it flies, for the tags the conversion invents.
    [[nodiscard]] const auto& GetFlags() const { return flags_; }
    // The EU5 dynasty a converted character belongs to, or empty.
@@ -136,6 +156,10 @@ class EU5World
    [[nodiscard]] const auto& GetDevelopmentBonuses() const { return development_bonuses_; }
 
    void LogReport() const;
+
+   // Land EU5's 1337 countries held beyond CK3's reach goes to the converted country that inherited
+   // most of the rest of theirs, so the edges of CK3's map aren't left without an owner.
+   void InheritLandLeftBehind(const VanillaCountries& vanilla_countries);
 
   private:
    // CK3 tributaries rule their own land, so they are already countries; this makes them subjects.
@@ -147,10 +171,14 @@ class EU5World
    void AssignAlliances(const ck3::Relations& relations);
    // Truces between CK3 rulers who both became independent countries, and aren't at war again.
    void AssignTruces(const ck3::Relations& relations);
+   // CK3 rulers' rivals and nemeses as EU5 rivals, their friends and lovers as good relations.
+   void AssignRivalsAndFriends(const ck3::Opinions& opinions);
    // Each converted ruler's living spouse, children and heir, as characters alongside them.
    void AssignFamilies(const ck3::CK3World& ck3_world);
    // The houses of everyone converted, as EU5 dynasties.
    void AssignDynasties();
+   // The artifacts of converted rulers and their families, as works of art in their capitals.
+   void AssignWorksOfArt(const ck3::Artifacts& artifacts);
    // Arms from CK3 for the countries EU5 has no flag for.
    void AssignFlags(const ck3::CK3World& ck3_world);
    // The country each CK3 ruler became, among those written to the mod.
@@ -224,14 +252,18 @@ class EU5World
    std::set<std::pair<std::string, std::string>> alliances_;
    std::vector<ConvertedWar> wars_;
    std::vector<ConvertedTruce> truces_;
+   std::vector<std::pair<std::string, std::string>> rivals_;
+   std::vector<std::pair<std::string, std::string>> good_relations_;
    std::map<std::string, int> standing_armies_;
    std::vector<ConvertedBuilding> buildings_;
+   std::vector<ConvertedWorkOfArt> works_of_art_;
    int wars_skipped_ = 0;
    int samantas_ = 0;
    int tributaries_dropped_ = 0;
    int overlords_raised_to_subject_nations_ = 0;
    int raised_to_era_ = 0;
    int councillors_ = 0;
+   int inherited_locations_ = 0;
    std::map<long long, ConvertedDynasty> dynasties_;
    std::map<std::string, ck3::CoatOfArms> flags_;
    // EU5 location to the CK3 development of the county it came from, and the bonus that becomes.

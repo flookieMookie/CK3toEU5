@@ -10,6 +10,11 @@
 namespace ck3
 {
 
+// CK3 renders the names it saves with its text markup in them, each code opened by \x15: a link -
+// \x15ONCLICK:TITLE,3615 - or tooltip up to the next space, a style - \x15L; - and \x15! to close
+// one. What is left is the name the player read.
+[[nodiscard]] std::string WithoutMarkup(const std::string& text);
+
 // One of the save's active wars. Sides are lists of characters, the rulers who joined them.
 struct War
 {

@@ -27,7 +27,8 @@ std::string Sanitize(const std::string& name)
    std::string clean;
    for (const char character: name)
    {
-      if (static_cast<unsigned char>(character) < 0x20)
+      // Control codes, and the backslashes the save escapes its quotes with.
+      if (static_cast<unsigned char>(character) < 0x20 || character == '\\')
       {
          continue;
       }
@@ -176,13 +177,19 @@ void CountryNamesFile::Create(const std::filesystem::path& folder_path)
       WriteEntry(output, dynasty.id, DynastyName(*dynasty.house, ck3_dynasty_names_, language_));
    }
 
-   // CK3 wrote war names out in the player's language when it saved, so they read the same everywhere.
+   // CK3 wrote war and artifact names out in the player's language when it saved, so they read the
+   // same everywhere.
    for (const auto& war: eu5_world_.GetWars())
    {
       if (!war.name_key.empty())
       {
          WriteEntry(output, war.name_key, war.name);
       }
+   }
+   for (const auto& work: eu5_world_.GetWorksOfArt())
+   {
+      WriteEntry(output, work.key, work.name);
+      WriteEntry(output, work.key + "_desc", work.description);
    }
 
    const auto cultures = eu5_world_.GetCultureResolver().GetUsedGeneratedCultures();

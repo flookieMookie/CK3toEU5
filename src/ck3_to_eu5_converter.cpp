@@ -10,6 +10,7 @@
 #include "ck3_world/cultures/culture_localization.hpp"
 #include "ck3_world/mods/ck3_mods.hpp"
 #include "configuration/configuration.hpp"
+#include "eu5_world/eu5_vanilla_countries.hpp"
 #include "eu5_world/eu5_world.hpp"
 #include "mappers/mappers.hpp"
 #include "output/output.hpp"
@@ -41,14 +42,15 @@ void Converter::Convert()
    Log(LogLevel::Info) << "-> Building EU5 countries.";
    const eu5::GameDefinitions game_definitions(configuration_.GetEU5Directory());
    const eu5::LocationData location_data(configuration_.GetEU5Directory());
-   const eu5::EU5World eu5_world(ck3_world, mappers, game_definitions, location_data);
+   const eu5::VanillaCountries vanilla_countries(configuration_.GetEU5Directory());
+   eu5::EU5World eu5_world(ck3_world, mappers, game_definitions, location_data);
+   eu5_world.InheritLandLeftBehind(vanilla_countries);
    eu5_world.LogReport();
 
    Log(LogLevel::Progress) << "80%";
 
 
    Log(LogLevel::Info) << "Outputting mod";
-   const eu5::VanillaCountries vanilla_countries(configuration_.GetEU5Directory());
    const eu5::VanillaCharacters vanilla_characters(configuration_.GetEU5Directory());
    const auto ck3_culture_names = ck3::LoadCultureLocalization(configuration_.GetCK3Directory(), ck3_world.GetMods());
    const auto ck3_dynasty_names = ck3::LoadDynastyLocalization(configuration_.GetCK3Directory(), ck3_world.GetMods());

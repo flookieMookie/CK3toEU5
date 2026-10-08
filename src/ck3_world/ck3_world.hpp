@@ -7,6 +7,7 @@
 #include "ModLoader/Mod.h"
 #include "Parser.h"
 #include "armies/armies.hpp"
+#include "artifacts/artifacts.hpp"
 #include "characters/characters.hpp"
 #include "coats_of_arms/coats_of_arms.hpp"
 #include "confederations/confederations.hpp"
@@ -18,6 +19,7 @@
 #include "geography/county_details.hpp"
 #include "geography/province_holdings.hpp"
 #include "realms/realms.hpp"
+#include "relations/opinions.hpp"
 #include "relations/relations.hpp"
 #include "religions/religions.hpp"
 #include "src/configuration/configuration.hpp"
@@ -43,6 +45,8 @@ class CK3World
    [[nodiscard]] const auto& GetConfederations() const { return confederations_; }
    [[nodiscard]] const auto& GetVassalContracts() const { return vassal_contracts_; }
    [[nodiscard]] const auto& GetRelations() const { return relations_; }
+   [[nodiscard]] const auto& GetOpinions() const { return opinions_; }
+   [[nodiscard]] const auto& GetArtifacts() const { return artifacts_; }
    [[nodiscard]] const auto& GetWars() const { return wars_; }
    [[nodiscard]] const auto& GetArmies() const { return armies_; }
    [[nodiscard]] const auto& GetProvinceHoldings() const { return province_holdings_; }
@@ -56,12 +60,6 @@ class CK3World
    [[nodiscard]] const auto& GetUsedMods() const { return used_mods_; }
    // The save's mods that are installed here, in load order.
    [[nodiscard]] const auto& GetMods() const { return mods_; }
-   //[[nodiscard]] const auto& GetMetaCoA() const { return metaCoA; }
-   //[[nodiscard]] const auto& GetLocalizationMapper() const { return localizationMapper; }
-   //[[nodiscard]] const auto& GetRivalPairs() const { return opinions.getRivalPairs(); }
-   //[[nodiscard]] const auto& GetWars() const { return wars.getWars(); }
-   //[[nodiscard]] const auto& GetArtifacts() const { return artifacts.getArtifacts(); }
-   //[[nodiscard]] const auto& GetMenAtArms() const { return armies.getMenAtArms(); }
 
   private:
    void ParseGamestate(std::istream& input_stream, const commonItems::ConverterVersion& converter_version);
@@ -91,22 +89,16 @@ class CK3World
    Religions religions_;
    CountyDetails county_details_;
    Cultures cultures_;
-   // HouseNameScraper houseNameScraper;
    Confederations confederations_;
    VassalContracts vassal_contracts_;
    Relations relations_;
+   Opinions opinions_;
+   Artifacts artifacts_;
    Wars wars_;
    Armies armies_;
    std::vector<std::string> trait_names_;
    CoatsOfArms coats_of_arms_;
    CouncillorTasks councillor_tasks_;
-   // Opinions opinions;
-   // Wars wars;
-   // Artifacts artifacts;
-   // Armies armies;
-   // mappers::NamedColors namedColors;
-   // mappers::TraitScraper traitScraper;
-   // mappers::LocalizationMapper localizationMapper;
 
    LandedTitles landed_titles_;
 

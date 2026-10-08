@@ -135,8 +135,28 @@ std::set<std::string> out::KeptVanillaCharacters(const eu5::VanillaCharacters& v
    return characters;
 }
 
+std::string out::WriteWorksOfArt(const std::vector<eu5::ConvertedWorkOfArt>& works)
+{
+   std::ostringstream output;
+   for (const auto& work: works)
+   {
+      // Where a work was made isn't recorded in CK3, so it comes from where it is kept.
+      output << "\t" << work.type << " = { location = " << work.location << " origin = " << work.location
+             << " quality = " << work.quality << " creation_date = " << work.creation_date << " key = " << work.key
+             << " }\n";
+   }
+   return output.str();
+}
+
+double out::FortLimitFor(const std::size_t locations, const std::string& rank)
+{
+   const auto rank_bonus = rank == "rank_empire" ? 2.0 : (rank == "rank_kingdom" ? 1.0 : 0.0);
+   return 1.0 + static_cast<double>(locations) / 10.0 + rank_bonus;
+}
+
 std::string out::WriteConvertedBuildings(const std::vector<eu5::ConvertedBuilding>& buildings,
-    const std::string& existing)
+    const std::string& existing,
+    const std::map<std::string, double>& fort_limits)
 {
    // What EU5's own start already has, where: a second of the same building - or a stockade beside a
    // castle - is one the location can't hold.
@@ -155,17 +175,55 @@ std::string out::WriteConvertedBuildings(const std::vector<eu5::ConvertedBuildin
    {
       urban.insert((*match)[1].str());
    }
+   const auto fits = [&](const eu5::ConvertedBuilding& building) {
+      return !present.contains({building.location, building.type}) &&
+             !(building.type == "stockade" && present.contains({building.location, "castle"})) &&
+             !(building.type == "market_village" && urban.contains(building.location));
+   };
+
+   // How much of each country's fort limit EU5's own forts already use, then the converted ones in
+   // order of strength while there is room.
+   static const std::regex kFort(
+       R"(\b(stockade|castle|bastion|star_fort|fortress)\s*=\s*\{[^}\n]*\btag\s*=\s*([A-Z0-9]{3}))");
+   const auto cost = [](const std::string& type) {
+      return type == "stockade" ? 0.5 : 1.0;
+   };
+   std::map<std::string, double> used;
+   for (auto match = std::sregex_iterator(existing.begin(), existing.end(), kFort); match != std::sregex_iterator();
+       ++match)
+   {
+      used[(*match)[2].str()] += cost((*match)[1].str());
+   }
+   std::set<const eu5::ConvertedBuilding*> kept;
+   for (const auto* type: {"castle", "stockade", "market_village"})
+   {
+      for (const auto& building: buildings)
+      {
+         if (building.type != type || !fits(building))
+         {
+            continue;
+         }
+         if (building.type != "market_village" && !fort_limits.empty())
+         {
+            const auto limit = fort_limits.find(building.tag);
+            if (limit == fort_limits.end() || used[building.tag] + cost(building.type) > limit->second)
+            {
+               continue;
+            }
+            used[building.tag] += cost(building.type);
+         }
+         kept.insert(&building);
+      }
+   }
+
    std::ostringstream output;
    for (const auto& building: buildings)
    {
-      if (present.contains({building.location, building.type}) ||
-          (building.type == "stockade" && present.contains({building.location, "castle"})) ||
-          (building.type == "market_village" && urban.contains(building.location)))
+      if (kept.contains(&building))
       {
-         continue;
+         output << "\t" << building.type << " = { tag = " << building.tag
+                << " level = 1 location = " << building.location << " }\n";
       }
-      output << "\t" << building.type << " = { tag = " << building.tag << " level = 1 location = " << building.location
-             << " }\n";
    }
    return output.str();
 }

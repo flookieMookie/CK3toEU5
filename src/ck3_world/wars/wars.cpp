@@ -11,23 +11,6 @@
 
 namespace
 {
-// CK3 renders war names with its text markup in them, each code opened by \x15: a link -
-// \x15ONCLICK:TITLE,3615 - or tooltip up to the next space, a style - \x15L; - and \x15! to close
-// one. What is left is the name the player read.
-std::string WithoutMarkup(const std::string& text)
-{
-   static const std::regex kLinks("\x15(ONCLICK|TOOLTIP):[^ ]* ?");
-   static const std::regex kStyles("\x15[A-Za-z_]+; ?");
-   static const std::regex kEnds("\x15!");
-   static const std::regex kSpaces(" {2,}");
-   auto plain = std::regex_replace(text, kLinks, "");
-   plain = std::regex_replace(plain, kStyles, "");
-   plain = std::regex_replace(plain, kEnds, "");
-   plain = std::regex_replace(plain, kSpaces, " ");
-   const auto first = plain.find_first_not_of(' ');
-   const auto last = plain.find_last_not_of(' ');
-   return first == std::string::npos ? std::string{} : plain.substr(first, last - first + 1);
-}
 
 // One side of a war: participants = { { character = 12631 ... } { ... } }.
 std::vector<long long> ParseParticipants(std::istream& input_stream)
@@ -56,6 +39,21 @@ std::vector<long long> ParseParticipants(std::istream& input_stream)
    return characters;
 }
 }  // namespace
+
+std::string ck3::WithoutMarkup(const std::string& text)
+{
+   static const std::regex kLinks("\x15(ONCLICK|TOOLTIP):[^ ]* ?");
+   static const std::regex kStyles("\x15[A-Za-z_]+; ?");
+   static const std::regex kEnds("\x15!");
+   static const std::regex kSpaces(" {2,}");
+   auto plain = std::regex_replace(text, kLinks, "");
+   plain = std::regex_replace(plain, kStyles, "");
+   plain = std::regex_replace(plain, kEnds, "");
+   plain = std::regex_replace(plain, kSpaces, " ");
+   const auto first = plain.find_first_not_of(' ');
+   const auto last = plain.find_last_not_of(' ');
+   return first == std::string::npos ? std::string{} : plain.substr(first, last - first + 1);
+}
 
 ck3::Wars::Wars(std::istream& input_stream)
 {
