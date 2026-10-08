@@ -176,7 +176,7 @@ TEST(LauncherCoreTests, ReleaseTagsAreComparedByVersion)  // NOLINT : clang-tidy
 TEST(LauncherCoreTests, TheNewestReleaseIsFoundInGitHubsList)  // NOLINT : clang-tidy doens't like gtest
 {
    const std::string releases = R"([
-      {"url": "https://api.github.com/x", "tag_name": "preview-2.1", "name": "unofficial preview 2.1", "prerelease": true},
+      {"url": "https://api.github.com/x", "tag_name": "preview-2.1", "name": "preview 2.1", "prerelease": true},
       {"tag_name":"preview-3","prerelease":false},
       {"tag_name": "preview-2", "prerelease": true},
       {"tag_name": "nightly"}

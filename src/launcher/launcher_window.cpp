@@ -525,8 +525,7 @@ bool LauncherWindow::Create(const int show)
    window_class.hIconSm = window_class.hIcon;
    RegisterClassExW(&window_class);
 
-   const auto title =
-       L"CK3 to EU5 Converter - " + Widen(launcher::ReleaseDisplayName(launcher::kReleaseTag)) + L" (unofficial)";
+   const auto title = L"CK3 to EU5 Converter - " + Widen(launcher::ReleaseDisplayName(launcher::kReleaseTag));
    if (CreateWindowExW(WS_EX_CONTROLPARENT,
            kWindowClass,
            title.c_str(),
@@ -734,7 +733,9 @@ HWND LauncherWindow::AddControl(const wchar_t* type,
 void LauncherWindow::BuildInterface()
 {
    title_ = AddControl(L"STATIC", L"Convert a Crusader Kings III save into a Europa Universalis V mod", SS_LEFT);
-   subtitle_ = AddControl(L"STATIC", L"Unofficial build. Not made or supported by Paradox Game Converters.", SS_LEFT);
+   subtitle_ = AddControl(L"STATIC",
+       L"Built on Paradox Game Converters' CK3toEU5, but not made or supported by them.",
+       SS_LEFT);
    SetColour(subtitle_, GetSysColor(COLOR_GRAYTEXT));
 
    // Hidden until the update check finds a newer release.
