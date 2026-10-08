@@ -378,6 +378,16 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
       }
       MarkForDefinition(*country, *tag_choice, context);
       AssignCapitalFaithAndCulture(*country, realm, capital_location, context);
+      // Only a royal court has a language of its own in CK3.
+      if (const auto& holder = realm.GetHolder(); holder && holder->GetCharacterRealm())
+      {
+         if (const auto language =
+                 context.mappers.GetLanguageMapper().GetEU5Language(holder->GetCharacterRealm()->GetCourtLanguage());
+             language.has_value() && context.game_definitions.HasLanguage(*language))
+         {
+            country->SetCourtLanguage(*language);
+         }
+      }
 
       // Land is gathered here rather than taken from the realm, because a duchy or higher vassal
       // keeps its own and becomes a country in its own right.

@@ -290,11 +290,6 @@ Output::Output(std::string name,
    in_game_folder->RegisterSubfolder(std::move(in_game_common_folder));
    mod_folder->RegisterSubfolder(std::move(in_game_folder));
 
-   // The scaffold also registered a history/advisors.txt holding the placeholder "zaba 123 321" and
-   // copied resources/localisation, whose only content is a 3 byte stub. Both shipped inside the
-   // generated mod. AdvisorFile and CopyResource are kept and still tested; they just need real
-   // content before they go back into the output.
-
    // ----------------------------------
    root_folder_->RegisterSubfolder(std::move(mod_folder));
 }

@@ -207,6 +207,10 @@ void WriteCountry(std::ostringstream& output,
    {
       output << "\t\t\treligious_school = " << *school << "\n";
    }
+   if (const auto& language = country.GetCourtLanguage())
+   {
+      output << "\t\t\tcourt_language = " << *language << "\n";
+   }
    output << discoveries;
    // The ruler's treasury, which EU5 keeps in the same place its own start data does.
    if (country.HasRuler())

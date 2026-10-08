@@ -83,6 +83,8 @@ class Country
    // EU5 rejects a vassal that outranks its liege, so rank is decided once the liege is known.
    [[nodiscard]] const auto& GetRank() const { return rank_; }
    [[nodiscard]] auto GetTechnologyLevel() const { return technology_level_; }
+   // The EU5 language the CK3 ruler's court spoke, where CK3 kept one and EU5 has it.
+   [[nodiscard]] const auto& GetCourtLanguage() const { return court_language_; }
    [[nodiscard]] const auto& GetLiegeTag() const { return liege_tag_; }
    [[nodiscard]] const auto& GetFamily() const { return family_; }
    // Empty when the heir isn't converted.
@@ -109,6 +111,7 @@ class Country
    void SetCulture(std::string culture) { culture_ = std::move(culture); }
    void SetNeedsDefinition(bool needs_definition) { needs_definition_ = needs_definition; }
    void SetTechnologyLevel(int level) { technology_level_ = level; }
+   void SetCourtLanguage(std::string language) { court_language_ = std::move(language); }
    void SetRank(std::string rank) { rank_ = std::move(rank); }
    void SetLiegeTag(std::string liege_tag) { liege_tag_ = std::move(liege_tag); }
    void AddFamilyMember(FamilyMember member) { family_.push_back(std::move(member)); }
@@ -125,6 +128,7 @@ class Country
    bool needs_definition_ = false;
    std::string rank_ = "rank_county";
    int technology_level_ = 3;
+   std::optional<std::string> court_language_;
    std::string liege_tag_;
    std::vector<FamilyMember> family_;
    std::string heir_id_;
