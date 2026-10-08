@@ -19,15 +19,16 @@ EU5 always starts on 1 April 1337, so a campaign played to around then fits best
 ## What carries over
 
 - **Your map:** every realm becomes an EU5 country with its borders, capital, name, rank and flag. Big realms stay in one piece; only vassal kings become subjects
-- **Diplomacy:** wars in progress (with levies raised), alliances, truces and tributaries
+- **Diplomacy:** wars in progress (with levies raised), alliances, truces, tributaries, and rulers' rivals and friends
 - **Characters:** rulers with their spouse, children, heir, dynasty and council, with abilities, traits and nicknames from CK3
-- **Your realm:** treasury, succession law, centralisation from crown or tribal authority, and men-at-arms as a standing army
-- **The land:** religion and culture of every area (including cultures and faiths your campaign created), development, and the castles, forts and market villages you built
+- **Your realm:** treasury, succession law, court language, centralisation from crown or tribal authority, and men-at-arms as a standing army. Developed realms also get the laws and estate privileges EU5 gives its own countries in the same place
+- **Treasures:** artifacts like crowns, swords, holy books and tapestries become works of art in your capital
+- **The land:** religion and culture of every area (including cultures and faiths your campaign created), development, and the castles, forts and market villages you built, up to EU5's fort limit
 - **Technology** from your development and your culture's era
 - **Names in every language** EU5 supports
 - **CK3 mods** your save used, if you have them installed (map-changing mods can't be converted)
 
-Places CK3 doesn't cover, like the Americas, keep EU5's normal 1337 setup. Population sizes stay EU5's own.
+Places CK3 doesn't cover, like the Americas, keep EU5's normal 1337 setup, and land at the edge of CK3's map goes to whoever took over the rest of its 1337 owner's. Population sizes stay EU5's own.
 
 ## Problems?
 
