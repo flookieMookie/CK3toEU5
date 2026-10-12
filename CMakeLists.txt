@@ -350,7 +350,7 @@ if (PLATFORM STREQUAL "Windows")
 	target_link_options(CK3toEU5Launcher PRIVATE /PDBALTPATH:%_PDB%)
 	# All part of Windows: WinHTTP for the update check, the common controls for the progress bar
 	# and the update link.
-	target_link_libraries(CK3toEU5Launcher PRIVATE winhttp comctl32)
+	target_link_libraries(CK3toEU5Launcher PRIVATE winhttp comctl32 dwmapi uxtheme)
 	target_compile_definitions(CK3toEU5Launcher PRIVATE NOMINMAX)
 	target_compile_options(CK3toEU5Launcher PRIVATE
 		$<$<COMPILE_LANGUAGE:CXX>:/W4 /external:anglebrackets /external:W0 /WX>)

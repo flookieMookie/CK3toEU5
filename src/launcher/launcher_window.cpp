@@ -22,6 +22,7 @@
 
 #include "launcher_core.hpp"
 #include "realm_picker.hpp"
+#include "theme.hpp"
 #include "wide_text.hpp"
 
 namespace
@@ -33,10 +34,6 @@ constexpr int kConversionShare = 90;
 // Short waits: the check runs while the player is choosing a save, and is simply skipped when
 // GitHub can't be reached.
 constexpr int kUpdateTimeoutMilliseconds = 5000;
-
-constexpr COLORREF kGood = RGB(0, 128, 0);
-constexpr COLORREF kBad = RGB(192, 0, 0);
-constexpr COLORREF kCaution = RGB(170, 100, 0);
 
 // What the background threads tell the window. Text travels as a heap copy the window frees.
 constexpr UINT kOutputLineMessage = WM_APP + 1;
@@ -53,10 +50,12 @@ constexpr int kShowDetailsId = 142;
 constexpr int kUpdateLinkId = 143;
 constexpr int kVassalsId = 144;
 constexpr int kPickRealmsId = 145;
+constexpr int kThemeId = 146;
 
 const wchar_t* const kWindowClass = L"CK3toEU5Launcher";
 
 using launcher::Narrow;
+using launcher::Tone;
 using launcher::Widen;
 
 // What the vassal choice offers, in the order the box lists them, and the name the converter knows
@@ -404,7 +403,9 @@ class LauncherWindow
    void ApplyFonts();
    void Layout();
    [[nodiscard]] int Scale(int pixels) const { return MulDiv(pixels, static_cast<int>(dpi_), 96); }
-   void SetColour(HWND control, COLORREF colour);
+   void SetColour(HWND control, Tone tone);
+   // Switches every control, the title bar and the log between the light and the dark look.
+   void ApplyTheme();
 
    void StartUpdateCheck();
    void ShowUpdate(const std::string& tag);
@@ -436,7 +437,7 @@ class LauncherWindow
    [[nodiscard]] std::wstring InstallMod();
    void FinishConversion(bool succeeded, const std::wstring& message);
    void SetRunning(bool running);
-   void SetStatus(const std::wstring& message, COLORREF colour);
+   void SetStatus(const std::wstring& message, Tone tone);
 
    HINSTANCE instance_;
    HWND handle_ = nullptr;
@@ -445,10 +446,16 @@ class LauncherWindow
    HFONT bold_font_ = nullptr;
    HFONT title_font_ = nullptr;
    HFONT button_font_ = nullptr;
-   std::map<HWND, COLORREF> colours_;
+   // What each coloured piece of text is saying; its colour follows from the look in use.
+   std::map<HWND, Tone> colours_;
+   bool dark_ = false;
+   launcher::Palette palette_ = launcher::PaletteFor(false);
+   HBRUSH window_brush_ = nullptr;
+   HBRUSH field_brush_ = nullptr;
    std::vector<HWND> controls_;
 
    HWND title_ = nullptr;
+   HWND theme_button_ = nullptr;
    HWND subtitle_ = nullptr;
    HWND update_text_ = nullptr;
    HWND update_link_ = nullptr;
@@ -514,6 +521,13 @@ LauncherWindow::~LauncherWindow()
       if (font != nullptr)
       {
          DeleteObject(font);
+      }
+   }
+   for (auto* brush: {window_brush_, field_brush_})
+   {
+      if (brush != nullptr)
+      {
+         DeleteObject(brush);
       }
    }
 }
@@ -619,15 +633,45 @@ LRESULT LauncherWindow::HandleMessage(const UINT message, const WPARAM wparam, c
          Layout();
          return 0;
       }
-      case WM_CTLCOLORSTATIC:
+      case WM_SYSCOLORCHANGE:
+         // The light look is made of Windows' own colours.
+         ApplyTheme();
+         return 0;
+      case WM_ERASEBKGND:
       {
          auto* context = reinterpret_cast<HDC>(wparam);
-         SetBkColor(context, GetSysColor(COLOR_BTNFACE));
-         if (const auto colour = colours_.find(reinterpret_cast<HWND>(lparam)); colour != colours_.end())
-         {
-            SetTextColor(context, colour->second);
-         }
-         return reinterpret_cast<LRESULT>(GetSysColorBrush(COLOR_BTNFACE));
+         RECT client{};
+         GetClientRect(handle_, &client);
+         FillRect(context, &client, window_brush_);
+         // The log has no edge of its own - a sunken one is half white, which glares in the dark - so
+         // a thin frame is drawn around it here.
+         RECT frame{};
+         GetWindowRect(log_, &frame);
+         MapWindowPoints(nullptr, handle_, reinterpret_cast<POINT*>(&frame), 2);
+         InflateRect(&frame, 1, 1);
+         auto* border = CreateSolidBrush(palette_.border);
+         FrameRect(context, &frame, border);
+         DeleteObject(border);
+         return 1;
+      }
+      case WM_CTLCOLORSTATIC:
+      case WM_CTLCOLORBTN:
+      {
+         // Labels, group boxes and tick boxes sit on the window; a label may have a tone of its own.
+         auto* context = reinterpret_cast<HDC>(wparam);
+         const auto tone = colours_.find(reinterpret_cast<HWND>(lparam));
+         SetBkColor(context, palette_.window);
+         SetTextColor(context, launcher::ColourOf(palette_, tone == colours_.end() ? Tone::kNormal : tone->second));
+         return reinterpret_cast<LRESULT>(window_brush_);
+      }
+      case WM_CTLCOLOREDIT:
+      case WM_CTLCOLORLISTBOX:
+      {
+         // Text boxes, and the list a drop-down opens.
+         auto* context = reinterpret_cast<HDC>(wparam);
+         SetBkColor(context, palette_.field);
+         SetTextColor(context, palette_.text);
+         return reinterpret_cast<LRESULT>(field_brush_);
       }
       case WM_COMMAND:
       {
@@ -655,6 +699,12 @@ LRESULT LauncherWindow::HandleMessage(const UINT message, const WPARAM wparam, c
             {
                OnPickRealms();
             }
+            else if (id == kThemeId)
+            {
+               dark_ = !dark_;
+               ApplyTheme();
+               SaveSettings();
+            }
             else if (id >= kFolderBrowseId && id < kFolderBrowseId + static_cast<int>(folders_.size()))
             {
                BrowseForFolder(folders_[static_cast<std::size_t>(id - kFolderBrowseId)]);
@@ -671,7 +721,7 @@ LRESULT LauncherWindow::HandleMessage(const UINT message, const WPARAM wparam, c
                // Realms were picked from the save that was chosen before; another has its own.
                picked_realms_.clear();
                UpdateVassalControls();
-               SetStatus(L"Ready. Press Convert.", GetSysColor(COLOR_WINDOWTEXT));
+               SetStatus(L"Ready. Press Convert.", Tone::kNormal);
             }
             else if (id >= kFolderPathId && id < kFolderPathId + static_cast<int>(folders_.size()))
             {
@@ -683,10 +733,26 @@ LRESULT LauncherWindow::HandleMessage(const UINT message, const WPARAM wparam, c
       case WM_NOTIFY:
       {
          const auto* notice = reinterpret_cast<const NMHDR*>(lparam);
-         if (notice->idFrom == static_cast<UINT_PTR>(kUpdateLinkId) &&
-             (notice->code == NM_CLICK || notice->code == NM_RETURN))
+         if (notice->idFrom != static_cast<UINT_PTR>(kUpdateLinkId))
+         {
+            return 0;
+         }
+         if (notice->code == NM_CLICK || notice->code == NM_RETURN)
          {
             ShellExecuteW(handle_, L"open", update_url_.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+         }
+         else if (notice->code == NM_CUSTOMDRAW)
+         {
+            // Windows' link blue is hard to read on a dark window.
+            const auto* draw = reinterpret_cast<const NMCUSTOMDRAW*>(lparam);
+            if (draw->dwDrawStage == CDDS_PREPAINT)
+            {
+               return CDRF_NOTIFYITEMDRAW;
+            }
+            if (draw->dwDrawStage == CDDS_ITEMPREPAINT)
+            {
+               SetTextColor(draw->hdc, palette_.link);
+            }
          }
          return 0;
       }
@@ -750,14 +816,15 @@ HWND LauncherWindow::AddControl(const wchar_t* type,
 void LauncherWindow::BuildInterface()
 {
    title_ = AddControl(L"STATIC", L"Convert a Crusader Kings III save into a Europa Universalis V mod", SS_LEFT);
+   theme_button_ = AddControl(L"BUTTON", L"Dark mode", BS_PUSHBUTTON | WS_TABSTOP, kThemeId);
    subtitle_ = AddControl(L"STATIC",
        L"Built on Paradox Game Converters' CK3toEU5, but not made or supported by them.",
        SS_LEFT);
-   SetColour(subtitle_, GetSysColor(COLOR_GRAYTEXT));
+   SetColour(subtitle_, Tone::kGray);
 
    // Hidden until the update check finds a newer release.
    update_text_ = AddControl(L"STATIC", L"", SS_LEFT);
-   SetColour(update_text_, kGood);
+   SetColour(update_text_, Tone::kGood);
    update_link_ = AddControl(WC_LINK, L"<a>Download it</a>", WS_TABSTOP, kUpdateLinkId);
    ShowWindow(update_text_, SW_HIDE);
    ShowWindow(update_link_, SW_HIDE);
@@ -768,7 +835,7 @@ void LauncherWindow::BuildInterface()
    save_hint_ = AddControl(L"STATIC",
        L"EU5 starts on 1 April 1337, so a campaign played to around then fits best, but any save works.",
        SS_LEFT);
-   SetColour(save_hint_, GetSysColor(COLOR_GRAYTEXT));
+   SetColour(save_hint_, Tone::kGray);
 
    folder_group_ = AddControl(L"BUTTON", L"2. Game folders (found automatically)", BS_GROUPBOX);
    const std::array<const wchar_t*, 4> names = {L"Crusader Kings III install",
@@ -799,7 +866,7 @@ void LauncherWindow::BuildInterface()
    SendMessageW(vassals_, CB_SETCURSEL, 0, 0);
    pick_realms_ = AddControl(L"BUTTON", L"Pick realms...", BS_PUSHBUTTON | WS_TABSTOP, kPickRealmsId);
    vassal_hint_ = AddControl(L"STATIC", L"", SS_LEFT);
-   SetColour(vassal_hint_, GetSysColor(COLOR_GRAYTEXT));
+   SetColour(vassal_hint_, Tone::kGray);
    UpdateVassalControls();
 
    name_group_ = AddControl(L"BUTTON", L"4. Mod name (optional)", BS_GROUPBOX);
@@ -810,20 +877,16 @@ void LauncherWindow::BuildInterface()
        reinterpret_cast<LPARAM>(L"Leave empty to name the mod after the save"));
 
    convert_button_ = AddControl(L"BUTTON", L"Convert", BS_DEFPUSHBUTTON | WS_TABSTOP, kConvertId);
-   progress_ = AddControl(PROGRESS_CLASSW, L"", 0);
+   progress_ = AddControl(PROGRESS_CLASSW, L"", PBS_SMOOTH);
    SendMessageW(progress_, PBM_SETRANGE32, 0, 100);
    status_ = AddControl(L"STATIC", L"Choose your save, then press Convert.", SS_LEFT);
    open_mod_folder_ = AddControl(L"BUTTON", L"Open mod folder", BS_PUSHBUTTON | WS_TABSTOP, kOpenModFolderId);
    ShowWindow(open_mod_folder_, SW_HIDE);
    show_details_ = AddControl(L"BUTTON", L"Show every step", BS_AUTOCHECKBOX | WS_TABSTOP, kShowDetailsId);
-   log_ = AddControl(MSFTEDIT_CLASS,
-       L"",
-       ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL | WS_VSCROLL | WS_TABSTOP,
-       0,
-       WS_EX_CLIENTEDGE);
-   SendMessageW(log_, EM_SETBKGNDCOLOR, 0, static_cast<LPARAM>(GetSysColor(COLOR_WINDOW)));
+   log_ = AddControl(MSFTEDIT_CLASS, L"", ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL | WS_VSCROLL | WS_TABSTOP);
 
    ApplyFonts();
+   ApplyTheme();
 }
 
 void LauncherWindow::ApplyFonts()
@@ -886,7 +949,9 @@ void LauncherWindow::Layout()
    };
 
    int y = margin;
-   place(title_, margin, y, inner, Scale(28));
+   const int theme_width = Scale(96);
+   place(title_, margin, y, inner - theme_width - gap, Scale(28));
+   place(theme_button_, margin + inner - theme_width, y, theme_width, Scale(26));
    y += Scale(28);
    place(subtitle_, margin, y, inner, line);
    y += line;
@@ -970,13 +1035,47 @@ void LauncherWindow::Layout()
    place(show_details_, margin, y, inner, line);
    y += line + gap;
 
-   place(log_, margin, y, inner, client.bottom - margin - y);
+   // One pixel in from the others' edges: its frame is drawn around it.
+   place(log_, margin + 1, y + 1, inner - 2, client.bottom - margin - y - 2);
 }
 
-void LauncherWindow::SetColour(HWND control, const COLORREF colour)
+void LauncherWindow::SetColour(HWND control, const Tone tone)
 {
-   colours_[control] = colour;
+   colours_[control] = tone;
    InvalidateRect(control, nullptr, TRUE);
+}
+
+void LauncherWindow::ApplyTheme()
+{
+   palette_ = launcher::PaletteFor(dark_);
+   for (auto* brush: {window_brush_, field_brush_})
+   {
+      if (brush != nullptr)
+      {
+         DeleteObject(brush);
+      }
+   }
+   window_brush_ = CreateSolidBrush(palette_.window);
+   field_brush_ = CreateSolidBrush(palette_.field);
+
+   launcher::UseDarkTitleBar(handle_, dark_);
+   SetWindowPos(handle_,
+       nullptr,
+       0,
+       0,
+       0,
+       0,
+       SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+   for (auto* control: controls_)
+   {
+      launcher::ThemeControl(control, dark_);
+   }
+   // The button offers the other look.
+   SetWindowTextW(theme_button_, dark_ ? L"Light mode" : L"Dark mode");
+   SendMessageW(log_, EM_SETBKGNDCOLOR, 0, static_cast<LPARAM>(palette_.field));
+   // The log's lines were written in the old look's colours.
+   RebuildLog();
+   RedrawWindow(handle_, nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_FRAME | RDW_UPDATENOW);
 }
 
 void LauncherWindow::StartUpdateCheck()
@@ -1041,6 +1140,9 @@ void LauncherWindow::LoadSettings()
       picked_realms_ = launcher::SplitKeys(Narrow(value->second));
    }
    UpdateVassalControls();
+   const auto dark = values.find("dark_mode");
+   dark_ = dark == values.end() ? launcher::WindowsPrefersDark() : dark->second == L"yes";
+   ApplyTheme();
    loading_ = false;
 }
 
@@ -1098,22 +1200,22 @@ void LauncherWindow::OnPickRealms()
    }
    listing_realms_ = true;
    SetRunning(true);
-   SetStatus(L"Reading your save to list its realms...", GetSysColor(COLOR_WINDOWTEXT));
+   SetStatus(L"Reading your save to list its realms...", Tone::kNormal);
 }
 
 void LauncherWindow::ShowRealmPicker()
 {
    if (realm_choices_.empty())
    {
-      SetStatus(L"This save has no realms with vassals to pick from.", GetSysColor(COLOR_WINDOWTEXT));
+      SetStatus(L"This save has no realms with vassals to pick from.", Tone::kNormal);
       return;
    }
-   if (const auto picked = launcher::PickRealms(handle_, realm_choices_, picked_realms_, font_))
+   if (const auto picked = launcher::PickRealms(handle_, realm_choices_, picked_realms_, font_, dark_))
    {
       picked_realms_ = *picked;
       UpdateVassalControls();
    }
-   SetStatus(L"Ready. Press Convert.", GetSysColor(COLOR_WINDOWTEXT));
+   SetStatus(L"Ready. Press Convert.", Tone::kNormal);
 }
 
 void LauncherWindow::SaveSettings() const
@@ -1128,6 +1230,7 @@ void LauncherWindow::SaveSettings() const
    file << "mod_name=" << Narrow(Escape(GetText(mod_name_))) << "\r\n";
    file << "vassals=" << VassalChoice() << "\r\n";
    file << "vassal_realms=" << launcher::JoinKeys(picked_realms_) << "\r\n";
+   file << "dark_mode=" << (dark_ ? "yes" : "no") << "\r\n";
 }
 
 void LauncherWindow::DetectMissingFolders()
@@ -1153,7 +1256,7 @@ void LauncherWindow::UpdateFolderStatus()
 {
    const auto show = [this](const FolderRow& row, const bool found) {
       SetWindowTextW(row.status, found ? L"\u2713 Found" : L"\u2717 Not found");
-      SetColour(row.status, found ? kGood : kBad);
+      SetColour(row.status, found ? Tone::kGood : Tone::kBad);
    };
    const auto settings = CollectSettings();
    std::error_code error;
@@ -1169,7 +1272,7 @@ void LauncherWindow::UpdateFolderStatus()
    else if (!settings.eu5_mods.empty())
    {
       SetWindowTextW(folders_[kEu5Mods].status, L"Will be created");
-      SetColour(folders_[kEu5Mods].status, GetSysColor(COLOR_GRAYTEXT));
+      SetColour(folders_[kEu5Mods].status, Tone::kGray);
    }
    else
    {
@@ -1247,7 +1350,7 @@ void LauncherWindow::OnConvert()
       return;
    }
    SetRunning(true);
-   SetStatus(L"Converting... this usually takes under a minute.", GetSysColor(COLOR_WINDOWTEXT));
+   SetStatus(L"Converting... this usually takes under a minute.", Tone::kNormal);
 }
 
 bool LauncherWindow::StartConverter(const launcher::Settings& settings, const bool list_realms)
@@ -1371,7 +1474,7 @@ void LauncherWindow::OnConverterExited(const DWORD exit_code)
       FinishConversion(false, L"The conversion failed. The details below say why.");
       return;
    }
-   SetStatus(L"Copying the mod into EU5...", GetSysColor(COLOR_WINDOWTEXT));
+   SetStatus(L"Copying the mod into EU5...", Tone::kNormal);
    SendMessageW(progress_, PBM_SETPOS, kConversionShare, 0);
    if (const auto problem = InstallMod(); !problem.empty())
    {
@@ -1449,7 +1552,7 @@ std::wstring LauncherWindow::InstallMod()
 void LauncherWindow::FinishConversion(const bool succeeded, const std::wstring& message)
 {
    SetRunning(false);
-   SetStatus(message, succeeded ? kGood : kBad);
+   SetStatus(message, succeeded ? Tone::kGood : Tone::kBad);
    ShowWindow(open_mod_folder_, succeeded ? SW_SHOW : SW_HIDE);
    if (warning_count_ > 0)
    {
@@ -1493,10 +1596,10 @@ void LauncherWindow::SetRunning(const bool running)
    UpdateVassalControls();
 }
 
-void LauncherWindow::SetStatus(const std::wstring& message, const COLORREF colour)
+void LauncherWindow::SetStatus(const std::wstring& message, const Tone tone)
 {
    SetWindowTextW(status_, message.c_str());
-   SetColour(status_, colour);
+   SetColour(status_, tone);
 }
 
 void LauncherWindow::AddLogLine(const launcher::LogLine& line)
@@ -1523,19 +1626,19 @@ bool LauncherWindow::IsShownInLog(const launcher::LogLine& line) const
 void LauncherWindow::WriteLogLine(const launcher::LogLine& line)
 {
    std::wstring prefix;
-   auto colour = GetSysColor(COLOR_WINDOWTEXT);
+   auto colour = palette_.text;
    switch (line.level)
    {
       case launcher::LogLevel::kError:
          prefix = L"Error: ";
-         colour = kBad;
+         colour = palette_.bad;
          break;
       case launcher::LogLevel::kWarning:
          prefix = L"Warning: ";
-         colour = kCaution;
+         colour = palette_.caution;
          break;
       case launcher::LogLevel::kNotice:
-         colour = kGood;
+         colour = palette_.good;
          break;
       default:
          break;

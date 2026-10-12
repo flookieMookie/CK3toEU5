@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <set>
 
+#include "theme.hpp"
 #include "wide_text.hpp"
 
 namespace
@@ -40,6 +41,8 @@ struct Picker
    HWND ok = nullptr;
    HWND cancel = nullptr;
    UINT dpi = 96;
+   launcher::Palette palette;
+   HBRUSH background = nullptr;
    const std::vector<launcher::RealmChoice>* realms = nullptr;
    std::vector<std::string> chosen;
    bool accepted = false;
@@ -126,6 +129,18 @@ LRESULT CALLBACK PickerProcedure(HWND window, const UINT message, const WPARAM w
       case WM_GETMINMAXINFO:
          reinterpret_cast<MINMAXINFO*>(lparam)->ptMinTrackSize = {picker->Scale(520), picker->Scale(360)};
          return 0;
+      case WM_ERASEBKGND:
+      {
+         RECT client{};
+         GetClientRect(window, &client);
+         FillRect(reinterpret_cast<HDC>(wparam), &client, picker->background);
+         return 1;
+      }
+      case WM_CTLCOLORSTATIC:
+      case WM_CTLCOLORBTN:
+         SetBkColor(reinterpret_cast<HDC>(wparam), picker->palette.window);
+         SetTextColor(reinterpret_cast<HDC>(wparam), picker->palette.text);
+         return reinterpret_cast<LRESULT>(picker->background);
       case WM_COMMAND:
          switch (LOWORD(wparam))
          {
@@ -152,12 +167,45 @@ LRESULT CALLBACK PickerProcedure(HWND window, const UINT message, const WPARAM w
          return DefWindowProcW(window, message, wparam, lparam);
    }
 }
+
+// A list's column headings are drawn in black whatever their theme. The list, which owns them, is
+// asked before each one is drawn, and answers with the colour handed to it here.
+LRESULT CALLBACK ListProcedure(HWND list,
+    const UINT message,
+    const WPARAM wparam,
+    const LPARAM lparam,
+    const UINT_PTR id,
+    const DWORD_PTR text_colour)
+{
+   if (message == WM_NCDESTROY)
+   {
+      RemoveWindowSubclass(list, &ListProcedure, id);
+   }
+   else if (message == WM_NOTIFY)
+   {
+      const auto* draw = reinterpret_cast<const NMCUSTOMDRAW*>(lparam);
+      if (draw->hdr.code == NM_CUSTOMDRAW && draw->hdr.hwndFrom == ListView_GetHeader(list))
+      {
+         if (draw->dwDrawStage == CDDS_PREPAINT)
+         {
+            return CDRF_NOTIFYITEMDRAW;
+         }
+         if (draw->dwDrawStage == CDDS_ITEMPREPAINT)
+         {
+            SetTextColor(draw->hdc, static_cast<COLORREF>(text_colour));
+            return CDRF_DODEFAULT;
+         }
+      }
+   }
+   return DefSubclassProc(list, message, wparam, lparam);
+}
 }  // namespace
 
 std::optional<std::vector<std::string>> launcher::PickRealms(HWND owner,
     const std::vector<RealmChoice>& realms,
     const std::vector<std::string>& picked,
-    HFONT font)
+    HFONT font,
+    const bool dark)
 {
    auto* instance = reinterpret_cast<HINSTANCE>(GetWindowLongPtrW(owner, GWLP_HINSTANCE));
    WNDCLASSEXW window_class{};
@@ -172,6 +220,8 @@ std::optional<std::vector<std::string>> launcher::PickRealms(HWND owner,
    Picker picker;
    picker.owner = owner;
    picker.dpi = GetDpiForWindow(owner);
+   picker.palette = PaletteFor(dark);
+   picker.background = CreateSolidBrush(picker.palette.window);
    picker.realms = &realms;
 
    RECT owner_area{};
@@ -192,8 +242,10 @@ std::optional<std::vector<std::string>> launcher::PickRealms(HWND owner,
        &picker);
    if (window == nullptr)
    {
+      DeleteObject(picker.background);
       return std::nullopt;
    }
+   UseDarkTitleBar(window, dark);
 
    const auto add =
        [&](const wchar_t* type, const wchar_t* text, const DWORD style, const int id, const DWORD extended) {
@@ -210,6 +262,7 @@ std::optional<std::vector<std::string>> launcher::PickRealms(HWND owner,
               instance,
               nullptr);
           SendMessageW(control, WM_SETFONT, reinterpret_cast<WPARAM>(font), TRUE);
+          ThemeControl(control, dark);
           return control;
        };
    picker.hint = add(L"STATIC",
@@ -226,6 +279,14 @@ std::optional<std::vector<std::string>> launcher::PickRealms(HWND owner,
    picker.cancel = add(L"BUTTON", L"Cancel", BS_PUSHBUTTON | WS_TABSTOP, IDCANCEL, 0);
 
    ListView_SetExtendedListViewStyle(picker.list, LVS_EX_CHECKBOXES | LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
+   ListView_SetBkColor(picker.list, picker.palette.field);
+   ListView_SetTextBkColor(picker.list, picker.palette.field);
+   ListView_SetTextColor(picker.list, picker.palette.text);
+   if (dark)
+   {
+      ThemeControl(ListView_GetHeader(picker.list), dark);
+      SetWindowSubclass(picker.list, &ListProcedure, 1, picker.palette.text);
+   }
    const auto add_column = [&picker](const int index, const wchar_t* title, const int width_in_pixels) {
       std::wstring text = title;
       LVCOLUMNW column{};
@@ -237,7 +298,7 @@ std::optional<std::vector<std::string>> launcher::PickRealms(HWND owner,
    add_column(0, L"Realm", 220);
    add_column(1, L"Rank", 80);
    add_column(2, L"Counties", 70);
-   add_column(3, L"Vassals", 210);
+   add_column(3, L"Vassals", 200);
 
    const std::set<std::string> already_picked(picked.begin(), picked.end());
    for (std::size_t index = 0; index < realms.size(); ++index)
@@ -284,6 +345,7 @@ std::optional<std::vector<std::string>> launcher::PickRealms(HWND owner,
          DispatchMessageW(&message);
       }
    }
+   DeleteObject(picker.background);
    SetForegroundWindow(owner);
    return picker.accepted ? std::optional(picker.chosen) : std::nullopt;
 }
