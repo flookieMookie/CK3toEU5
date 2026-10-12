@@ -9,16 +9,19 @@ Turn your Crusader Kings III save into a Europa Universalis V mod and keep playi
 1. Download the zip from the [releases page](https://github.com/flookieMookie/CK3toEU5/releases) and unzip it anywhere.
 2. Run **CK3toEU5Launcher.exe**. If Windows warns you the program isn't signed, click **More info**, then **Run anyway**.
 3. Pick your CK3 save. They're in `Documents\Paradox Interactive\Crusader Kings III\save games`.
-4. Check the game folders say **Found**, then press **Convert**. The mod goes straight into EU5's mod folder.
-5. In EU5, click the shield icon on the main menu, enable your mod, and start a new game.
+4. Check the game folders say **Found**.
+5. If you want more of your vassals as countries of their own, choose that under **Vassals** (more on that below).
+6. Press **Convert**. The mod goes straight into EU5's mod folder.
+7. In EU5, click the shield icon on the main menu, enable your mod, and start a new game.
 
-The launcher tells you when a new version is out.
+The launcher tells you when a new version is out, and the button in its top right corner switches it to dark mode.
 
 EU5 always starts on 1 April 1337, so a campaign played to around then fits best, but a save from any date works.
 
 ## What carries over
 
 - **Your map:** every realm becomes an EU5 country with its borders, capital, name, rank and flag. Big realms stay in one piece; only vassal kings become subjects
+- **Your vassals, if you want them:** the launcher can turn dukes, or every vassal down to the counts, into subject countries too, either everywhere or only in the realms you tick
 - **Diplomacy:** wars in progress (with levies raised), alliances, truces, tributaries, and rulers' rivals and friends
 - **Characters:** rulers with their spouse, children, heir, dynasty and council, with abilities, traits and nicknames from CK3
 - **Your realm:** treasury, succession law, court language, centralisation from crown or tribal authority, and men-at-arms as a standing army. Developed realms also get the laws and estate privileges EU5 gives its own countries in the same place

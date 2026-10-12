@@ -1,6 +1,6 @@
 # Version info - if editing, remember to also update the workflow, which generates a fresh copy of this
 
-version = "3.0.0"
+version = "3.1.0"
 name = "Stable"
 source = "CK3"
 minSource = "0.0"
