@@ -29,6 +29,22 @@ struct Settings
    std::filesystem::path save_game;
    // Empty lets the converter name the mod after the save.
    std::string mod_name;
+   // Which vassals become countries of their own: "kings" (big realms stay whole), "dukes" or "all".
+   std::string vassals = "kings";
+   // The realms that applies in, by the key of their primary title. Empty means every realm.
+   std::vector<std::string> vassal_realms;
+};
+
+// An independent realm in the save, as the converter reports it for the player to pick from.
+struct RealmChoice
+{
+   std::string key;  // e_hre
+   std::string name;
+   std::string rank;  // Empire, Kingdom, Duchy, County
+   int counties = 0;
+   int kings = 0;
+   int dukes = 0;
+   int counts = 0;
 };
 
 enum class LogLevel
@@ -58,6 +74,11 @@ struct LogLine
 // The folder name the converter settled on for the mod. It rewrites spaces and dashes, so the
 // launcher reads the result rather than predicting it.
 [[nodiscard]] std::optional<std::string> ParseOutputName(const LogLine& line);
+// A realm from the converter's --list-realms output: "Realm:" and its details, tab separated.
+[[nodiscard]] std::optional<RealmChoice> ParseRealm(const LogLine& line);
+// A list of keys as the settings keep it, comma separated, and back.
+[[nodiscard]] std::string JoinKeys(const std::vector<std::string>& keys);
+[[nodiscard]] std::vector<std::string> SplitKeys(const std::string& joined);
 
 // Steam lists every library folder it installs games into in steamapps/libraryfolders.vdf.
 [[nodiscard]] std::vector<std::filesystem::path> ParseSteamLibraryFolders(std::istream& vdf);

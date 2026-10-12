@@ -52,6 +52,53 @@ TEST(LauncherCoreTests, ConfigurationHasEveryKeyTheConverterReads)  // NOLINT : 
    EXPECT_NE(std::string::npos, configuration.find("SaveGame = \"C:/Docs/Crusader Kings III/save games/my game.ck3\""));
    EXPECT_NE(std::string::npos, configuration.find("output_name = \"My Mod\""));
    EXPECT_NE(std::string::npos, configuration.find("debug = \"no\""));
+   // Unless the player says otherwise, big realms stay whole everywhere.
+   EXPECT_NE(std::string::npos, configuration.find("vassals = \"kings\""));
+   EXPECT_NE(std::string::npos, configuration.find("vassal_realms = \"\""));
+}
+
+TEST(LauncherCoreTests, TheVassalChoiceReachesTheConverter)  // NOLINT : clang-tidy doens't like gtest
+{
+   Settings settings;
+   settings.vassals = "dukes";
+   settings.vassal_realms = {"e_hre", "k_france"};
+
+   const auto configuration = MakeConverterConfiguration(settings);
+
+   EXPECT_NE(std::string::npos, configuration.find("vassals = \"dukes\""));
+   EXPECT_NE(std::string::npos, configuration.find("vassal_realms = \"e_hre,k_france\""));
+
+   settings.vassals = "everyone, please";
+   EXPECT_NE(std::string::npos, MakeConverterConfiguration(settings).find("vassals = \"kings\""));
+}
+
+TEST(LauncherCoreTests, RealmsAreReadFromTheConvertersList)  // NOLINT : clang-tidy doens't like gtest
+{
+   const auto realm = ParseRealm(
+       ParseLogLine("2026-10-11 10:00:00   [NOTICE] Realm:\te_hre\tHoly Roman Empire\tEmpire\t412\t3\t41\t120"));
+
+   ASSERT_TRUE(realm.has_value());
+   EXPECT_EQ("e_hre", realm->key);
+   EXPECT_EQ("Holy Roman Empire", realm->name);
+   EXPECT_EQ("Empire", realm->rank);
+   EXPECT_EQ(412, realm->counties);
+   EXPECT_EQ(3, realm->kings);
+   EXPECT_EQ(41, realm->dukes);
+   EXPECT_EQ(120, realm->counts);
+
+   EXPECT_FALSE(
+       ParseRealm(ParseLogLine("2026-10-11 10:00:00     [INFO] Realm:\te_hre\tx\tEmpire\t1\t0\t0\t0")).has_value());
+   EXPECT_FALSE(ParseRealm(ParseLogLine("2026-10-11 10:00:00   [NOTICE] * Conversion complete *")).has_value());
+   EXPECT_FALSE(
+       ParseRealm(ParseLogLine("2026-10-11 10:00:00   [NOTICE] Realm:\te_hre\tHoly Roman Empire")).has_value());
+}
+
+TEST(LauncherCoreTests, PickedRealmsAreKeptAsACommaSeparatedList)  // NOLINT : clang-tidy doens't like gtest
+{
+   EXPECT_EQ("e_hre,k_france", JoinKeys({"e_hre", "k_france"}));
+   EXPECT_EQ("", JoinKeys({}));
+   EXPECT_EQ((std::vector<std::string>{"e_hre", "k_france"}), SplitKeys("e_hre, k_france,,"));
+   EXPECT_TRUE(SplitKeys("").empty());
 }
 
 TEST(LauncherCoreTests, QuotesInTheModNameCannotBreakTheConfiguration)  // NOLINT : clang-tidy doens't like gtest

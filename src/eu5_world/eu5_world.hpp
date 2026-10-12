@@ -17,6 +17,7 @@
 #include "eu5_game_definitions.hpp"
 #include "eu5_location_data.hpp"
 #include "src/ck3_world/coats_of_arms/coats_of_arms.hpp"
+#include "src/ck3_world/titles/title.hpp"
 
 namespace ck3
 {
@@ -41,6 +42,31 @@ class Mappers;
 namespace eu5
 {
 class VanillaCountries;
+
+// Which CK3 vassals become EU5 countries of their own - subjects of their liege - rather than land
+// of their liege's country.
+struct VassalOptions
+{
+   // The lowest rank of vassal ruler that does. Kings by default, so a great realm stays one great
+   // country; dukes; or counts, which is every vassal there is.
+   ck3::Level smallest = ck3::Level::kKingdom;
+   // The realms that applies in, by the key of their primary title. Empty means all of them; with
+   // some named, the others keep only their vassal kings.
+   std::set<std::string> realms;
+};
+
+// An independent CK3 realm as the launcher lists it, for the player to choose whose vassals to keep.
+struct RealmSummary
+{
+   std::string key;  // its primary title - e_hre
+   std::string name;
+   ck3::Level tier = ck3::Level::kCounty;
+   int counties = 0;
+   // Its vassal rulers, by the highest title each holds.
+   int kings = 0;
+   int dukes = 0;
+   int counts = 0;
+};
 
 // A CK3 vassal relationship, written out as an EU5 subject.
 struct Dependency
@@ -120,7 +146,11 @@ class EU5World
    EU5World(const ck3::CK3World& ck3_world,
        const mappers::Mappers& mappers,
        const GameDefinitions& game_definitions,
-       const LocationData& location_data);
+       const LocationData& location_data,
+       const VassalOptions& vassal_options = {});
+
+   // The save's independent realms that have vassals at all, largest first.
+   [[nodiscard]] static std::vector<RealmSummary> SummariseRealms(const ck3::CK3World& ck3_world);
 
    [[nodiscard]] const auto& GetCountries() const { return countries_; }
    [[nodiscard]] auto GetRealmsWithoutTag() const { return realms_without_tag_; }

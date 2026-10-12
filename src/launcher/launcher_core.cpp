@@ -62,7 +62,68 @@ std::string launcher::MakeConverterConfiguration(const Settings& settings)
    configuration << "SaveGame = \"" << ToUtf8(settings.save_game) << "\"\n";
    configuration << "output_name = \"" << mod_name << "\"\n";
    configuration << "debug = \"no\"\n";
+   configuration << "vassals = \""
+                 << (settings.vassals == "dukes" || settings.vassals == "all" ? settings.vassals : "kings") << "\"\n";
+   auto realms = JoinKeys(settings.vassal_realms);
+   std::erase(realms, '"');
+   configuration << "vassal_realms = \"" << realms << "\"\n";
    return configuration.str();
+}
+
+std::string launcher::JoinKeys(const std::vector<std::string>& keys)
+{
+   std::string joined;
+   for (const auto& key: keys)
+   {
+      joined += (joined.empty() ? "" : ",") + key;
+   }
+   return joined;
+}
+
+std::vector<std::string> launcher::SplitKeys(const std::string& joined)
+{
+   std::vector<std::string> keys;
+   std::istringstream stream(joined);
+   for (std::string key; std::getline(stream, key, ',');)
+   {
+      if (key = Trim(key); !key.empty())
+      {
+         keys.push_back(key);
+      }
+   }
+   return keys;
+}
+
+std::optional<launcher::RealmChoice> launcher::ParseRealm(const LogLine& line)
+{
+   static const std::string kPrefix = "Realm:";
+   if (line.level != LogLevel::kNotice || !line.message.starts_with(kPrefix))
+   {
+      return std::nullopt;
+   }
+   std::vector<std::string> fields;
+   std::istringstream stream(line.message.substr(kPrefix.size()));
+   for (std::string field; std::getline(stream, field, '\t');)
+   {
+      fields.push_back(field);
+   }
+   // The first field is what sat between the colon and the first tab: nothing.
+   if (fields.size() < 8 || fields[1].empty())
+   {
+      return std::nullopt;
+   }
+   const auto number = [](const std::string& text) {
+      int value = 0;
+      std::from_chars(text.data(), text.data() + text.size(), value);
+      return value;
+   };
+   return RealmChoice{.key = fields[1],
+       .name = fields[2].empty() ? fields[1] : fields[2],
+       .rank = fields[3],
+       .counties = number(fields[4]),
+       .kings = number(fields[5]),
+       .dukes = number(fields[6]),
+       .counts = number(fields[7])};
 }
 
 launcher::LogLine launcher::ParseLogLine(const std::string& line)

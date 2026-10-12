@@ -127,14 +127,19 @@ std::string GenerateTag(const std::string& title_key, const std::set<std::string
          }
       }
    }
-   // Last resort, a purely synthetic tag. EU5 ships none beginning with X0.
-   for (const char first: kBase36)
+   // Last resort, a purely synthetic tag. EU5 ships none beginning with X0, so those go first; a
+   // world with every count a country needs thousands more, and takes any letter after that.
+   static const std::string kLeading = "XZQWYJVKUOIEAHFGPBMDCLNRST";
+   for (const char leading: kLeading)
    {
-      for (const char second: kBase36)
+      for (const char first: kBase36)
       {
-         if (const auto candidate = std::string("X") + first + second; !used_tags.contains(candidate))
+         for (const char second: kBase36)
          {
-            return candidate;
+            if (const auto candidate = std::string(1, leading) + first + second; !used_tags.contains(candidate))
+            {
+               return candidate;
+            }
          }
       }
    }
@@ -160,15 +165,17 @@ std::map<long long, ck3::Level> MapHighestTitleOfHolder(const IdTitleMap& id_tit
    return highest;
 }
 
-// Walks the de facto tree below a ruler's top titles. Counties reached become their land. A duchy
-// or higher title held by a vassal who is a king or more stops the walk and is reported back as a
-// vassal, so its land goes to that kingdom, a subject country of its own. Dukes and counts are not
-// promoted: their land is the liege's, so a great realm is one great country in EU5 - Byzantium
-// holds its themes itself rather than ruling a ring of ducal subjects.
+// Walks the de facto tree below a ruler's top titles. Counties reached become their land. A title
+// held by a vassal of at least the smallest rank that is promoted stops the walk and is reported
+// back as a vassal, so its land goes to that vassal, a subject country of its own. By default only
+// kings are: dukes' and counts' land is the liege's, so a great realm is one great country in EU5 -
+// Byzantium holds its themes itself rather than ruling a ring of ducal subjects. The player can ask
+// for dukes too, or for every vassal down to the counts.
 void GatherLandAndVassals(const std::vector<TitlePtr>& top_titles,
     long long holder_id,
     const std::map<long long, std::vector<TitlePtr>>& de_facto_children,
     const std::map<long long, ck3::Level>& highest_title_of_holder,
+    const ck3::Level smallest_vassal,
     std::vector<TitlePtr>& counties,
     std::map<long long, std::vector<TitlePtr>>& vassal_titles_by_holder)
 {
@@ -182,10 +189,12 @@ void GatherLandAndVassals(const std::vector<TitlePtr>& top_titles,
       }
    }
 
-   const auto is_kingly = [&highest_title_of_holder](const long long vassal_id) {
+   const auto is_promoted = [&highest_title_of_holder, smallest_vassal](const long long vassal_id) {
       const auto highest = highest_title_of_holder.find(vassal_id);
-      return highest != highest_title_of_holder.end() && highest->second >= ck3::Level::kKingdom;
+      return highest != highest_title_of_holder.end() && highest->second >= smallest_vassal;
    };
+   // A king or duke is found through a duchy or more that he holds; a count only through his county.
+   const auto smallest_title = std::min(smallest_vassal, ck3::Level::kDuchy);
 
    std::vector<TitlePtr> to_visit = top_titles;
    while (!to_visit.empty())
@@ -199,7 +208,7 @@ void GatherLandAndVassals(const std::vector<TitlePtr>& top_titles,
 
       const bool is_own_top_title = top_title_ids.contains(title->GetID());
       if (!is_own_top_title && title->GetHolder().has_value() && title->GetHolder()->GetID() != holder_id &&
-          title->GetLevel() >= ck3::Level::kDuchy && is_kingly(title->GetHolder()->GetID()))
+          title->GetLevel() >= smallest_title && is_promoted(title->GetHolder()->GetID()))
       {
          vassal_titles_by_holder[title->GetHolder()->GetID()].emplace_back(title);
          continue;
@@ -225,6 +234,8 @@ struct PendingRealm
    std::vector<TitlePtr> top_titles;
    long long holder_id = 0;
    std::string liege_tag;  // empty when independent
+   // The lowest rank of its vassals that become countries too, which its vassals pass on to theirs.
+   ck3::Level smallest_vassal = ck3::Level::kKingdom;
 };
 
 // Vassals have no ck3::Realm of their own - Realms only builds independent ones - so one is put
@@ -299,14 +310,21 @@ std::map<long long, std::vector<TitlePtr>> MapDeFactoChildren(const ck3::Titles&
 }
 
 // Independent realms seed the worklist; their vassals are appended as the land is walked.
-std::vector<PendingRealm> SeedPendingRealms(const ck3::Realms& realms)
+std::vector<PendingRealm> SeedPendingRealms(const ck3::Realms& realms, const eu5::VassalOptions& vassal_options)
 {
    std::vector<PendingRealm> pending;
    for (const auto& realm: realms.GetRealms())
    {
       if (realm->GetPrimaryTitle() && realm->GetHolder())
       {
-         pending.emplace_back(PendingRealm{realm, realm->GetHeldTitles(), realm->GetHolder()->GetID(), {}});
+         // With realms named, only those keep their lesser vassals; the rest keep their kings.
+         const auto chosen =
+             vassal_options.realms.empty() || vassal_options.realms.contains(realm->GetPrimaryTitle()->GetKey());
+         pending.emplace_back(PendingRealm{realm,
+             realm->GetHeldTitles(),
+             realm->GetHolder()->GetID(),
+             {},
+             chosen ? vassal_options.smallest : ck3::Level::kKingdom});
       }
    }
    return pending;
@@ -333,7 +351,8 @@ struct eu5::EU5World::Context
 eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
     const mappers::Mappers& mappers,
     const GameDefinitions& game_definitions,
-    const LocationData& location_data):
+    const LocationData& location_data,
+    const VassalOptions& vassal_options):
     conversion_date_(ck3_world.GetConversionDate()),
     ck3_trait_names_(ck3_world.GetTraitNames()),
     culture_resolver_(game_definitions, mappers.GetCultureGroupMapper(), mappers.GetLanguageMapper())
@@ -352,7 +371,7 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
 
    // Independent realms first; each one's vassal kings get appended as they are found, so the list
    // is walked by index while it grows.
-   auto pending = SeedPendingRealms(ck3_world.GetRealms());
+   auto pending = SeedPendingRealms(ck3_world.GetRealms(), vassal_options);
    for (std::size_t index = 0; index < pending.size(); ++index)
    {
       // A copy, since appending vassals below can reallocate the list.
@@ -397,6 +416,7 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
           current.holder_id,
           context.de_facto_children,
           highest_title_of_holder,
+          current.smallest_vassal,
           counties,
           vassal_titles_by_holder);
       for (const auto& county: counties)
@@ -410,7 +430,8 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
       {
          if (auto vassal_realm = MakeVassalRealm(vassal_titles, vassal_holder_id, ck3_world, context.id_title_map))
          {
-            pending.emplace_back(PendingRealm{vassal_realm, vassal_titles, vassal_holder_id, tag_choice->tag});
+            pending.emplace_back(
+                PendingRealm{vassal_realm, vassal_titles, vassal_holder_id, tag_choice->tag, current.smallest_vassal});
          }
       }
 
@@ -1395,6 +1416,75 @@ void eu5::EU5World::InheritLandLeftBehind(const VanillaCountries& vanilla_countr
    }
    Log(LogLevel::Info) << "<> " << inherited_locations_ << " locations EU5's countries held beyond CK3's map went to "
                        << "the converted countries that inherited the rest of theirs.";
+}
+
+std::vector<eu5::RealmSummary> eu5::EU5World::SummariseRealms(const ck3::CK3World& ck3_world)
+{
+   const auto id_title_map = MapTitlesById(ck3_world.GetTitles());
+   const auto de_facto_children = MapDeFactoChildren(ck3_world.GetTitles());
+   const auto highest_title_of_holder = MapHighestTitleOfHolder(id_title_map);
+
+   std::vector<RealmSummary> summaries;
+   for (const auto& realm: ck3_world.GetRealms().GetRealms())
+   {
+      if (!realm->GetPrimaryTitle() || !realm->GetHolder())
+      {
+         continue;
+      }
+      RealmSummary summary{.key = realm->GetPrimaryTitle()->GetKey(),
+          .name = CleanCK3Name(realm->GetRealmName()),
+          .tier = realm->GetTier()};
+
+      // Everyone below the ruler who holds a county or more, each counted once at their highest title.
+      std::set<long long> visited;
+      std::set<long long> vassals;
+      std::vector<TitlePtr> to_visit = realm->GetHeldTitles();
+      while (!to_visit.empty())
+      {
+         const auto title = to_visit.back();
+         to_visit.pop_back();
+         if (!title || !visited.insert(title->GetID()).second)
+         {
+            continue;
+         }
+         summary.counties += title->GetLevel() == ck3::Level::kCounty ? 1 : 0;
+         if (title->GetLevel() >= ck3::Level::kCounty && title->GetHolder().has_value() &&
+             title->GetHolder()->GetID() != realm->GetHolder()->GetID())
+         {
+            vassals.insert(title->GetHolder()->GetID());
+         }
+         if (const auto children = de_facto_children.find(title->GetID()); children != de_facto_children.end())
+         {
+            to_visit.insert(to_visit.end(), children->second.begin(), children->second.end());
+         }
+      }
+      for (const auto vassal: vassals)
+      {
+         const auto highest = highest_title_of_holder.find(vassal);
+         const auto tier = highest == highest_title_of_holder.end() ? ck3::Level::kCounty : highest->second;
+         if (tier >= ck3::Level::kKingdom)
+         {
+            ++summary.kings;
+         }
+         else if (tier == ck3::Level::kDuchy)
+         {
+            ++summary.dukes;
+         }
+         else
+         {
+            ++summary.counts;
+         }
+      }
+      // A realm of one ruler has nobody to keep.
+      if (!vassals.empty())
+      {
+         summaries.push_back(std::move(summary));
+      }
+   }
+   std::ranges::stable_sort(summaries, [](const RealmSummary& lhs, const RealmSummary& rhs) {
+      return lhs.counties > rhs.counties;
+   });
+   return summaries;
 }
 
 std::string eu5::EU5World::DynastyIdOf(const ck3::Character& character) const

@@ -44,6 +44,14 @@ std::string Configuration::GetOutputName() const
 {
    return output_name_;
 }
+std::string Configuration::GetVassals() const
+{
+   return vassals_;
+}
+std::set<std::string> Configuration::GetVassalRealms() const
+{
+   return vassal_realms_;
+}
 
 void Configuration::SetCK3Directory(std::filesystem::path ck3_dir)
 {
@@ -72,6 +80,18 @@ void Configuration::SetDebug(bool debug)
 void Configuration::SetOutputName(const std::string& name)
 {
    output_name_ = name;
+}
+void Configuration::SetVassals(const std::string& vassals)
+{
+   // Anything unrecognised keeps the default, so a hand-edited file can't break a conversion.
+   if (vassals == "kings" || vassals == "dukes" || vassals == "all")
+   {
+      vassals_ = vassals;
+   }
+}
+void Configuration::SetVassalRealms(std::set<std::string> realms)
+{
+   vassal_realms_ = std::move(realms);
 }
 
 void Configuration::Validate(const commonItems::ConverterVersion& converter_version) const

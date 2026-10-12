@@ -340,6 +340,7 @@ if (PLATFORM STREQUAL "Windows")
 	add_executable(CK3toEU5Launcher WIN32
 		"src/launcher/launcher_app.cpp"
 		"src/launcher/launcher_window.cpp"
+		"src/launcher/realm_picker.cpp"
 		"src/launcher/launcher_core.cpp"
 		"src/launcher/launcher.rc"
 		"src/launcher/launcher.manifest"

@@ -7,6 +7,7 @@
 #include <external/commonItems/OSCompatibilityLayer.h>
 
 #include <filesystem>
+#include <set>
 #include <string>
 
 
@@ -24,6 +25,11 @@ class Configuration
    [[nodiscard]] std::filesystem::path GetSaveGamePath() const;
    [[nodiscard]] bool GetDebug() const;
    [[nodiscard]] std::string GetOutputName() const;
+   // Which vassals become countries of their own: "kings" (the default), "dukes" or "all".
+   [[nodiscard]] std::string GetVassals() const;
+   // The realms that choice applies to, by the key of their primary title - e_hre, k_france. Empty
+   // means every realm; with some named, the rest keep only their vassal kings.
+   [[nodiscard]] std::set<std::string> GetVassalRealms() const;
 
    void SetCK3Directory(std::filesystem::path ck3_dir);
    void SetCK3DocDirectory(std::filesystem::path ck3_doc_dir);
@@ -32,6 +38,8 @@ class Configuration
    void SetSaveGamePath(std::filesystem::path save_game_p);
    void SetDebug(bool debug);
    void SetOutputName(const std::string& name);
+   void SetVassals(const std::string& vassals);
+   void SetVassalRealms(std::set<std::string> realms);
 
    void Validate(const commonItems::ConverterVersion& converter_version) const;
 
@@ -43,6 +51,8 @@ class Configuration
    std::filesystem::path save_game_;
    bool debug_ = false;
    std::string output_name_;
+   std::string vassals_ = "kings";
+   std::set<std::string> vassal_realms_;
 
 
 

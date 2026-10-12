@@ -21,6 +21,8 @@
 #include <vector>
 
 #include "launcher_core.hpp"
+#include "realm_picker.hpp"
+#include "wide_text.hpp"
 
 namespace
 {
@@ -49,33 +51,20 @@ constexpr int kConvertId = 140;
 constexpr int kOpenModFolderId = 141;
 constexpr int kShowDetailsId = 142;
 constexpr int kUpdateLinkId = 143;
+constexpr int kVassalsId = 144;
+constexpr int kPickRealmsId = 145;
 
 const wchar_t* const kWindowClass = L"CK3toEU5Launcher";
 
-std::wstring Widen(const std::string& text)
-{
-   if (text.empty())
-   {
-      return {};
-   }
-   const auto length = MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), nullptr, 0);
-   std::wstring wide(static_cast<std::size_t>(length), L'\0');
-   MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), wide.data(), length);
-   return wide;
-}
+using launcher::Narrow;
+using launcher::Widen;
 
-std::string Narrow(const std::wstring& text)
-{
-   if (text.empty())
-   {
-      return {};
-   }
-   const auto length =
-       WideCharToMultiByte(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), nullptr, 0, nullptr, nullptr);
-   std::string narrow(static_cast<std::size_t>(length), '\0');
-   WideCharToMultiByte(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), narrow.data(), length, nullptr, nullptr);
-   return narrow;
-}
+// What the vassal choice offers, in the order the box lists them, and the name the converter knows
+// each by.
+const std::array<std::pair<const char*, const wchar_t*>, 3> kVassalChoices = {
+    {{"kings", L"Only vassal kings become their own countries (big realms stay in one piece)"},
+        {"dukes", L"Dukes and kings become their own countries"},
+        {"all", L"Every vassal becomes its own country"}}};
 
 std::wstring GetText(HWND control)
 {
@@ -427,8 +416,16 @@ class LauncherWindow
    void BrowseForSave();
    void BrowseForFolder(FolderRow& row);
 
+   // The vassal box: which of the three choices is showing, and what the line under it says.
+   [[nodiscard]] std::string VassalChoice() const;
+   void UpdateVassalControls();
+   // Has the converter read the save and list its realms, then lets the player tick some.
+   void OnPickRealms();
+   void ShowRealmPicker();
+
    void OnConvert();
-   [[nodiscard]] bool StartConverter(const launcher::Settings& settings);
+   // Runs the converter on the settings; with list_realms it only reads the save and reports its realms.
+   [[nodiscard]] bool StartConverter(const launcher::Settings& settings, bool list_realms);
    void OnConverterExited(DWORD exit_code);
    void HandleOutputLine(const std::string& raw_line);
    void AddLogLine(const launcher::LogLine& line);
@@ -461,6 +458,10 @@ class LauncherWindow
    HWND save_hint_ = nullptr;
    HWND folder_group_ = nullptr;
    std::array<FolderRow, 4> folders_;
+   HWND vassal_group_ = nullptr;
+   HWND vassals_ = nullptr;
+   HWND pick_realms_ = nullptr;
+   HWND vassal_hint_ = nullptr;
    HWND name_group_ = nullptr;
    HWND mod_name_ = nullptr;
    HWND convert_button_ = nullptr;
@@ -476,6 +477,11 @@ class LauncherWindow
    std::thread update_check_;
 
    bool running_ = false;
+   // True while the converter is only listing the save's realms for the picker.
+   bool listing_realms_ = false;
+   std::vector<launcher::RealmChoice> realm_choices_;
+   // The realms the vassal choice is limited to, by title key; empty for every realm.
+   std::vector<std::string> picked_realms_;
    std::thread reader_;
    std::vector<launcher::LogLine> log_lines_;
    std::optional<std::string> output_name_;
@@ -548,7 +554,7 @@ bool LauncherWindow::Create(const int show)
    GetMonitorInfoW(MonitorFromWindow(handle_, MONITOR_DEFAULTTOPRIMARY), &monitor);
    const auto& area = monitor.rcWork;
    const auto width = std::min(Scale(820), static_cast<int>(area.right - area.left));
-   const auto height = std::min(Scale(720), static_cast<int>(area.bottom - area.top));
+   const auto height = std::min(Scale(800), static_cast<int>(area.bottom - area.top));
    SetWindowPos(handle_,
        nullptr,
        area.left + (area.right - area.left - width) / 2,
@@ -595,7 +601,7 @@ LRESULT LauncherWindow::HandleMessage(const UINT message, const WPARAM wparam, c
       case WM_GETMINMAXINFO:
       {
          auto* limits = reinterpret_cast<MINMAXINFO*>(lparam);
-         limits->ptMinTrackSize = {Scale(760), Scale(660)};
+         limits->ptMinTrackSize = {Scale(760), Scale(700)};
          return 0;
       }
       case WM_DPICHANGED:
@@ -645,15 +651,26 @@ LRESULT LauncherWindow::HandleMessage(const UINT message, const WPARAM wparam, c
             {
                BrowseForSave();
             }
+            else if (id == kPickRealmsId)
+            {
+               OnPickRealms();
+            }
             else if (id >= kFolderBrowseId && id < kFolderBrowseId + static_cast<int>(folders_.size()))
             {
                BrowseForFolder(folders_[static_cast<std::size_t>(id - kFolderBrowseId)]);
             }
          }
+         else if (code == CBN_SELCHANGE && id == kVassalsId)
+         {
+            UpdateVassalControls();
+         }
          else if (code == EN_CHANGE && !loading_)
          {
             if (id == kSavePathId && !running_)
             {
+               // Realms were picked from the save that was chosen before; another has its own.
+               picked_realms_.clear();
+               UpdateVassalControls();
                SetStatus(L"Ready. Press Convert.", GetSysColor(COLOR_WINDOWTEXT));
             }
             else if (id >= kFolderPathId && id < kFolderPathId + static_cast<int>(folders_.size()))
@@ -773,7 +790,19 @@ void LauncherWindow::BuildInterface()
       row.status = AddControl(L"STATIC", L"", SS_LEFT | SS_CENTERIMAGE);
    }
 
-   name_group_ = AddControl(L"BUTTON", L"3. Mod name (optional)", BS_GROUPBOX);
+   vassal_group_ = AddControl(L"BUTTON", L"3. Vassals", BS_GROUPBOX);
+   vassals_ = AddControl(L"COMBOBOX", L"", CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, kVassalsId);
+   for (const auto& [name, label]: kVassalChoices)
+   {
+      SendMessageW(vassals_, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(label));
+   }
+   SendMessageW(vassals_, CB_SETCURSEL, 0, 0);
+   pick_realms_ = AddControl(L"BUTTON", L"Pick realms...", BS_PUSHBUTTON | WS_TABSTOP, kPickRealmsId);
+   vassal_hint_ = AddControl(L"STATIC", L"", SS_LEFT);
+   SetColour(vassal_hint_, GetSysColor(COLOR_GRAYTEXT));
+   UpdateVassalControls();
+
+   name_group_ = AddControl(L"BUTTON", L"4. Mod name (optional)", BS_GROUPBOX);
    mod_name_ = AddControl(L"EDIT", L"", ES_AUTOHSCROLL | WS_TABSTOP, 0, WS_EX_CLIENTEDGE);
    SendMessageW(mod_name_,
        EM_SETCUEBANNER,
@@ -908,7 +937,19 @@ void LauncherWindow::Layout()
    place(folder_group_, margin, group_top, inner, y - group_top);
    y += Scale(12);
 
-   // 3. The mod's name.
+   // 3. Which vassals become countries. A drop-down's height is that of its opened list.
+   group_top = y;
+   y += caption;
+   const int pick = Scale(110);
+   place(vassals_, margin + gap, y, inner - 3 * gap - pick, Scale(200));
+   place(pick_realms_, margin + inner - gap - pick, y - Scale(1), pick, field + Scale(2));
+   y += field + Scale(4);
+   place(vassal_hint_, margin + gap, y, inner - 2 * gap, line);
+   y += line + gap;
+   place(vassal_group_, margin, group_top, inner, y - group_top);
+   y += Scale(12);
+
+   // 4. The mod's name.
    group_top = y;
    y += caption;
    place(mod_name_, margin + gap, y, inner - 2 * gap, field);
@@ -985,7 +1026,94 @@ void LauncherWindow::LoadSettings()
    {
       SetWindowTextW(mod_name_, value->second.c_str());
    }
+   if (const auto value = values.find("vassals"); value != values.end())
+   {
+      for (std::size_t index = 0; index < kVassalChoices.size(); ++index)
+      {
+         if (Narrow(value->second) == kVassalChoices[index].first)
+         {
+            SendMessageW(vassals_, CB_SETCURSEL, index, 0);
+         }
+      }
+   }
+   if (const auto value = values.find("vassal_realms"); value != values.end())
+   {
+      picked_realms_ = launcher::SplitKeys(Narrow(value->second));
+   }
+   UpdateVassalControls();
    loading_ = false;
+}
+
+std::string LauncherWindow::VassalChoice() const
+{
+   const auto selected = SendMessageW(vassals_, CB_GETCURSEL, 0, 0);
+   const auto index = selected < 0 ? std::size_t{0} : static_cast<std::size_t>(selected);
+   return kVassalChoices[std::min(index, kVassalChoices.size() - 1)].first;
+}
+
+void LauncherWindow::UpdateVassalControls()
+{
+   const auto choice = VassalChoice();
+   // Kings are subjects everywhere whatever is picked, so there is nothing to limit to some realms.
+   EnableWindow(pick_realms_, (choice != "kings" && !running_) ? TRUE : FALSE);
+   std::wstring hint;
+   if (choice == "kings")
+   {
+      hint = L"The default: a duke's or count's land belongs to their liege's country.";
+   }
+   else
+   {
+      hint = picked_realms_.empty() ? std::wstring(L"In every realm.")
+                                    : L"Only in the " + std::to_wstring(picked_realms_.size()) +
+                                          (picked_realms_.size() == 1 ? L" realm" : L" realms") + L" you picked.";
+      hint += choice == "all" ? L" Thousands of small countries make EU5 slower, and overlords may start over "
+                                L"their diplomatic limit."
+                              : L" More, smaller countries; some overlords may start over their diplomatic limit.";
+   }
+   SetWindowTextW(vassal_hint_, hint.c_str());
+}
+
+void LauncherWindow::OnPickRealms()
+{
+   const auto settings = CollectSettings();
+   if (const auto problems = launcher::ValidateSettings(settings); !problems.empty())
+   {
+      std::wstring message = L"The launcher reads your save to list its realms, so first:\n\n";
+      for (const auto& problem: problems)
+      {
+         message += L"• " + Widen(problem) + L"\n";
+      }
+      MessageBoxW(handle_, message.c_str(), L"Before picking realms", MB_OK | MB_ICONWARNING);
+      return;
+   }
+   realm_choices_.clear();
+   log_lines_.clear();
+   SetWindowTextW(log_, L"");
+   warning_count_ = 0;
+   SendMessageW(progress_, PBM_SETPOS, 0, 0);
+   ShowWindow(open_mod_folder_, SW_HIDE);
+   if (!StartConverter(settings, true))
+   {
+      return;
+   }
+   listing_realms_ = true;
+   SetRunning(true);
+   SetStatus(L"Reading your save to list its realms...", GetSysColor(COLOR_WINDOWTEXT));
+}
+
+void LauncherWindow::ShowRealmPicker()
+{
+   if (realm_choices_.empty())
+   {
+      SetStatus(L"This save has no realms with vassals to pick from.", GetSysColor(COLOR_WINDOWTEXT));
+      return;
+   }
+   if (const auto picked = launcher::PickRealms(handle_, realm_choices_, picked_realms_, font_))
+   {
+      picked_realms_ = *picked;
+      UpdateVassalControls();
+   }
+   SetStatus(L"Ready. Press Convert.", GetSysColor(COLOR_WINDOWTEXT));
 }
 
 void LauncherWindow::SaveSettings() const
@@ -998,6 +1126,8 @@ void LauncherWindow::SaveSettings() const
    }
    file << "save_game=" << Narrow(Escape(GetText(save_path_))) << "\r\n";
    file << "mod_name=" << Narrow(Escape(GetText(mod_name_))) << "\r\n";
+   file << "vassals=" << VassalChoice() << "\r\n";
+   file << "vassal_realms=" << launcher::JoinKeys(picked_realms_) << "\r\n";
 }
 
 void LauncherWindow::DetectMissingFolders()
@@ -1056,6 +1186,11 @@ launcher::Settings LauncherWindow::CollectSettings() const
    settings.eu5_mods = Trim(GetText(folders_[kEu5Mods].path));
    settings.save_game = Trim(GetText(save_path_));
    settings.mod_name = Narrow(Trim(GetText(mod_name_)));
+   settings.vassals = VassalChoice();
+   if (settings.vassals != "kings")
+   {
+      settings.vassal_realms = picked_realms_;
+   }
    return settings;
 }
 
@@ -1107,7 +1242,7 @@ void LauncherWindow::OnConvert()
    SendMessageW(progress_, PBM_SETPOS, 0, 0);
    ShowWindow(open_mod_folder_, SW_HIDE);
 
-   if (!StartConverter(settings))
+   if (!StartConverter(settings, false))
    {
       return;
    }
@@ -1115,7 +1250,7 @@ void LauncherWindow::OnConvert()
    SetStatus(L"Converting... this usually takes under a minute.", GetSysColor(COLOR_WINDOWTEXT));
 }
 
-bool LauncherWindow::StartConverter(const launcher::Settings& settings)
+bool LauncherWindow::StartConverter(const launcher::Settings& settings, const bool list_realms)
 {
    const auto converter_folder = LauncherFolder() / kConverterFolder;
    const auto converter = converter_folder / kConverterExecutable;
@@ -1157,7 +1292,7 @@ bool LauncherWindow::StartConverter(const launcher::Settings& settings)
    startup.hStdOutput = output_write;
    startup.hStdError = output_write;
    PROCESS_INFORMATION process{};
-   auto command = L"\"" + converter.wstring() + L"\"";
+   auto command = L"\"" + converter.wstring() + L"\"" + (list_realms ? L" --list-realms" : L"");
    const auto started = CreateProcessW(converter.c_str(),
        command.data(),
        nullptr,
@@ -1215,6 +1350,22 @@ void LauncherWindow::OnConverterExited(const DWORD exit_code)
    {
       reader_.join();
    }
+   if (listing_realms_)
+   {
+      listing_realms_ = false;
+      if (exit_code != 0)
+      {
+         FinishConversion(false, L"Your save couldn't be read. The details below say why.");
+         return;
+      }
+      // Reading the save left the converter's opening lines in the log, which say nothing here.
+      log_lines_.clear();
+      SetWindowTextW(log_, L"");
+      SetRunning(false);
+      SendMessageW(progress_, PBM_SETPOS, 0, 0);
+      ShowRealmPicker();
+      return;
+   }
    if (exit_code != 0)
    {
       FinishConversion(false, L"The conversion failed. The details below say why.");
@@ -1241,6 +1392,11 @@ void LauncherWindow::HandleOutputLine(const std::string& raw_line)
    if (const auto percent = launcher::ParseProgress(line); percent.has_value())
    {
       SendMessageW(progress_, PBM_SETPOS, static_cast<WPARAM>(*percent * kConversionShare / 100), 0);
+      return;
+   }
+   if (const auto realm = launcher::ParseRealm(line); realm.has_value())
+   {
+      realm_choices_.push_back(*realm);
       return;
    }
    if (const auto name = launcher::ParseOutputName(line); name.has_value())
@@ -1333,6 +1489,8 @@ void LauncherWindow::SetRunning(const bool running)
       EnableWindow(row.path, running ? FALSE : TRUE);
       EnableWindow(row.browse, running ? FALSE : TRUE);
    }
+   EnableWindow(vassals_, running ? FALSE : TRUE);
+   UpdateVassalControls();
 }
 
 void LauncherWindow::SetStatus(const std::wstring& message, const COLORREF colour)
@@ -1417,7 +1575,7 @@ int launcher::RunLauncher(HINSTANCE instance, const int show)
 {
    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
    const INITCOMMONCONTROLSEX controls{sizeof(INITCOMMONCONTROLSEX),
-       ICC_STANDARD_CLASSES | ICC_PROGRESS_CLASS | ICC_LINK_CLASS};
+       ICC_STANDARD_CLASSES | ICC_PROGRESS_CLASS | ICC_LINK_CLASS | ICC_LISTVIEW_CLASSES};
    InitCommonControlsEx(&controls);
    // The rich edit control, for the coloured log, lives in a DLL every Windows has.
    LoadLibraryW(L"Msftedit.dll");

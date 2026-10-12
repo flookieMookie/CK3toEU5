@@ -16,6 +16,9 @@ class Converter
   public:
    Converter(configuration::Configuration configuration, commonItems::ConverterVersion converter_version);
    void Convert();
+   // Reads the save and reports its realms, one a line, instead of converting it: what the launcher
+   // shows the player to pick whose vassals to keep.
+   void ListRealms();
 
   private:
    configuration::Configuration configuration_;

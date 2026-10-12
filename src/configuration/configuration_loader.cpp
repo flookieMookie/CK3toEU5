@@ -7,6 +7,8 @@
 
 #include <filesystem>
 #include <iostream>
+#include <set>
+#include <sstream>
 #include <string>
 
 #include "configuration.hpp"
@@ -72,6 +74,24 @@ configuration::Configuration configuration::LoadConfiguration(const path& config
    configuration_parser.registerKeyword("output_name", [&configuration](std::istream& stream) {
       configuration.SetOutputName(commonItems::getString(stream));
       Log(LogLevel::Info) << "\tOutput name given in config is " << configuration.GetOutputName();
+   });
+
+   configuration_parser.registerKeyword("vassals", [&configuration](std::istream& stream) {
+      configuration.SetVassals(commonItems::getString(stream));
+      Log(LogLevel::Info) << "\tVassals that become countries: " << configuration.GetVassals();
+   });
+   // A comma separated list of primary title keys: "e_hre,k_france".
+   configuration_parser.registerKeyword("vassal_realms", [&configuration](std::istream& stream) {
+      std::set<std::string> realms;
+      std::istringstream keys(commonItems::getString(stream));
+      for (std::string key; std::getline(keys, key, ',');)
+      {
+         if (!key.empty())
+         {
+            realms.insert(key);
+         }
+      }
+      configuration.SetVassalRealms(std::move(realms));
    });
 
    configuration_parser.parseFile(configuration_file);

@@ -4,6 +4,8 @@
 #include <external/commonItems/Log.h>
 
 #include <filesystem>
+#include <map>
+#include <string>
 #include <utility>
 
 #include "ck3_world/ck3_world.hpp"
@@ -25,6 +27,23 @@ Converter::Converter(configuration::Configuration configuration, commonItems::Co
 {
 }
 
+void Converter::ListRealms()
+{
+   static const std::map<ck3::Level, std::string> kRanks = {{ck3::Level::kCounty, "County"},
+       {ck3::Level::kDuchy, "Duchy"},
+       {ck3::Level::kKingdom, "Kingdom"},
+       {ck3::Level::kEmpire, "Empire"},
+       {ck3::Level::kHegemony, "Hegemony"}};
+   const ck3::CK3World ck3_world(configuration_, converter_version_);
+   for (const auto& realm: eu5::EU5World::SummariseRealms(ck3_world))
+   {
+      const auto rank = kRanks.find(realm.tier);
+      Log(LogLevel::Notice) << "Realm:\t" << realm.key << "\t" << realm.name << "\t"
+                            << (rank == kRanks.end() ? "" : rank->second) << "\t" << realm.counties << "\t"
+                            << realm.kings << "\t" << realm.dukes << "\t" << realm.counts;
+   }
+}
+
 void Converter::Convert()
 {
    Log(LogLevel::Progress) << "5%";
@@ -43,7 +62,13 @@ void Converter::Convert()
    const eu5::GameDefinitions game_definitions(configuration_.GetEU5Directory());
    const eu5::LocationData location_data(configuration_.GetEU5Directory());
    const eu5::VanillaCountries vanilla_countries(configuration_.GetEU5Directory());
-   eu5::EU5World eu5_world(ck3_world, mappers, game_definitions, location_data);
+   // Which vassals stay countries of their own is the player's choice.
+   eu5::VassalOptions vassal_options;
+   vassal_options.smallest = configuration_.GetVassals() == "all"
+                                 ? ck3::Level::kCounty
+                                 : (configuration_.GetVassals() == "dukes" ? ck3::Level::kDuchy : ck3::Level::kKingdom);
+   vassal_options.realms = configuration_.GetVassalRealms();
+   eu5::EU5World eu5_world(ck3_world, mappers, game_definitions, location_data, vassal_options);
    eu5_world.InheritLandLeftBehind(vanilla_countries);
    eu5_world.LogReport();
 
