@@ -21,6 +21,7 @@ EU5 always starts on 1 April 1337, so a campaign played to around then fits best
 ## What carries over
 
 - **Your map:** every realm becomes an EU5 country with its borders, capital, name, rank and flag. Big realms stay in one piece; only vassal kings become subjects
+- **Your religion and culture:** a country has its ruler's, as in CK3, even when most of its subjects follow something else. Conquer China as an Orthodox emperor and you're still Orthodox
 - **Your vassals, if you want them:** the launcher can turn dukes, or every vassal down to the counts, into subject countries too, either everywhere or only in the realms you tick
 - **Diplomacy:** wars in progress (with levies raised), alliances, truces, tributaries, and rulers' rivals and friends
 - **Characters:** rulers with their spouse, children, heir, dynasty and council, with abilities, traits and nicknames from CK3
