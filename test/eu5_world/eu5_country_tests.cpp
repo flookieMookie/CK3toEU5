@@ -87,4 +87,60 @@ TEST(EU5WorldCountryTests, NicknamesUseCK3sTextWhereItIsPlain)  // NOLINT : clan
    EXPECT_EQ("the Irish", NicknameText("nick_the_own_culture", "the Irish", nicknames, "english"));
 }
 
+TEST(EU5WorldCountryTests, ACountryFollowsItsRulersFaithNotItsLargest)  // NOLINT : clang-tidy doens't like gtest
+{
+   // An Orthodox emperor who conquered China: most of his subjects are Buddhist, the empire is not.
+   const PopulationShares population = {{"mahayana", 9000.0}, {"orthodox", 800.0}, {"sunni", 300.0}};
+   EXPECT_EQ("orthodox", ChooseStateReligion("orthodox", population));
+}
+
+TEST(EU5WorldCountryTests, ARulersFaithStandsEvenWhereNobodySharesIt)  // NOLINT : clang-tidy doens't like gtest
+{
+   // A Norse king of York, whose people are all Catholic.
+   const PopulationShares population = {{"catholic", 900.0}, {"judaism", 10.0}};
+   EXPECT_EQ("norse", ChooseStateReligion("norse", population));
+}
+
+TEST(EU5WorldCountryTests, AFaithEU5HasNoReligionForLeavesItToThePeople)  // NOLINT : clang-tidy doens't like gtest
+{
+   const PopulationShares population = {{"mahayana", 9000.0}, {"sunni", 300.0}, {"orthodox", 0.0}};
+   EXPECT_EQ("mahayana", ChooseStateReligion(std::nullopt, population));
+}
+
+TEST(EU5WorldCountryTests, ACountryWithoutPeopleChoosesNothing)  // NOLINT : clang-tidy doens't like gtest
+{
+   EXPECT_FALSE(ChooseStateReligion(std::nullopt, {}).has_value());
+   EXPECT_FALSE(ChoosePrimaryCulture(
+       [](const std::string&) {
+          return true;
+       },
+       {})
+           .has_value());
+}
+
+TEST(EU5WorldCountryTests, ACountryHasTheLargestOfItsRulersCultures)  // NOLINT : clang-tidy doens't like gtest
+{
+   // CK3's Greek covers several of EU5's cultures; the largest of them in the country is its own.
+   const PopulationShares population = {{"han", 9000.0}, {"greek", 500.0}, {"pontic", 700.0}, {"turkish", 600.0}};
+   const auto greek = [](const std::string& culture) {
+      return culture == "greek" || culture == "pontic";
+   };
+   EXPECT_EQ("pontic", ChoosePrimaryCulture(greek, population));
+}
+
+TEST(EU5WorldCountryTests, ARulerWithNoneOfTheirOwnPeopleHasThePeoplesCulture)  // NOLINT
+{
+   const PopulationShares population = {{"han", 9000.0}, {"turkish", 600.0}};
+   const auto norse = [](const std::string& culture) {
+      return culture == "norse";
+   };
+   EXPECT_EQ("han", ChoosePrimaryCulture(norse, population));
+}
+
+TEST(EU5WorldCountryTests, EqualSharesGoToTheFirstByName)  // NOLINT : clang-tidy doens't like gtest
+{
+   const PopulationShares population = {{"sunni", 50.0}, {"hindu", 50.0}};
+   EXPECT_EQ("hindu", ChooseStateReligion(std::nullopt, population));
+}
+
 }  // namespace eu5

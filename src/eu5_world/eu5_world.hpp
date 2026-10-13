@@ -249,7 +249,8 @@ class EU5World
        const std::optional<std::string>& capital_location,
        Context& context);
    void MarkForDefinition(Country& country, const TagChoice& tag_choice, const Context& context);
-   void AssignCapitalFaithAndCulture(Country& country,
+   // Returns the EU5 religion of the ruler's faith, where it has one.
+   std::optional<std::string> AssignCapitalFaithAndCulture(Country& country,
        const ck3::Realm& realm,
        const std::optional<std::string>& capital_location,
        const Context& context);
@@ -263,7 +264,10 @@ class EU5World
        const CountyData& county_data,
        const Context& context);
    [[nodiscard]] PopulationWeights WeighPopulation(const Country& country, const Context& context) const;
-   void AssignPopulationFaithAndCulture(Country& country, const Context& context);
+   void AssignPopulationFaithAndCulture(Country& country,
+       const ck3::Realm& realm,
+       const std::optional<std::string>& rulers_religion,
+       const Context& context);
 
    void LogLandReport() const;
    void LogTagReport() const;
@@ -306,6 +310,10 @@ class EU5World
    std::size_t landless_counties_ = 0;
    std::size_t religions_replaced_ = 0;
    std::size_t cultures_replaced_ = 0;
+   // Countries whose ruler and people differ, and which of the two the country followed.
+   std::size_t minority_faith_rulers_ = 0;
+   std::size_t faiths_without_followers_ = 0;
+   std::size_t minority_culture_rulers_ = 0;
    std::size_t realms_with_generated_tag_ = 0;
    std::size_t duplicate_tags_regenerated_ = 0;
    std::size_t vassals_demoted_ = 0;

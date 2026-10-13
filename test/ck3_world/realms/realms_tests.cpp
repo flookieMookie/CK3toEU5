@@ -213,6 +213,10 @@ TEST(CK3WorldRealmsTests, CultureAndFaithFallBackToTheCapitalCounty)  // NOLINT 
 
    ASSERT_EQ("italian", realms.GetRealms().front()->GetCultureName());
    ASSERT_EQ("catholic", realms.GetRealms().front()->GetFaithName());
+   // The culture and faith themselves fall back the same way.
+   ASSERT_NE(nullptr, realms.GetRealms().front()->GetCulture());
+   ASSERT_NE(nullptr, realms.GetRealms().front()->GetFaith());
+   EXPECT_EQ("catholic", realms.GetRealms().front()->GetFaith()->GetTag());
 }
 
 }  // namespace ck3

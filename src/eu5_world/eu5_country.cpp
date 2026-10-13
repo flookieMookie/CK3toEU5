@@ -187,6 +187,52 @@ std::string eu5::NicknameText(const std::string& nickname,
    return nickname_text.empty() ? nickname : nickname_text;
 }
 
+namespace
+{
+// The largest share among those `wanted` accepts. Shares of equal size go to the first by name, so
+// the same save always converts the same way.
+std::optional<std::string> LargestShare(const eu5::PopulationShares& population,
+    const std::function<bool(const std::string&)>& wanted)
+{
+   std::optional<std::string> largest;
+   double size = 0.0;
+   for (const auto& [name, share]: population)
+   {
+      if (share > 0.0 && wanted(name) && (!largest.has_value() || share > size))
+      {
+         largest = name;
+         size = share;
+      }
+   }
+   return largest;
+}
+
+bool Any(const std::string& /*name*/)
+{
+   return true;
+}
+}  // namespace
+
+std::optional<std::string> eu5::ChooseStateReligion(const std::optional<std::string>& rulers_religion,
+    const PopulationShares& population)
+{
+   if (rulers_religion.has_value())
+   {
+      return rulers_religion;
+   }
+   return LargestShare(population, Any);
+}
+
+std::optional<std::string> eu5::ChoosePrimaryCulture(const std::function<bool(const std::string&)>& is_rulers,
+    const PopulationShares& population)
+{
+   if (auto culture = LargestShare(population, is_rulers); culture.has_value())
+   {
+      return culture;
+   }
+   return LargestShare(population, Any);
+}
+
 int eu5::StartingGoldFor(const double ck3_gold)
 {
    constexpr double kLowest = -500.0;

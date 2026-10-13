@@ -140,3 +140,19 @@ std::shared_ptr<ck3::Faith> ck3::Realm::GetFaith() const
    }
    return nullptr;
 }
+
+std::shared_ptr<ck3::Culture> ck3::Realm::GetCulture() const
+{
+   if (holder_ && holder_->GetCulture().has_value())
+   {
+      if (auto culture = holder_->GetCulture()->GetPointer().lock(); culture)
+      {
+         return culture;
+      }
+   }
+   if (capital_details_)
+   {
+      return capital_details_->GetCulture().GetPointer().lock();
+   }
+   return nullptr;
+}

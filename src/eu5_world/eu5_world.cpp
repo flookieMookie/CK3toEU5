@@ -396,7 +396,7 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
          country->SetCapitalLocation(*capital_location);
       }
       MarkForDefinition(*country, *tag_choice, context);
-      AssignCapitalFaithAndCulture(*country, realm, capital_location, context);
+      const auto rulers_religion = AssignCapitalFaithAndCulture(*country, realm, capital_location, context);
       // Only a royal court has a language of its own in CK3.
       if (const auto& holder = realm.GetHolder(); holder && holder->GetCharacterRealm())
       {
@@ -423,7 +423,7 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
       {
          AddCounty(*country, *county, context);
       }
-      AssignPopulationFaithAndCulture(*country, context);
+      AssignPopulationFaithAndCulture(*country, realm, rulers_religion, context);
 
       // Each vassal ruler becomes a country of its own, holding the land under its titles.
       for (const auto& [vassal_holder_id, vassal_titles]: vassal_titles_by_holder)
@@ -556,7 +556,7 @@ void eu5::EU5World::MarkForDefinition(Country& country, const TagChoice& tag_cho
    }
 }
 
-void eu5::EU5World::AssignCapitalFaithAndCulture(Country& country,
+std::optional<std::string> eu5::EU5World::AssignCapitalFaithAndCulture(Country& country,
     const ck3::Realm& realm,
     const std::optional<std::string>& capital_location,
     const Context& context)
@@ -584,16 +584,17 @@ void eu5::EU5World::AssignCapitalFaithAndCulture(Country& country,
    }
 
    // A first guess from the capital, so a country whose land holds no pops still has a culture.
-   // It is replaced by the population's own once the land is known.
+   // It is replaced by one of the population's own once the land is known.
    if (!capital_location.has_value())
    {
-      return;
+      return mapped_religion;
    }
    const auto culture = context.location_data.GetDominantCulture(*capital_location);
    if (!culture.empty() && (!definitions.IsLoaded() || definitions.HasCulture(culture)))
    {
       country.SetCulture(culture);
    }
+   return mapped_religion;
 }
 
 void eu5::EU5World::AddCounty(Country& country, const ck3::Title& county, Context& context)
@@ -723,36 +724,59 @@ eu5::EU5World::PopulationWeights eu5::EU5World::WeighPopulation(const Country& c
    return weights;
 }
 
-void eu5::EU5World::AssignPopulationFaithAndCulture(Country& country, const Context& context)
+void eu5::EU5World::AssignPopulationFaithAndCulture(Country& country,
+    const ck3::Realm& realm,
+    const std::optional<std::string>& rulers_religion,
+    const Context& context)
 {
-   // EU5 checks a country's religion and culture against its own population and complains for
-   // every one that disagrees. The capital alone is a poor proxy, so now that the land is known both
-   // are taken from the pops the country actually holds, weighted by size.
+   // Now that the land is known, the country's religion and culture are settled against the pops
+   // it actually holds. Its ruler's come first, as they did in CK3; the people's largest stands in
+   // for a faith EU5 has no religion for, and for a culture none of the country's people have.
    const auto weights = WeighPopulation(country, context);
-   const auto heaviest = [](const std::map<std::string, double>& weight) {
-      return std::ranges::max_element(weight, {}, [](const auto& entry) {
-         return entry.second;
-      })->first;
-   };
    const auto& definitions = context.game_definitions;
+   const auto any = [](const std::string& /*name*/) {
+      return true;
+   };
 
-   if (!weights.culture.empty())
+   const auto rulers_culture = realm.GetCulture();
+   const auto resolved_culture = rulers_culture ? culture_resolver_.Resolve(*rulers_culture) : std::string{};
+   const auto is_rulers = [this, &rulers_culture, &resolved_culture](const std::string& culture) {
+      return rulers_culture &&
+             (culture == resolved_culture || culture_resolver_.IsCompatible(*rulers_culture, culture));
+   };
+   if (const auto culture = ChoosePrimaryCulture(is_rulers, weights.culture); culture.has_value())
    {
-      const auto culture = heaviest(weights.culture);
       // A generated culture is not in EU5's own definitions but will be shipped alongside.
-      if (!definitions.IsLoaded() || definitions.HasCulture(culture) ||
-          culture_resolver_.GetGeneratedCultures().contains(culture))
+      if (!definitions.IsLoaded() || definitions.HasCulture(*culture) ||
+          culture_resolver_.GetGeneratedCultures().contains(*culture))
       {
-         country.SetCulture(culture);
-         culture_resolver_.MarkUsed(culture);
+         country.SetCulture(*culture);
+         culture_resolver_.MarkUsed(*culture);
+         if (const auto peoples = ChoosePrimaryCulture(any, weights.culture); culture != peoples)
+         {
+            ++minority_culture_rulers_;
+            Log(LogLevel::Debug) << "   " << country.GetTag() << " has its ruler's culture, " << *culture
+                                 << "; the largest among its people is " << peoples.value_or("none") << ".";
+         }
       }
    }
-   if (!weights.religion.empty())
+   if (const auto religion = ChooseStateReligion(rulers_religion, weights.religion); religion.has_value())
    {
-      const auto religion = heaviest(weights.religion);
-      if (!definitions.IsLoaded() || definitions.HasReligion(religion))
+      if (!definitions.IsLoaded() || definitions.HasReligion(*religion))
       {
-         country.SetReligion(religion);
+         country.SetReligion(*religion);
+         // A country without people has nobody to differ from.
+         const auto peoples = ChooseStateReligion(std::nullopt, weights.religion);
+         if (peoples.has_value() && religion != peoples)
+         {
+            ++minority_faith_rulers_;
+            const auto followers = weights.religion.find(*religion);
+            const bool shared = followers != weights.religion.end() && followers->second > 0.0;
+            faiths_without_followers_ += shared ? 0 : 1;
+            Log(LogLevel::Debug) << "   " << country.GetTag() << " follows its ruler's faith, " << *religion
+                                 << (shared ? "" : ", which none of its people share") << "; the largest among them is "
+                                 << *peoples << ".";
+         }
       }
    }
 }
@@ -1723,6 +1747,14 @@ void eu5::EU5World::LogFaithAndCultureReport() const
    }
    Log(LogLevel::Info) << "   " << cultures_replaced_
                        << " locations had a culture CK3 disagrees with, rewritten from the county.";
+   Log(LogLevel::Info) << "   " << minority_faith_rulers_
+                       << " countries follow their ruler's faith though another is larger among their people, and "
+                       << minority_culture_rulers_ << " have their ruler's culture though another is larger.";
+   if (faiths_without_followers_ > 0)
+   {
+      Log(LogLevel::Info) << "   In " << faiths_without_followers_
+                          << " of those, none of the people share their ruler's faith yet.";
+   }
    const auto generated_cultures = culture_resolver_.GetUsedGeneratedCultures();
    if (!generated_cultures.empty())
    {
@@ -1748,6 +1780,9 @@ void eu5::EU5World::LogCountryList() const
                           << country->GetSourceRealm()->GetPrimaryTitle()->GetKey() << ")"
                           << " | capital: " << country->GetCapitalLocation().value_or("none")
                           << " | religion: " << country->GetReligion().value_or("none")
+                          << " | culture: " << country->GetCulture().value_or("none")
+                          << " | ruler: " << country->GetSourceRealm()->GetFaithName() << ", "
+                          << country->GetSourceRealm()->GetCultureName()
                           << " | locations: " << country->GetLocations().size();
    }
 }

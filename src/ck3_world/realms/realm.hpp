@@ -11,6 +11,7 @@
 namespace ck3
 {
 class Character;
+class Culture;
 class Faith;
 class CountyDetail;
 
@@ -34,6 +35,8 @@ class Realm
    [[nodiscard]] std::string GetFaithName() const;
    // The faith itself, with the same fallback to the capital. Null when neither has one.
    [[nodiscard]] std::shared_ptr<Faith> GetFaith() const;
+   // And the culture itself.
+   [[nodiscard]] std::shared_ptr<Culture> GetCulture() const;
    [[nodiscard]] std::string GetGovernment() const;
 
    void SetCapitalCounty(std::shared_ptr<Title> capital) { capital_county_ = std::move(capital); }

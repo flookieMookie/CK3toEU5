@@ -1,6 +1,8 @@
 #ifndef EU5_COUNTRY_H
 #define EU5_COUNTRY_H
 
+#include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -42,6 +44,23 @@ namespace eu5
     const std::string& nickname_text,
     const commonItems::LocalizationDatabase& ck3_nicknames,
     const std::string& language);
+
+// How many people a country holds of each religion, or of each culture.
+using PopulationShares = std::map<std::string, double>;
+
+// The religion a country follows. It is its ruler's, as the realm's was in CK3: an Orthodox emperor
+// who conquered China rules an Orthodox empire, however many of his subjects are Buddhist, and a
+// Norse king of York is no Catholic because York is. Only a ruler whose faith EU5 has no religion
+// for leaves it to the people, whose largest it then is. Nothing for such a country without people.
+[[nodiscard]] std::optional<std::string> ChooseStateReligion(const std::optional<std::string>& rulers_religion,
+    const PopulationShares& population);
+
+// The country's primary culture, on the same principle. CK3's cultures are broader than EU5's, so the
+// ruler's is whichever of the country's own cultures `is_rulers` accepts, the largest if several do.
+// A primary culture has to be one the country's people have, so a ruler with none of their own
+// people rules in the largest culture of those they do have.
+[[nodiscard]] std::optional<std::string> ChoosePrimaryCulture(const std::function<bool(const std::string&)>& is_rulers,
+    const PopulationShares& population);
 
 // A country's starting treasury from its CK3 ruler's gold. The two games count money on much the same
 // scale at their starts, so it carries over as it is, held within the range EU5's own start data uses -
