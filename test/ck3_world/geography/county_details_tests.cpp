@@ -61,6 +61,31 @@ TEST(CK3WorldCountyDetailsTests, FaithsCanBeLinked)  // NOLINT : clang-tidy doen
    ASSERT_EQ("theravada", county3->second->GetFaith().GetPointer().lock()->GetTag());
 }
 
+// Since CK3 1.20 a county names its rite, not its faith.
+TEST(CK3WorldCountyDetailsTests, RitesCanBeLinked)  // NOLINT : clang-tidy doens't like gtest
+{
+   std::stringstream input;
+   input << "counties = {\n";
+   input << "c_middlesex = { development = 9 culture = 231 rite = 0 }\n";
+   input << "}";
+   ck3::CountyDetails details(input);
+
+   ck3::Religions religions;
+   std::stringstream faith_input;
+   faith_input << "database={ 0={ tag=\"akom_pagan\" } 12={ tag=\"christian_faith\" main_rite=0 } }";
+   religions.ParseFaithDatabase(faith_input);
+   std::stringstream rite_input;
+   rite_input << "database={ 0={ rite_type=\"roman_rite\" faith=12 source=historical } }";
+   religions.ParseRites(rite_input);
+   religions.LinkReligions();
+
+   details.LinkReligions(religions);
+   // Rite 0, not faith 0.
+   const auto faith = details.GetCountyDetails().at("c_middlesex")->GetFaith().GetPointer().lock();
+   ASSERT_NE(nullptr, faith);
+   EXPECT_EQ("roman_rite", faith->GetTag());
+}
+
 TEST(CK3WorldCountyDetailsTests, LinkingMissingFaithIsIgnored)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream input;

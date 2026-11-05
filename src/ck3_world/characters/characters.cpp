@@ -62,9 +62,10 @@ void ck3::Characters::LinkCultures(const Cultures& cultures)
 void ck3::Characters::LinkFaiths(const Religions& religions)
 {
    const auto& faith_map = religions.GetFaiths();
+   const auto& rite_map = religions.GetRites();
    for (const auto& character: characters_alive_)
    {
-      character.second->LinkFaith(faith_map);
+      character.second->LinkFaith(faith_map, rite_map);
    }
    Log(LogLevel::Debug) << "Character faiths linked.";
 }

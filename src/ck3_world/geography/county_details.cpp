@@ -49,7 +49,7 @@ void ck3::CountyDetails::LinkReligions(const Religions& religions)
 {
    for (const auto& county_detail: county_details_)
    {
-      county_detail.second->LinkFaith(religions.GetFaiths());
+      county_detail.second->LinkFaith(religions.GetFaiths(), religions.GetRites());
    }
    Log(LogLevel::Debug) << "County faiths linked.";
 }

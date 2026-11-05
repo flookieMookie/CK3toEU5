@@ -7,11 +7,13 @@
 #include <fstream>
 #include <string>
 #include <system_error>
+#include <vector>
 
 namespace
 {
-// Reads one family of CK3 localisation files - localization/<language>/<folder>/<stem>_l_<language>.yml -
-// in every language CK3 ships - then the matching files of the save's mods, which override it.
+// Reads one family of CK3 localisation files - localization/<language>/<folder>/<stem>_l_<language>.yml,
+// and the files beside it that end the same way, as chinese_dynasty_names_l_english.yml does - in every
+// language CK3 ships, then the matching files of the save's mods, which override it.
 commonItems::LocalizationDatabase LoadCK3Localization(const std::filesystem::path& ck3_directory,
     const std::string& folder,
     const std::string& stem,
@@ -39,11 +41,26 @@ commonItems::LocalizationDatabase LoadCK3Localization(const std::filesystem::pat
          continue;
       }
       const auto language = entry.path().filename().string();
-      std::ifstream file(entry.path() / folder / (stem + "_l_" + language + ".yml"));
-      if (file.is_open() && localization.ScrapeStream(file) > 0)
+      const auto ending = stem + "_l_" + language + ".yml";
+      // The main file first, so any of the others that names a key again has the last word.
+      std::vector<std::filesystem::path> files;
+      for (const auto& candidate: std::filesystem::directory_iterator(entry.path() / folder, error))
       {
-         ++languages;
+         if (const auto name = candidate.path().filename().string();
+             candidate.is_regular_file() && name.ends_with(ending) && name != ending)
+         {
+            files.push_back(candidate.path());
+         }
       }
+      std::ranges::sort(files);
+      files.insert(files.begin(), entry.path() / folder / ending);
+      bool scraped = false;
+      for (const auto& path: files)
+      {
+         std::ifstream file(path);
+         scraped = (file.is_open() && localization.ScrapeStream(file) > 0) || scraped;
+      }
+      languages += scraped ? 1 : 0;
    }
 
    // Mods name their files as they like, but nearly always after the family, as CK3 does, or in a

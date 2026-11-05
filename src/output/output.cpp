@@ -24,6 +24,7 @@
 #include "out_file_classes/setup/pops_file.hpp"
 #include "out_file_classes/setup/vanilla_start_file.hpp"
 #include "out_file_classes/setup/wars_file.hpp"
+#include "src/eu5_world/eu5_setup_folder.hpp"
 
 
 
@@ -82,10 +83,11 @@ Output::Output(std::string name,
    // Setup
    // ----------------------------------
    // The mod mirrors the game's own folder layout, so the start files live under
-   // main_menu/setup/start, matching game/main_menu/setup/start in the EU5 install.
+   // main_menu/setup/1337, matching game/main_menu/setup/1337 in the EU5 install (setup/start in an
+   // EU5 from before it gave each start date a folder of its own).
    auto main_menu_folder = std::make_unique<OutputFolder>("main_menu", folder_manager_);
    auto setup_folder = std::make_unique<OutputFolder>("setup", folder_manager_);
-   auto start_folder = std::make_unique<OutputFolder>("start", folder_manager_);
+   auto start_folder = std::make_unique<OutputFolder>(eu5::StartSetupFolderName(eu5_directory), folder_manager_);
 
    auto countries_file =
        std::make_unique<CountriesFile>("10_countries.txt", file_writer_, eu5_world, vanilla_countries, *map_areas_);

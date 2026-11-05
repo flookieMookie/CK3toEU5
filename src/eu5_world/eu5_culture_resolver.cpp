@@ -7,6 +7,7 @@
 #include "external/commonItems/Localization/LocalizationDatabase.h"
 #include "src/ck3_world/cultures/culture.hpp"
 #include "src/mappers/culture_group_mapper/culture_group_mapper.hpp"
+#include "src/mappers/culture_mapper/culture_mapper.hpp"
 #include "src/mappers/language_mapper/language_mapper.hpp"
 
 namespace
@@ -38,10 +39,12 @@ std::string SanitizeName(const std::string& name)
 
 eu5::CultureResolver::CultureResolver(const GameDefinitions& game_definitions,
     const mappers::CultureGroupMapper& culture_group_mapper,
-    const mappers::LanguageMapper& language_mapper):
+    const mappers::LanguageMapper& language_mapper,
+    const mappers::CultureMapper* culture_mapper):
     game_definitions_(&game_definitions),
     culture_group_mapper_(&culture_group_mapper),
-    language_mapper_(&language_mapper)
+    language_mapper_(&language_mapper),
+    culture_mapper_(culture_mapper)
 {
    for (const auto& [name, definition]: game_definitions.GetCultureDefinitions())
    {
@@ -63,7 +66,13 @@ std::vector<std::string> eu5::CultureResolver::GroupsFor(const ck3::Culture& ck3
       return {};
    }
 
-   std::vector<std::string> groups = culture_group_mapper_->GetEU5CultureGroups(ck3_culture.GetHeritage());
+   // A link for this heritage and language together is the most particular, so it comes first.
+   std::vector<std::string> groups =
+       culture_group_mapper_->GetEU5CultureGroups(ck3_culture.GetHeritage(), ck3_culture.GetLanguage());
+   if (groups.empty())
+   {
+      groups = culture_group_mapper_->GetEU5CultureGroups(ck3_culture.GetHeritage());
+   }
    if (groups.empty())
    {
       groups = culture_group_mapper_->GetEU5CultureGroupsForLanguage(ck3_culture.GetLanguage());
@@ -130,6 +139,15 @@ bool eu5::CultureResolver::IsCompatible(const ck3::Culture& ck3_culture, const s
       return true;
    }
 
+   // EU5's culture is one CK3 has too - castilian, norman - and CK3 says this county is another, so
+   // it is no finer detail of CK3's but a different culture: Andalusian land that stayed Andalusian
+   // in the campaign is not Castilian because EU5's 1337 says so.
+   if (const auto counterpart = ck3_counterparts_.find(eu5_culture);
+       counterpart != ck3_counterparts_.end() && counterpart->second != NameOf(ck3_culture))
+   {
+      return false;
+   }
+
    const auto groups = GroupsFor(ck3_culture);
    const auto language = LanguageFor(ck3_culture);
    if (groups.empty() && !language.has_value())
@@ -145,6 +163,36 @@ bool eu5::CultureResolver::IsCompatible(const ck3::Culture& ck3_culture, const s
       return true;
    }
    return language.has_value() && *language == definition->language;
+}
+
+std::string eu5::CultureResolver::NameOf(const ck3::Culture& ck3_culture)
+{
+   // A vanilla CK3 culture keeps its template key; a dynamic one has only its generated name.
+   return SanitizeName(ck3_culture.GetTemplate().has_value() ? *ck3_culture.GetTemplate() : ck3_culture.GetName());
+}
+
+void eu5::CultureResolver::NoteCK3Cultures(const std::map<long long, std::shared_ptr<ck3::Culture>>& ck3_cultures)
+{
+   if (game_definitions_ == nullptr)
+   {
+      return;
+   }
+   for (const auto& [id, culture]: ck3_cultures)
+   {
+      if (!culture || !culture->GetTemplate().has_value())
+      {
+         continue;
+      }
+      const auto name = NameOf(*culture);
+      const auto renamed = culture_mapper_ != nullptr ? culture_mapper_->GetEU5Culture(name) : std::nullopt;
+      for (const auto& candidate: {renamed.value_or(""), name, name + "_culture"})
+      {
+         if (!name.empty() && game_definitions_->HasCulture(candidate))
+         {
+            ck3_counterparts_.emplace(candidate, name);
+         }
+      }
+   }
 }
 
 std::string eu5::CultureResolver::Resolve(const ck3::Culture& ck3_culture)
@@ -163,6 +211,14 @@ std::string eu5::CultureResolver::Resolve(const ck3::Culture& ck3_culture)
       unresolved_.insert(key);
       resolved_.emplace(key, "");
       return {};
+   }
+
+   // EU5 has this culture under a name of its own.
+   if (const auto renamed = culture_mapper_ != nullptr ? culture_mapper_->GetEU5Culture(name) : std::nullopt;
+       renamed.has_value() && game_definitions_ != nullptr && game_definitions_->HasCulture(*renamed))
+   {
+      resolved_.emplace(key, *renamed);
+      return *renamed;
    }
 
    // EU5 already has this culture. Its keys are inconsistent about the suffix - english and

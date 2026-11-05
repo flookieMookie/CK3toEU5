@@ -55,6 +55,10 @@ void ck3::Character::ParseCharacter(std::istream& input_stream)
    parser.registerKeyword("faith", [this](const std::string&, std::istream& input_stream) {
       faith_ = IdPointerPair<Faith>(commonItems::singleLlong(input_stream).getLlong());
    });
+   parser.registerKeyword("rite", [this](const std::string&, std::istream& input_stream) {
+      faith_ = IdPointerPair<Faith>(commonItems::singleLlong(input_stream).getLlong());
+      faith_by_rite_ = true;
+   });
    parser.registerKeyword("dynasty_house", [this](const std::string&, std::istream& input_stream) {
       house_ = IdPointerPair<House>(commonItems::singleLlong(input_stream).getLlong());
    });
@@ -340,16 +344,17 @@ void ck3::Character::LinkCulture(const std::map<long long, std::shared_ptr<Cultu
    }
 }
 
-void ck3::Character::LinkFaith(const std::map<long long, std::shared_ptr<Faith>>& faiths)
+void ck3::Character::LinkFaith(const std::map<long long, std::shared_ptr<Faith>>& faiths,
+    const std::map<long long, std::shared_ptr<Faith>>& rites)
 {
    if (!faith_.has_value())
    {
       // We'll try determining the faith later from house head
       return;
    }
-   if (faiths.contains(faith_->GetID()))
+   if (const auto& map = faith_by_rite_ ? rites : faiths; map.contains(faith_->GetID()))
    {
-      faith_->SetPointer(faiths.at(faith_->GetID()));
+      faith_->SetPointer(map.at(faith_->GetID()));
    }
    else
    {

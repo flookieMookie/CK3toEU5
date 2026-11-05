@@ -6,6 +6,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include "CommonRegexes.h"
 #include "Log.h"
@@ -24,6 +25,46 @@ ck3::Faith::Faith(std::istream& input_stream, long long faith_id): faith_id_(fai
    ParseFaith(input_stream);
 }
 
+ck3::Faith::Faith(const long long rite_id, std::string tag, std::string custom_name, const long long parent_faith_id):
+    faith_id_(rite_id),
+    tag_(std::move(tag)),
+    custom_name_(std::move(custom_name)),
+    parent_faith_(IdPointerPair<Faith>(parent_faith_id))
+{
+}
+
+std::shared_ptr<ck3::Faith> ck3::Faith::GetParentFaith() const
+{
+   return parent_faith_.has_value() ? parent_faith_->GetPointer().lock() : nullptr;
+}
+
+void ck3::Faith::LinkParentFaith(const std::map<long long, std::shared_ptr<Faith>>& faiths,
+    const std::shared_ptr<Faith>& self)
+{
+   if (!parent_faith_.has_value())
+   {
+      return;
+   }
+   const auto parent = faiths.find(parent_faith_->GetID());
+   if (parent == faiths.end())
+   {
+      Log(LogLevel::Warning) << "Rite " << tag_ << " belongs to faith " << parent_faith_->GetID()
+                             << " which has no definition, ignoring it.";
+      return;
+   }
+   parent_faith_->SetPointer(parent->second);
+   religion_ = IdPointerPair<Religion>(parent->second->GetReligion().GetID());
+   auto& rites = parent->second->rites_;
+   if (faith_id_ == parent->second->main_rite_id_)
+   {
+      rites.insert(rites.begin(), self);
+   }
+   else
+   {
+      rites.push_back(self);
+   }
+}
+
 void ck3::Faith::ParseFaith(std::istream& input_stream)
 {
    registerKeyword("tag", [this](const std::string&, std::istream& input_stream) {
@@ -37,6 +78,9 @@ void ck3::Faith::ParseFaith(std::istream& input_stream)
    });
    registerKeyword("faith_type", [this](const std::string&, std::istream& input_stream) {
       faith_type_ = commonItems::singleString(input_stream).getString();
+   });
+   registerKeyword("main_rite", [this](const std::string&, std::istream& input_stream) {
+      main_rite_id_ = commonItems::singleLlong(input_stream).getLlong();
    });
    registerKeyword("name", [this](const std::string&, std::istream& input_stream) {
       custom_name_ = commonItems::singleString(input_stream).getString();

@@ -355,8 +355,12 @@ eu5::EU5World::EU5World(const ck3::CK3World& ck3_world,
     const VassalOptions& vassal_options):
     conversion_date_(ck3_world.GetConversionDate()),
     ck3_trait_names_(ck3_world.GetTraitNames()),
-    culture_resolver_(game_definitions, mappers.GetCultureGroupMapper(), mappers.GetLanguageMapper())
+    culture_resolver_(game_definitions,
+        mappers.GetCultureGroupMapper(),
+        mappers.GetLanguageMapper(),
+        &mappers.GetCultureMapper())
 {
+   culture_resolver_.NoteCK3Cultures(ck3_world.GetCultures().GetCultures());
    Context context{ck3_world,
        mappers,
        game_definitions,
@@ -1551,9 +1555,13 @@ std::optional<std::string> eu5::EU5World::MapFaith(const ck3::Faith& faith, cons
       return religion.has_value() &&
              (!context.game_definitions.IsLoaded() || context.game_definitions.HasReligion(*religion));
    };
-   if (auto religion = mapper.GetEU5Religion(faith.GetTag()); defined(religion))
+   // Its own name first, and for a CK3 1.20 rite the faith it belongs to.
+   for (const auto& tag: FaithTagsToTry(faith))
    {
-      return religion;
+      if (auto religion = mapper.GetEU5Religion(tag); defined(religion))
+      {
+         return religion;
+      }
    }
 
    // A faith a campaign creates - a reformed pagan faith, a heresy - has no mapping of its own, and
@@ -1565,17 +1573,30 @@ std::optional<std::string> eu5::EU5World::MapFaith(const ck3::Faith& faith, cons
    {
       return std::nullopt;
    }
+   const auto own_faith = faith.GetParentFaith();
    for (const auto& sibling_link: religion->GetFaiths())
    {
       const auto sibling = sibling_link.GetPointer().lock();
-      if (!sibling || sibling->GetID() == faith.GetID())
+      if (!sibling || sibling->GetID() == faith.GetID() || sibling == own_faith)
       {
          continue;
       }
-      if (auto mapped = mapper.GetEU5Religion(sibling->GetTag()); defined(mapped))
+      // A sibling stands for its rites too: since CK3 1.20 the rites carry the names religion_map knows.
+      std::vector<std::string> tags = {sibling->GetTag()};
+      for (const auto& rite: sibling->GetRites())
       {
-         faiths_by_relative_.insert(faith.GetCustomName().empty() ? faith.GetTag() : faith.GetCustomName());
-         return mapped;
+         if (rite)
+         {
+            tags.push_back(rite->GetTag());
+         }
+      }
+      for (const auto& tag: tags)
+      {
+         if (auto mapped = mapper.GetEU5Religion(tag); defined(mapped))
+         {
+            faiths_by_relative_.insert(faith.GetCustomName().empty() ? faith.GetTag() : faith.GetCustomName());
+            return mapped;
+         }
       }
    }
    return std::nullopt;

@@ -48,14 +48,30 @@ TEST(MappersCultureGroupMapperTests, LanguageMapsToGroups)  // NOLINT : clang-ti
    ASSERT_TRUE(mapper.GetEU5CultureGroups("language_gaelic").empty());
 }
 
-TEST(MappersCultureGroupMapperTests, HeritageAndLanguageOnOneLink)  // NOLINT : clang-tidy doens't like gtest
+// A link naming a heritage and a language applies only where both meet: West Slavs who speak Czech are
+// Bohemian, and other West Slavs are not, nor other Czech speakers.
+TEST(MappersCultureGroupMapperTests, HeritageAndLanguageOnOneLinkNeedBoth)  // NOLINT : clang-tidy doens't like gtest
 {
    std::stringstream input;
-   input << "link = { eu5 = british_group heritage = heritage_brythonic language = language_brythonic }\n";
+   input << "link = { eu5 = slavic_group heritage = heritage_west_slavic }\n";
+   input << "link = { eu5 = bohemian_group heritage = heritage_west_slavic language = language_czech_slovak }\n";
    const CultureGroupMapper mapper(input);
 
-   ASSERT_EQ("british_group", mapper.GetEU5CultureGroups("heritage_brythonic").front());
-   ASSERT_EQ("british_group", mapper.GetEU5CultureGroupsForLanguage("language_brythonic").front());
+   EXPECT_EQ("bohemian_group", mapper.GetEU5CultureGroups("heritage_west_slavic", "language_czech_slovak").front());
+   ASSERT_EQ(1, mapper.GetEU5CultureGroups("heritage_west_slavic").size());
+   EXPECT_EQ("slavic_group", mapper.GetEU5CultureGroups("heritage_west_slavic").front());
+   EXPECT_TRUE(mapper.GetEU5CultureGroupsForLanguage("language_czech_slovak").empty());
+   EXPECT_TRUE(mapper.GetEU5CultureGroups("heritage_west_slavic", "language_polish").empty());
+}
+
+TEST(MappersCultureGroupMapperTests, AHeritageCanBeNamedAsCK3)  // NOLINT : clang-tidy doens't like gtest
+{
+   std::stringstream input;
+   input << "link = { eu5 = inuit_group ck3 = heritage_inuit }\n";
+   const CultureGroupMapper mapper(input);
+
+   ASSERT_FALSE(mapper.GetEU5CultureGroups("heritage_inuit").empty());
+   EXPECT_EQ("inuit_group", mapper.GetEU5CultureGroups("heritage_inuit").front());
 }
 
 TEST(MappersCultureGroupMapperTests, NameListMapsToGroups)  // NOLINT : clang-tidy doens't like gtest

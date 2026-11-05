@@ -47,6 +47,7 @@ mappers::Mappers::Mappers(const std::filesystem::path& configurables_folder):
     tag_mapper_(configurables_folder / "tag_mappings.txt"),
     religion_mapper_(configurables_folder / "religion_map.txt"),
     culture_group_mapper_(configurables_folder / "cultureGroups_map.txt"),
+    culture_mapper_(configurables_folder / "culture_map.txt"),
     language_mapper_(configurables_folder / "language_map.txt"),
     province_mapper_(configurables_folder / "province_mappings.txt")
 {

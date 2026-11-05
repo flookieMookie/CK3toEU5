@@ -10,7 +10,10 @@ Prints the problems found and exits non-zero if there are any.
 import re, os, sys, glob
 mod=sys.argv[1].replace(chr(92),'/').rstrip('/')
 V=os.path.join(sys.argv[2] if len(sys.argv)>2 else r"C:/Program Files (x86)/Steam/steamapps/common/Europa Universalis V", "game")
-S=mod+'/main_menu/setup/start/'
+# EU5 reads its 1337 start from main_menu/setup/1337, or setup/start before it gave each start date a
+# folder of its own; the mod mirrors whichever the game has.
+START='1337' if os.path.isdir(os.path.join(V,'main_menu','setup','1337')) else 'start'
+S=mod+'/main_menu/setup/'+START+'/'
 def read(p):
     b=open(p,'rb').read()
     try: t=b.decode('utf-8')
@@ -25,7 +28,7 @@ files={p.replace(chr(92),'/'):read(p) for p in glob.glob(mod+'/**/*.*',recursive
 for p in files:
     # EU5 reads its start files with a strict reader: a byte order mark is taken for part of the first
     # key, and that whole section is dropped - silently, apart from a line in debug.log.
-    if '/setup/start/' in p and open(p,'rb').read(3)==bytes([0xEF, 0xBB, 0xBF]):
+    if '/setup/'+START+'/' in p and open(p,'rb').read(3)==bytes([0xEF, 0xBB, 0xBF]):
         bad('byte order mark on start file',os.path.basename(p))
 for p,t in files.items():
     if p.endswith('.txt'):
@@ -56,7 +59,7 @@ def character_ids(text):
     return ids
 chars=character_ids(chars_txt)
 # EU5's own 1337 names a few people it never defines; the countries the conversion keeps carry those along.
-vanilla_chars=character_ids(read(V+'/main_menu/setup/start/05_characters.txt'))
+vanilla_chars=character_ids(read(V+'/main_menu/setup/'+START+'/05_characters.txt'))
 print(len(chars),'characters defined')
 for ref in set(re.findall(r'\b(?:ruler|heir|character|regent|active_regent|consort)\s*=\s*([A-Za-z][A-Za-z0-9_]*)',countries)):
     if ref not in chars and ref!='random' and ref in vanilla_chars: bad('undefined character in 10_countries',ref)
@@ -86,6 +89,11 @@ conv_tags={t for t in re.findall(r'^\t\t([A-Z][A-Z0-9]{2}) = \{ #',files[S+'10_c
 for lang,keys in sorted(loc.items()):
     miss=[k for k in used if k not in keys]; misst=[t for t in conv_tags if t not in keys]
     if miss or misst: bad(lang,'missing loc keys',len(miss),miss[:3],'tags',len(misst),misst[:3])
+# An entry with no text shows as its raw key in game, as a nameless dynasty once did.
+for p,t in files.items():
+    if p.endswith('.yml'):
+        empty=re.findall(r'^ ([A-Za-z0-9_]+):\d* ""\s*$',t,re.M)
+        if empty: bad(os.path.basename(p),'empty loc entries',len(empty),empty[:3])
 print('localisation languages:',len(loc))
 
 # ruler traits

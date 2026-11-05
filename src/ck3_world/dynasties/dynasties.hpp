@@ -19,6 +19,9 @@ class Dynasties: commonItems::parser
 
    void LinkCharacters(const Characters& characters);
    void LinkDynasties();
+   // Names the houses the save gives only a key, from CK3's own house definitions: key = { name = ... }.
+   // Returns how many it named.
+   int NameHousesFromDefinitions(std::istream& definitions);
 
   private:
    void ParseDynasties(std::istream& input_stream);

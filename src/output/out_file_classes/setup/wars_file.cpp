@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 
+#include "src/eu5_world/eu5_setup_folder.hpp"
 #include "vanilla_start_file.hpp"
 
 namespace
@@ -167,7 +168,7 @@ void WarsFile::Create(const std::filesystem::path& folder_path)
    Log(LogLevel::Info) << "\tCreating " << GetName();
 
    std::string contents = "war_manager = {\n}\n";
-   if (std::ifstream vanilla(eu5_directory_ / "game" / "main_menu" / "setup" / "start" / GetName()); vanilla.is_open())
+   if (std::ifstream vanilla(eu5::StartSetupFolder(eu5_directory_) / GetName()); vanilla.is_open())
    {
       contents.assign(std::istreambuf_iterator<char>(vanilla), std::istreambuf_iterator<char>());
       if (contents.starts_with("\xEF\xBB\xBF"))

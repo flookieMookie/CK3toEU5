@@ -9,11 +9,10 @@
 #include <string>
 
 #include "Log.h"
+#include "src/eu5_world/eu5_setup_folder.hpp"
 
 namespace
 {
-const std::filesystem::path kCharactersFile =
-    std::filesystem::path("game") / "main_menu" / "setup" / "start" / "05_characters.txt";
 
 // Characters sit one level down, inside character_db = { ... }. Their own contents nest further -
 // first_name = { ... } - so a block only starts a character at that first depth.
@@ -65,7 +64,7 @@ int DepthChange(const std::string& line)
 
 eu5::VanillaCharacters::VanillaCharacters(const std::filesystem::path& eu5_directory)
 {
-   std::ifstream file(eu5_directory / kCharactersFile);
+   std::ifstream file(StartSetupFolder(eu5_directory) / "05_characters.txt");
    if (!file.is_open())
    {
       Log(LogLevel::Warning) << "EU5 characters not found - vanilla countries the conversion keeps will have no ruler.";

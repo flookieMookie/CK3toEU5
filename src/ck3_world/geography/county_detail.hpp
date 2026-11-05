@@ -23,7 +23,9 @@ class CountyDetail
    [[nodiscard]] const auto& IsDeJureHRE() const { return de_jure_hre_; }
 
    void LinkCulture(const std::map<long long, std::shared_ptr<Culture>>& cultures_map);
-   void LinkFaith(const std::map<long long, std::shared_ptr<Faith>>& faiths_map);
+   // Before CK3 1.20 a county names its faith; since, its rite.
+   void LinkFaith(const std::map<long long, std::shared_ptr<Faith>>& faiths_map,
+       const std::map<long long, std::shared_ptr<Faith>>& rites_map = {});
 
   private:
    void ParseCountyDetails(std::istream& input_stream);
@@ -32,6 +34,7 @@ class CountyDetail
    std::string county_key_;
    IdPointerPair<Culture> culture_;
    IdPointerPair<Faith> faith_;
+   bool by_rite_ = false;
    bool de_jure_hre_ = false;
 };
 }  // namespace ck3

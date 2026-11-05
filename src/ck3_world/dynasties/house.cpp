@@ -44,6 +44,18 @@ void ck3::House::ParseHouse(std::istream& input_stream)
 }
 
 
+void ck3::House::FillFromDefinition(const std::string& name, const std::string& prefix)
+{
+   if (name_.empty())
+   {
+      name_ = name;
+   }
+   if (prefix_.empty())
+   {
+      prefix_ = prefix;
+   }
+}
+
 void ck3::House::LinkHouseHead(const std::map<long long, std::shared_ptr<Character>>& characters_map)
 {
    if (house_head_.has_value())

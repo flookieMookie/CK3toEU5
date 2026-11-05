@@ -66,7 +66,9 @@ class Character
    void RemoveSuzerain() { suzerain_ = std::nullopt; }
 
    void LinkCulture(const std::map<long long, std::shared_ptr<Culture>>& cultures);
-   void LinkFaith(const std::map<long long, std::shared_ptr<Faith>>& faiths);
+   // Before CK3 1.20 a character names their faith; since, their rite.
+   void LinkFaith(const std::map<long long, std::shared_ptr<Faith>>& faiths,
+       const std::map<long long, std::shared_ptr<Faith>>& rites = {});
    void LinkHouse(const std::map<long long, std::shared_ptr<House>>& houses);
    void LinkClaims(const std::map<long long, std::shared_ptr<Title>>& id_title_map);
    void LinkCharacters(const std::map<long long, std::shared_ptr<Character>>& characters);
@@ -112,6 +114,7 @@ class Character
 
    std::optional<IdPointerPair<Culture>> culture_;
    std::optional<IdPointerPair<Faith>> faith_;
+   bool faith_by_rite_ = false;
 
    std::optional<IdPointerPair<Character>> employer_;
    std::optional<IdPointerPair<Character>> primary_spouse_;

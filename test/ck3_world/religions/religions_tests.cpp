@@ -180,4 +180,51 @@ TEST(CK3WorldFaithsTests, LinkingMissingFaithIsIgnored)  // NOLINT : clang-tidy 
    EXPECT_NO_THROW(religions.LinkReligions());  // NOLINT : clang-tidy doens't like gtest
 }
 
+// CK3 1.20 keeps faiths in a block of their own and divides them into rites, which counties and
+// characters belong to.
+TEST(CK3WorldReligionsTests, RitesOfCK3_1_20BelongToTheirFaith)  // NOLINT : clang-tidy doens't like gtest
+{
+   Religions religions;
+   std::stringstream religion_input;
+   religion_input << "religions={ 7={ tag=\"christianity_religion\" faiths={ 12 13 } } }";
+   religions.ParseReligions(religion_input);
+
+   std::stringstream faith_input;
+   faith_input << "database={\n";
+   faith_input << "\t12={ faith_type=\"christian_faith\" religion=7 main_rite=0 tag=\"christian_faith\" }\n";
+   faith_input << "\t13={ faith_type=\"catholic\" religion=7 main_rite=150 tag=\"catholic\" }\n";
+   faith_input << "}";
+   religions.ParseFaithDatabase(faith_input);
+
+   std::stringstream rite_input;
+   rite_input << "database={\n";
+   rite_input << "\t6={ rite_type=\"byzantine_rite\" faith=12 data={ tag=\"byzantine_rite\" name=\"Byzantine Rite\" } "
+                 "source=historical }\n";
+   rite_input << "\t0={ rite_type=\"roman_rite\" faith=12 data={ tag=\"roman_rite\" name=\"Roman Rite\" } "
+                 "source=historical }\n";
+   rite_input
+       << "\t200={ rite_type=\"dynamic_rite_200\" faith=12 data={ name=\"Rite of Saint Maria\" } source=player }\n";
+   rite_input << "}";
+   religions.ParseRites(rite_input);
+   religions.LinkReligions();
+
+   ASSERT_EQ(2, religions.GetFaiths().size());
+   ASSERT_EQ(3, religions.GetRites().size());
+   const auto& byzantine = religions.GetRites().at(6);
+   EXPECT_EQ("byzantine_rite", byzantine->GetTag());
+   ASSERT_NE(nullptr, byzantine->GetParentFaith());
+   EXPECT_EQ("christian_faith", byzantine->GetParentFaith()->GetTag());
+   // A rite takes its faith's religion.
+   ASSERT_NE(nullptr, byzantine->GetReligion().GetPointer().lock());
+   EXPECT_EQ("christianity_religion", byzantine->GetReligion().GetPointer().lock()->GetTag());
+   // A faith lists its rites, its main one first.
+   const auto& rites = religions.GetFaiths().at(12)->GetRites();
+   ASSERT_EQ(3, rites.size());
+   EXPECT_EQ("roman_rite", rites.front()->GetTag());
+   // CK3's own rites are named in its localisation; one made in the campaign keeps its own name.
+   EXPECT_TRUE(byzantine->GetCustomName().empty());
+   EXPECT_EQ("Rite of Saint Maria", religions.GetRites().at(200)->GetCustomName());
+   EXPECT_EQ("dynamic_rite_200", religions.GetRites().at(200)->GetTag());
+}
+
 }  // namespace ck3

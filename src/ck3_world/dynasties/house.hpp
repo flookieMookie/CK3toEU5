@@ -22,6 +22,9 @@ class House: commonItems::parser
    [[nodiscard]] const auto& GetHouseHead() const { return house_head_; }
 
    void LinkHouseHead(const std::map<long long, std::shared_ptr<Character>>& characters_map);
+   // CK3 1.20 saves its own houses by key alone; their name and prefix are in the game's
+   // common/dynasty_houses, and only fill what the save left out.
+   void FillFromDefinition(const std::string& name, const std::string& prefix);
    void LinkDynasty(const std::map<long long, std::shared_ptr<Dynasty>>& dynasties_map);
 
   private:

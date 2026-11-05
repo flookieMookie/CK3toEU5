@@ -8,11 +8,10 @@
 #include <string>
 
 #include "Log.h"
+#include "src/eu5_world/eu5_setup_folder.hpp"
 
 namespace
 {
-const std::filesystem::path kCountriesFile =
-    std::filesystem::path("game") / "main_menu" / "setup" / "start" / "10_countries.txt";
 
 // Country blocks sit two levels down, inside countries = { countries = { ... } }, and the file is
 // far easier to carry over verbatim than to reproduce: each block holds includes, government,
@@ -48,7 +47,7 @@ void CollectLocations(const std::string& block, eu5::VanillaCountry& country)
 
 eu5::VanillaCountries::VanillaCountries(const std::filesystem::path& eu5_directory): setup_(eu5_directory)
 {
-   const auto countries_file = eu5_directory / kCountriesFile;
+   const auto countries_file = StartSetupFolder(eu5_directory) / "10_countries.txt";
    if (!std::filesystem::exists(countries_file))
    {
       Log(LogLevel::Warning) << "EU5 countries not found at " << countries_file.string()

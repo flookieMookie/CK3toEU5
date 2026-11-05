@@ -1,0 +1,9 @@
+# CK3 cultures that EU5 has under another name.
+# link = { eu5 = eu5culture ck3 = ck3culture }
+# A CK3 culture EU5 calls by the same name (castilian, czech) needs no link, and one with no EU5
+# equivalent at all gets a culture of its own. Each EU5 culture named here stands in for the CK3 one
+# wherever CK3 has it, and where EU5 already has it in 1337 it stays.
+
+link = { eu5 = andalusi ck3 = andalusian }    # the Arabised Iberians of al-Andalus
+link = { eu5 = slovak ck3 = slovien }         # CK3's Slovaks, who share Czech's language there
+link = { eu5 = slovene ck3 = carantanian }    # the Slovenes' forebears

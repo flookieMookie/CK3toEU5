@@ -66,6 +66,7 @@ class CK3World
    void ParseMeta(std::istream& input_stream);
    void LoadMods(const configuration::Configuration& configuration);
    void LoadLandedTitles(const configuration::Configuration& configuration);
+   void LoadHouseDefinitions(const configuration::Configuration& configuration);
 
    // savegame processing
 

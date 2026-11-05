@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "src/ck3_world/realms/realm.hpp"
+#include "src/ck3_world/religions/faith.hpp"
 
 eu5::Country::Country(std::string tag, std::shared_ptr<ck3::Realm> source_realm):
     tag_(std::move(tag)),
@@ -212,6 +213,38 @@ bool Any(const std::string& /*name*/)
    return true;
 }
 }  // namespace
+
+std::vector<std::string> eu5::FaithTagsToTry(const ck3::Faith& faith)
+{
+   std::vector<std::string> tags;
+   const auto add = [&tags](const std::string& tag, const std::string_view suffix) {
+      if (tag.empty())
+      {
+         return;
+      }
+      for (const auto& candidate:
+          {tag, tag.ends_with(suffix) && tag.size() > suffix.size() ? tag.substr(0, tag.size() - suffix.size()) : ""})
+      {
+         if (!candidate.empty() && std::ranges::find(tags, candidate) == tags.end())
+         {
+            tags.push_back(candidate);
+         }
+      }
+   };
+   add(faith.GetTag(), "_rite");
+   if (const auto parent = faith.GetParentFaith())
+   {
+      add(parent->GetTag(), "_faith");
+      for (const auto& rite: parent->GetRites())
+      {
+         if (rite && rite->GetID() != faith.GetID())
+         {
+            add(rite->GetTag(), {});
+         }
+      }
+   }
+   return tags;
+}
 
 std::optional<std::string> eu5::ChooseStateReligion(const std::optional<std::string>& rulers_religion,
     const PopulationShares& population)

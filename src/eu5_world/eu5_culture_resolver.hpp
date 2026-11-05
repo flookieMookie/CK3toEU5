@@ -2,6 +2,7 @@
 #define EU5_CULTURE_RESOLVER_H
 
 #include <map>
+#include <memory>
 #include <optional>
 #include <set>
 #include <string>
@@ -22,6 +23,7 @@ class LocalizationDatabase;
 namespace mappers
 {
 class CultureGroupMapper;
+class CultureMapper;
 class LanguageMapper;
 }  // namespace mappers
 
@@ -46,12 +48,17 @@ class CultureResolver
    CultureResolver() = default;
    CultureResolver(const GameDefinitions& game_definitions,
        const mappers::CultureGroupMapper& culture_group_mapper,
-       const mappers::LanguageMapper& language_mapper);
+       const mappers::LanguageMapper& language_mapper,
+       const mappers::CultureMapper* culture_mapper = nullptr);
 
    // True when EU5's culture is a plausible finer grained member of the CK3 one, so EU5's detail
    // should stand. Also true when nothing is known about the CK3 culture, since overwriting on
    // ignorance is worse than leaving the game's own data alone.
    [[nodiscard]] bool IsCompatible(const ck3::Culture& ck3_culture, const std::string& eu5_culture) const;
+
+   // The save's own cultures, to know which of EU5's are a CK3 culture too: castilian is in both,
+   // EU5's leonese and picard only in EU5.
+   void NoteCK3Cultures(const std::map<long long, std::shared_ptr<ck3::Culture>>& ck3_cultures);
 
    // The EU5 culture a CK3 culture should become, generating a definition if EU5 has no
    // equivalent. Empty when neither EU5 nor the configurables say enough to place it.
@@ -67,11 +74,14 @@ class CultureResolver
   private:
    // The EU5 culture groups a CK3 culture maps onto, by heritage, then language, then name list.
    [[nodiscard]] std::vector<std::string> GroupsFor(const ck3::Culture& ck3_culture) const;
+   // The name a CK3 culture goes by in EU5's key style: its template's, or for a dynamic one its own.
+   [[nodiscard]] static std::string NameOf(const ck3::Culture& ck3_culture);
    [[nodiscard]] std::optional<std::string> LanguageFor(const ck3::Culture& ck3_culture) const;
 
    const GameDefinitions* game_definitions_ = nullptr;
    const mappers::CultureGroupMapper* culture_group_mapper_ = nullptr;
    const mappers::LanguageMapper* language_mapper_ = nullptr;
+   const mappers::CultureMapper* culture_mapper_ = nullptr;
 
    // A language spoken by some existing EU5 culture in a group, for generated cultures whose own
    // language is unmapped.
@@ -81,6 +91,8 @@ class CultureResolver
    std::map<std::string, CultureDefinition> generated_cultures_;
    std::set<std::string> used_cultures_;
    std::set<std::string> unresolved_;
+   // EU5 culture to the CK3 culture of the same name.
+   std::map<std::string, std::string> ck3_counterparts_;
 };
 
 

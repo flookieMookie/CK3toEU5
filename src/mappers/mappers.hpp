@@ -4,6 +4,7 @@
 #include <filesystem>
 
 #include "culture_group_mapper/culture_group_mapper.hpp"
+#include "culture_mapper/culture_mapper.hpp"
 #include "language_mapper/language_mapper.hpp"
 #include "province_mapper/province_mapper.hpp"
 #include "religion_mapper/religion_mapper.hpp"
@@ -31,6 +32,7 @@ class Mappers
    [[nodiscard]] const auto& GetTagMapper() const { return tag_mapper_; }
    [[nodiscard]] const auto& GetReligionMapper() const { return religion_mapper_; }
    [[nodiscard]] const auto& GetCultureGroupMapper() const { return culture_group_mapper_; }
+   [[nodiscard]] const auto& GetCultureMapper() const { return culture_mapper_; }
    [[nodiscard]] const auto& GetLanguageMapper() const { return language_mapper_; }
    [[nodiscard]] const auto& GetProvinceMapper() const { return province_mapper_; }
 
@@ -44,6 +46,7 @@ class Mappers
    TagMapper tag_mapper_;
    ReligionMapper religion_mapper_;
    CultureGroupMapper culture_group_mapper_;
+   CultureMapper culture_mapper_;
    LanguageMapper language_mapper_;
    ProvinceMapper province_mapper_;
 };

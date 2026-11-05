@@ -1,6 +1,7 @@
 #include <sstream>
 
 #include "gtest/gtest.h"
+#include "src/ck3_world/religions/faith.hpp"
 #include "src/eu5_world/eu5_country.hpp"
 
 namespace eu5
@@ -85,6 +86,31 @@ TEST(EU5WorldCountryTests, NicknamesUseCK3sTextWhereItIsPlain)  // NOLINT : clan
    EXPECT_EQ("the Great", NicknameText("nick_the_great", "the Great", nicknames, "french"));
    EXPECT_EQ("the Bald", NicknameText("nick_the_bald_ironic", "the Bald", nicknames, "english"));
    EXPECT_EQ("the Irish", NicknameText("nick_the_own_culture", "the Irish", nicknames, "english"));
+}
+
+TEST(EU5WorldCountryTests, AFaithIsLookedUpByItsOwnName)  // NOLINT : clang-tidy doens't like gtest
+{
+   std::stringstream input;
+   input << "tag=\"catholic\"";
+   const ck3::Faith faith(input, 13);
+   EXPECT_EQ(std::vector<std::string>{"catholic"}, FaithTagsToTry(faith));
+}
+
+TEST(EU5WorldCountryTests, ARiteIsLookedUpByItsNameThenItsFaithsAndItsSiblings)  // NOLINT
+{
+   std::stringstream input;
+   input << "tag=\"christian_faith\" main_rite=0";
+   const auto christian = std::make_shared<ck3::Faith>(input, 12);
+   const std::map<long long, std::shared_ptr<ck3::Faith>> faiths = {{12, christian}};
+   const auto roman = std::make_shared<ck3::Faith>(0, "roman_rite", "", 12);
+   const auto cathar = std::make_shared<ck3::Faith>(74, "cathar_rite", "", 12);
+   roman->LinkParentFaith(faiths, roman);
+   cathar->LinkParentFaith(faiths, cathar);
+
+   // Its own name, without _rite as the faith used to be called, its faith with and without _faith,
+   // then the faith's other rites, main one first.
+   EXPECT_EQ((std::vector<std::string>{"cathar_rite", "cathar", "christian_faith", "christian", "roman_rite"}),
+       FaithTagsToTry(*cathar));
 }
 
 TEST(EU5WorldCountryTests, ACountryFollowsItsRulersFaithNotItsLargest)  // NOLINT : clang-tidy doens't like gtest

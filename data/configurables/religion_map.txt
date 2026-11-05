@@ -15,6 +15,13 @@ link = { eu5 = tibetan_buddhism ck3 = acharya ck3 = lamaism }
 link = { eu5 = sanjiao ck3 = maitreya ck3 = pundarika ck3 = vinaya ck3 = zhengyi ck3 = shangqing ck3 = quanzhen } #Chinese Buddhism/Daoism (It's both in EU5)
 
 ##Christianity
+# CK3 1.20 divided faiths into rites, which is what counties and characters now belong to. Most rites
+# keep the name their faith had before (insular_celtic, zayidi), or add _rite to it (cathar_rite), and
+# the converter tries both. These are the ones that do neither.
+link = { eu5 = catholic ck3 = roman_rite ck3 = ambrosian_rite ck3 = beneventan_rite ck3 = carolingian_christianity ck3 = joachimite_rite ck3 = adoptionist_rite ck3 = adamites }
+link = { eu5 = orthodox ck3 = byzantine_rite ck3 = georgian_rite ck3 = slavic_rite ck3 = iconoclast_rite ck3 = messalian_rite }
+link = { eu5 = miaphysite ck3 = miaphysitism ck3 = antiochian_rite ck3 = ethiopian_rite }
+link = { eu5 = hussite ck3 = hussite }
 #link = { eu5 = anglican ck3 = ??? } #Protestant
 link = { eu5 = bogomilism ck3 = bogomilist }
 link = { eu5 = bosnian_church ck3 = bosnian_church }

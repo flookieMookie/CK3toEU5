@@ -33,6 +33,10 @@ void ck3::CountyDetail::ParseCountyDetails(std::istream& input_stream)
    parser.registerKeyword("faith", [this](const std::string&, std::istream& input_stream) {
       faith_ = IdPointerPair<Faith>(commonItems::singleLlong(input_stream).getLlong());
    });
+   parser.registerKeyword("rite", [this](const std::string&, std::istream& input_stream) {
+      faith_ = IdPointerPair<Faith>(commonItems::singleLlong(input_stream).getLlong());
+      by_rite_ = true;
+   });
    parser.registerRegex(commonItems::catchallRegex, commonItems::ignoreItem);
    parser.parseStream(input_stream);
    parser.clearRegisteredKeywords();
@@ -51,15 +55,17 @@ void ck3::CountyDetail::LinkCulture(const std::map<long long, std::shared_ptr<Cu
                              << " which has no definition, ignoring it.";
    }
 }
-void ck3::CountyDetail::LinkFaith(const std::map<long long, std::shared_ptr<Faith>>& faiths_map)
+void ck3::CountyDetail::LinkFaith(const std::map<long long, std::shared_ptr<Faith>>& faiths_map,
+    const std::map<long long, std::shared_ptr<Faith>>& rites_map)
 {
-   if (faiths_map.contains(faith_.GetID()))
+   const auto& map = by_rite_ ? rites_map : faiths_map;
+   if (map.contains(faith_.GetID()))
    {
-      faith_.SetPointer(faiths_map.at(faith_.GetID()));
+      faith_.SetPointer(map.at(faith_.GetID()));
    }
    else
    {
-      Log(LogLevel::Warning) << "County details " << county_key_ << " has faith " << faith_.GetID()
-                             << " which has no definition, ignoring it.";
+      Log(LogLevel::Warning) << "County details " << county_key_ << " has " << (by_rite_ ? "rite " : "faith ")
+                             << faith_.GetID() << " which has no definition, ignoring it.";
    }
 }

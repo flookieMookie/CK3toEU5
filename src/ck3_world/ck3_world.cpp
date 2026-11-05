@@ -1,6 +1,7 @@
 #include "ck3_world.hpp"
 
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -51,6 +52,7 @@ ck3::CK3World::CK3World(const configuration::Configuration& configuration,
    Log(LogLevel::Info) << "* Gamestate Parsing Complete, Parsing Game Files *";
    LoadMods(configuration);
    LoadLandedTitles(configuration);
+   LoadHouseDefinitions(configuration);
    Log(LogLevel::Progress) << "25 %";
 
    Log(LogLevel::Info) << "* Parsing Complete, Weaving Internals *";
@@ -171,9 +173,18 @@ void ck3::CK3World::ParseGamestate(std::istream& input_stream, const commonItems
 
    parser.registerKeyword("religion", [this](const std::string&, std::istream& input_stream) {
       Log(LogLevel::Info) << "-> Loading religions.";
-      religions_ = Religions(input_stream);
+      religions_.ParseReligions(input_stream);
       Log(LogLevel::Info) << "<> Loaded " << religions_.GetReligions().size() << " religions and "
                           << religions_.GetFaiths().size() << " faiths.";
+   });
+   // CK3 1.20 keeps faiths in a block of their own, and divides them into rites.
+   parser.registerKeyword("faiths", [this](const std::string&, std::istream& input_stream) {
+      religions_.ParseFaithDatabase(input_stream);
+      Log(LogLevel::Info) << "<> Loaded " << religions_.GetFaiths().size() << " faiths.";
+   });
+   parser.registerKeyword("rites", [this](const std::string&, std::istream& input_stream) {
+      religions_.ParseRites(input_stream);
+      Log(LogLevel::Info) << "<> Loaded " << religions_.GetRites().size() << " rites.";
    });
    parser.registerKeyword("county_manager", [this](const std::string&, std::istream& input_stream) {
       Log(LogLevel::Info) << "-> Loading county details.";
@@ -284,6 +295,30 @@ void ck3::CK3World::LoadMods(const configuration::Configuration& configuration)
    }
    Log(LogLevel::Info) << "<> Loaded " << mods_.size() << " mod(s): their titles, culture and dynasty names and coat "
                        << "of arms art are used.";
+}
+
+void ck3::CK3World::LoadHouseDefinitions(const configuration::Configuration& configuration)
+{
+   const auto mod_filesystem = CK3Files(configuration.GetCK3Directory(), mods_);
+   int named = 0;
+   for (const auto& file: mod_filesystem.GetAllFilesInFolder("common/dynasty_houses"))
+   {
+      if (file.extension() != ".txt")
+      {
+         continue;
+      }
+      std::ifstream definitions(file);
+      if (definitions.is_open())
+      {
+         // CK3's own files start with a byte order mark, which would be read as the first key.
+         commonItems::absorbBOM(definitions);
+         named += dynasties_.NameHousesFromDefinitions(definitions);
+      }
+   }
+   if (named > 0)
+   {
+      Log(LogLevel::Info) << "<> Named " << named << " houses the save keeps by key alone, from CK3's own.";
+   }
 }
 
 void ck3::CK3World::LoadLandedTitles(const configuration::Configuration& configuration)

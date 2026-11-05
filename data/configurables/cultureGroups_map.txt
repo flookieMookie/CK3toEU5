@@ -74,11 +74,11 @@ link = { eu5 = tatar_group language = language_oghur }
 
 ##Complex (Requires BOTH heritage and a language)
 link = { eu5 = bohemian_group heritage = heritage_west_slavic language = language_czech_slovak }
-link = { eu5 = swiss_group heritage = central_germanic language = language_french }
-link = { eu5 = swiss_group heritage = central_germanic language = language_occitano_romance }
-link = { eu5 = swiss_group heritage = central_germanic language = language_italian }
-link = { eu5 = swiss_group heritage = frankish language = language_central_germanic }
-link = { eu5 = swiss_group heritage = frankish language = language_high_german }
+link = { eu5 = swiss_group heritage = heritage_central_germanic language = language_french }
+link = { eu5 = swiss_group heritage = heritage_central_germanic language = language_occitano_romance }
+link = { eu5 = swiss_group heritage = heritage_central_germanic language = language_italian }
+link = { eu5 = swiss_group heritage = heritage_frankish language = language_central_germanic }
+link = { eu5 = swiss_group heritage = heritage_frankish language = language_high_german }
 link = { eu5 = swiss_group heritage = heritage_latin language = language_central_germanic }
 link = { eu5 = swiss_group heritage = heritage_latin language = language_high_german }
 

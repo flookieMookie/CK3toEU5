@@ -34,6 +34,41 @@ void ck3::Dynasties::ParseDynasties(std::istream& input_stream)
    clearRegisteredKeywords();
 }
 
+int ck3::Dynasties::NameHousesFromDefinitions(std::istream& definitions)
+{
+   std::map<std::string, std::shared_ptr<House>> houses_by_key;
+   for (const auto& [id, house]: houses_)
+   {
+      if (house->GetName().empty() && !house->GetKey().empty())
+      {
+         houses_by_key.emplace(house->GetKey(), house);
+      }
+   }
+   int named = 0;
+   commonItems::parser parser;
+   parser.registerRegex(commonItems::catchallRegex, [&](const std::string& key, std::istream& input_stream) {
+      std::string name;
+      std::string prefix;
+      commonItems::parser definition;
+      definition.registerKeyword("name", [&name](const std::string&, std::istream& input_stream) {
+         name = commonItems::singleString(input_stream).getString();
+      });
+      definition.registerKeyword("prefix", [&prefix](const std::string&, std::istream& input_stream) {
+         prefix = commonItems::singleString(input_stream).getString();
+      });
+      definition.registerRegex(commonItems::catchallRegex, commonItems::ignoreItem);
+      definition.parseStream(input_stream);
+      if (const auto house = houses_by_key.find(key); house != houses_by_key.end() && !name.empty())
+      {
+         house->second->FillFromDefinition(name, prefix);
+         houses_by_key.erase(house);
+         ++named;
+      }
+   });
+   parser.parseStream(definitions);
+   return named;
+}
+
 void ck3::Dynasties::ParseOnlyDynasties(std::istream& input_stream)
 {
    commonItems::parser dynasties_parser;

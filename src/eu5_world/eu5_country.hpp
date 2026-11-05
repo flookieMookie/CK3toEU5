@@ -14,6 +14,7 @@
 namespace ck3
 {
 class Character;
+class Faith;
 class Realm;
 }  // namespace ck3
 
@@ -44,6 +45,12 @@ namespace eu5
     const std::string& nickname_text,
     const commonItems::LocalizationDatabase& ck3_nicknames,
     const std::string& language);
+
+// The CK3 tags to look a faith up by in religion_map, nearest first. CK3 1.20 divides faiths into
+// rites, which is what counties and characters belong to: many rites carry the name their faith had
+// before, some add _rite to it, and the rest go by the faith they belong to - whose name may end in
+// _faith where the old one did not - and then by its other rites, its main one first.
+[[nodiscard]] std::vector<std::string> FaithTagsToTry(const ck3::Faith& faith);
 
 // How many people a country holds of each religion, or of each culture.
 using PopulationShares = std::map<std::string, double>;

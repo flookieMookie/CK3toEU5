@@ -227,3 +227,27 @@ TEST(CK3WorldDynastiesTests, LinkingMissingDynastyIsIgnored)  // NOLINT : clang-
 
    EXPECT_NO_THROW(dynasties.LinkDynasties());  // NOLINT : clang-tidy doens't like gtest
 }
+
+// CK3 1.20 saves its own houses by key alone, and names them in its common/dynasty_houses.
+TEST(CK3WorldDynastiesTests, HousesSavedByKeyAreNamedFromCK3sDefinitions)  // NOLINT : clang-tidy doens't like gtest
+{
+   std::stringstream input;
+   input << "dynasty_house={\n";
+   input << "\t10418={key=\"house_orleans\" dynasty=4229}\n";
+   input << "\t10419={key=\"house_lacon\" name=\"dynn_Saved\"}\n";
+   input << "\t10420={key=\"1029175\"}\n";
+   input << "}";
+   ck3::Dynasties dynasties(input);
+
+   std::stringstream definitions;
+   definitions << "house_orleans = { prefix = \"dynnp_d_\" name = \"dynn_Orleans\" dynasty = 9557 }\n";
+   definitions << "house_lacon = { prefix = \"dynnp_de\" name = \"dynn_Lacon\" }\n";
+   definitions << "1029175 = { name = \"dynn_Chalukya\" }\n";
+   EXPECT_EQ(2, dynasties.NameHousesFromDefinitions(definitions));
+
+   EXPECT_EQ("dynn_Orleans", dynasties.GetHouses().at(10418)->GetName());
+   EXPECT_EQ("dynnp_d_", dynasties.GetHouses().at(10418)->GetPrefix());
+   // A name the save does carry stands.
+   EXPECT_EQ("dynn_Saved", dynasties.GetHouses().at(10419)->GetName());
+   EXPECT_EQ("dynn_Chalukya", dynasties.GetHouses().at(10420)->GetName());
+}

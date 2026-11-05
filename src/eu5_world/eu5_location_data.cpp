@@ -7,11 +7,10 @@
 #include "Log.h"
 #include "Parser.h"
 #include "ParserHelpers.h"
+#include "src/eu5_world/eu5_setup_folder.hpp"
 
 namespace
 {
-// game/main_menu/setup/start/06_pops.txt, relative to the EU5 install root.
-const std::filesystem::path kPopsFile = std::filesystem::path("game") / "main_menu" / "setup" / "start" / "06_pops.txt";
 
 eu5::Pop ParsePop(std::istream& input_stream)
 {
@@ -47,7 +46,7 @@ std::string Dominant(const std::map<std::string, double>& totals)
 
 eu5::LocationData::LocationData(const std::filesystem::path& eu5_directory)
 {
-   const auto pops_file = eu5_directory / kPopsFile;
+   const auto pops_file = StartSetupFolder(eu5_directory) / "06_pops.txt";
    if (!std::filesystem::exists(pops_file))
    {
       Log(LogLevel::Warning) << "EU5 pops not found at " << pops_file.string()

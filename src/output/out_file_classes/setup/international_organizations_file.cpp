@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 
+#include "src/eu5_world/eu5_setup_folder.hpp"
 #include "vanilla_start_file.hpp"
 
 namespace
@@ -111,7 +112,7 @@ void InternationalOrganizationsFile::Create(const std::filesystem::path& folder_
 {
    Log(LogLevel::Info) << "\tCreating " << GetName();
 
-   std::ifstream vanilla(eu5_directory_ / "game" / "main_menu" / "setup" / "start" / GetName());
+   std::ifstream vanilla(eu5::StartSetupFolder(eu5_directory_) / GetName());
    if (!vanilla.is_open())
    {
       Log(LogLevel::Warning) << "\t<> EU5's " << GetName() << " not found - skipping, vanilla will apply.";

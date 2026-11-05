@@ -8,10 +8,10 @@
 #include <string>
 #include <utility>
 
+#include "src/eu5_world/eu5_setup_folder.hpp"
+
 namespace
 {
-const std::filesystem::path kVanillaFile =
-    std::filesystem::path("game") / "main_menu" / "setup" / "start" / "04_dynasties.txt";
 }  // namespace
 
 namespace out
@@ -31,7 +31,7 @@ void DynastiesFile::Create(const std::filesystem::path& folder_path)
 {
    Log(LogLevel::Info) << "\tCreating " << GetName();
 
-   std::ifstream vanilla(eu5_directory_ / kVanillaFile);
+   std::ifstream vanilla(eu5::StartSetupFolder(eu5_directory_) / "04_dynasties.txt");
    if (!vanilla.is_open())
    {
       // Without EU5's own the file can't be written safely, and converted characters simply go

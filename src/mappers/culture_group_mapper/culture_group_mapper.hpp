@@ -17,7 +17,8 @@ namespace mappers
 // or language, and one or more eu5 culture groups.
 //    link = { eu5 = amazigh_group eu5 = maghrebi_group heritage = heritage_berber }
 //
-// A link may carry both a heritage and a language, in which case both resolve to the same groups.
+// A link carrying both a heritage and a language applies only to cultures with both: West Slavs who
+// speak Czech are Bohemian, the rest of the West Slavs are not.
 class CultureGroupMapper
 {
   public:
@@ -29,6 +30,9 @@ class CultureGroupMapper
    [[nodiscard]] const std::vector<std::string>& GetEU5CultureGroups(const std::string& ck3_heritage) const;
    [[nodiscard]] const std::vector<std::string>& GetEU5CultureGroupsForLanguage(const std::string& ck3_language) const;
    [[nodiscard]] const std::vector<std::string>& GetEU5CultureGroupsForNameList(const std::string& ck3_name_list) const;
+   // The groups of a link naming both this heritage and this language; empty when none does.
+   [[nodiscard]] const std::vector<std::string>& GetEU5CultureGroups(const std::string& ck3_heritage,
+       const std::string& ck3_language) const;
 
    [[nodiscard]] const auto& GetHeritageMappings() const { return heritage_to_eu5_groups_; }
    [[nodiscard]] const auto& GetLanguageMappings() const { return language_to_eu5_groups_; }
@@ -40,6 +44,7 @@ class CultureGroupMapper
    std::map<std::string, std::vector<std::string>> heritage_to_eu5_groups_;
    std::map<std::string, std::vector<std::string>> language_to_eu5_groups_;
    std::map<std::string, std::vector<std::string>> name_list_to_eu5_groups_;
+   std::map<std::pair<std::string, std::string>, std::vector<std::string>> heritage_and_language_to_eu5_groups_;
 };
 
 }  // namespace mappers

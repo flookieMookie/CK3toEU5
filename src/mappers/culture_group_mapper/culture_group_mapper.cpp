@@ -32,6 +32,10 @@ CultureGroupLink ParseLink(std::istream& input_stream)
    link_parser.registerKeyword("heritage", [&link](std::istream& input_stream) {
       link.ck3_heritage = commonItems::getString(input_stream);
    });
+   // A few links name their heritage as ck3 = heritage_x.
+   link_parser.registerKeyword("ck3", [&link](std::istream& input_stream) {
+      link.ck3_heritage = commonItems::getString(input_stream);
+   });
    link_parser.registerKeyword("language", [&link](std::istream& input_stream) {
       link.ck3_language = commonItems::getString(input_stream);
    });
@@ -86,6 +90,12 @@ void mappers::CultureGroupMapper::ParseMappings(std::istream& input_stream)
       {
          return;
       }
+      if (link.ck3_heritage.has_value() && link.ck3_language.has_value())
+      {
+         heritage_and_language_to_eu5_groups_.insert_or_assign(std::pair(*link.ck3_heritage, *link.ck3_language),
+             groups);
+         return;
+      }
       if (link.ck3_heritage.has_value())
       {
          heritage_to_eu5_groups_.insert_or_assign(*link.ck3_heritage, groups);
@@ -102,6 +112,13 @@ void mappers::CultureGroupMapper::ParseMappings(std::istream& input_stream)
    parser.registerRegex(commonItems::catchallRegex, commonItems::ignoreItem);
    parser.parseStream(input_stream);
    parser.clearRegisteredKeywords();
+}
+
+const std::vector<std::string>& mappers::CultureGroupMapper::GetEU5CultureGroups(const std::string& ck3_heritage,
+    const std::string& ck3_language) const
+{
+   const auto mapping = heritage_and_language_to_eu5_groups_.find(std::pair(ck3_heritage, ck3_language));
+   return mapping == heritage_and_language_to_eu5_groups_.end() ? kNoGroups : mapping->second;
 }
 
 const std::vector<std::string>& mappers::CultureGroupMapper::GetEU5CultureGroups(const std::string& ck3_heritage) const
