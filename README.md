@@ -2,7 +2,7 @@
 
 Turn your Crusader Kings III save into a Europa Universalis V mod and keep playing your world in 1337.
 
-**[Download the latest version](https://github.com/flookieMookie/CK3toEU5/releases/latest)** · Windows, 64-bit · Crusader Kings III + Europa Universalis V 1.3
+**[Download the latest version](https://github.com/flookieMookie/CK3toEU5/releases/latest)** · Windows, 64-bit · Crusader Kings III (1.20 or earlier) + Europa Universalis V 1.4
 
 ## How to use it
 
