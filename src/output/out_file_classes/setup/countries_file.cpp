@@ -487,6 +487,23 @@ std::string out::NotPresentBlock(const std::string& block,
    included.append(copied, result.cend());
    result = included;
 
+   // Not all of EU5's own not-present templates are whole: subsaharan_monarchy_not_present names no
+   // government type, which every country needs, and EU5 complains of it hundreds of times over.
+   // The country keeps the type it had.
+   if (const auto type = setup.GovernmentTypeOf(block); type.has_value() && !setup.GovernmentTypeOf(result).has_value())
+   {
+      static const std::regex kGovernment(R"(\bgovernment\s*=\s*\{)");
+      if (std::smatch government; std::regex_search(result, government, kGovernment))
+      {
+         result.insert(static_cast<std::size_t>(government.position(0) + government.length(0)),
+             "\n\t\t\ttype = " + *type);
+      }
+      else if (const auto last = result.rfind('}'); last != std::string::npos)
+      {
+         result.insert(last, "\tgovernment = { type = " + *type + " }\n\t");
+      }
+   }
+
    // Drop the lines the removals emptied, keeping the block's own layout otherwise.
    std::istringstream lines(result);
    std::ostringstream output;

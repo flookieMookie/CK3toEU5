@@ -47,6 +47,28 @@ TEST(OutputCountriesFileTests, TheocraciesChooseHeirsFromTheirClergy)  // NOLINT
    EXPECT_EQ("heir_same_religion", HeirReligionLawFor("partition_inheritance"));
 }
 
+// EU5's own subsaharan_monarchy_not_present has no government type, which every country needs.
+TEST(OutputCountriesFileTests, ANotPresentTemplateWithoutAGovernmentTypeKeepsTheCountrys)  // NOLINT
+{
+   const std::string alodia =
+       "\tALO = {\n"
+       "\t\town_control_core = { soba qerri }\n"
+       "\t\tinclude = \"subsaharan_monarchy_no_coast\"\n"
+       "\t\tgovernment = {\n"
+       "\t\t\their_selection = matrilineal_non_exclusive\n"
+       "\t\t}\n"
+       "\t}\n";
+
+   eu5::CountrySetup setup;
+   setup.AddTemplate("subsaharan_monarchy_no_coast", "government = { type = monarchy }");
+   setup.AddTemplate("subsaharan_monarchy_not_present", "government = { centralization_vs_decentralization = 40 }");
+
+   const auto written = NotPresentBlock(alodia, eu5::MapAreas(), setup);
+   EXPECT_NE(std::string::npos, written.find("include = \"subsaharan_monarchy_not_present\""));
+   EXPECT_NE(std::string::npos, written.find("type = monarchy"));
+   EXPECT_EQ("monarchy", setup.GovernmentTypeOf(written));
+}
+
 TEST(OutputCountriesFileTests, CountriesNotPresentKeepNoLandOrRulers)  // NOLINT : clang-tidy doens't like gtest
 {
    const std::string denmark =
